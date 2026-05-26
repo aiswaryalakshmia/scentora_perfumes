@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title%}
+address book
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/address_book.css' %}">
+{% endblock %}
+
+{% block content %}
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="profile-summary">
+      <div class="profile-icon">
+        <i class="fa-solid fa-user"></i>
+      </div>
+      <h3>Welcome back</h3>
+      <p class="member-tier">Luxury Member</p>
+    </div>
+
+    <ul class="sidebar-menu">
+      <li><a href="#">Dashboard</a></li>
+      <li><a href="#">My Orders</a></li>
+      <li><a href="#">Wishlist</a></li>
+      <li class="active"><a href="#">Address Book</a></li>
+      <li><a href="#">Wallet</a></li>
+      <li><a href="#">Edit Profile</a></li>
+      <li><a href="#">Logout</a></li>
+    </ul>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="address-content">
+    <div class="header-row">
+      <div>
+        <h2>Manage Addresses</h2>
+        <p class="subtitle">Curate your delivery destinations with the same precision as your fragrance collection.</p>
+      </div>
+      <a href="{% url 'add_address' %}" class="add-btn">
+            + Add New Address
+        </a>
+    </div>
+
+    
+        <!-- Address Cards -->
+    {% if addresses %}
+
+    <div class="address-grid">
+
+    {% for address in addresses %}
+
+    <div class="address-card {% if address.is_default %}default{% endif %}">
+
+        <div class="card-header">
+
+        <span class="tag">
+            {{address.address_type}}
+        </span>
+
+        {% if address.is_default %}
+        <span class="status">Default</span>
+        {% endif %}
+
+        </div>
+
+        <h4>{{ address.full_name }}</h4>
+
+        <p>
+        <i class="fa-solid fa-phone"></i>
+        {{ address.phone_number }}
+        </p>
+
+        <p>
+        <i class="fa-solid fa-location-dot"></i>
+
+        {{ address.address_line }},
+        {{ address.city }},
+        {{ address.state }},
+        {{ address.postal_code }}
+
+        </p>
+
+        <div class="card-actions">
+
+        <a href="{% url 'edit_address' address.id %}"
+            class="btn edit">
+
+            Edit
+
+        </a>
+
+        <a href="{% url 'delete_address' address.id %}"
+            class="btn delete"
+            onclick="return confirm('Are you sure you want to delete this address?')">
+            
+                Delete
+        </a>
+
+        {% if not address.is_default %}
+        <button class="btn default">
+            Set as Default
+        </button>
+        {% endif %}
+
+        </div>
+
+    </div>
+
+    {% endfor %}
+
+    </div>
+
+    {% else %}
+
+    <!-- Empty State -->
+
+    <div class="empty-address">
+
+    <h3>No addresses added yet</h3>      
+
+    </div>
+
+    {% endif %}
+
+    <!-- Concierge Delivery Section -->
+    <section class="concierge">
+      <div class="concierge-image">
+        <img src="{% static 'images/concierge-bottle.png' %}" alt="Concierge Delivery">
+      </div>
+      <div class="concierge-text">
+        <h5 class="section-label">The Scentora Service</h5>
+        <h3>Concierge Delivery</h3>
+        <p>
+          Every Scentora delivery is handled with the same reverence as the fragrances themselves.
+          We ensure your signature scent arrives in pristine condition, wrapped in our sustainable silk-lined packaging.
+        </p>
+      </div>
+    </section>
+  </main>
+{% endblock %}
+
+

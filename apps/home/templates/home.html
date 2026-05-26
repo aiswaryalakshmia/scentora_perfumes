@@ -1,0 +1,104 @@
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+Home
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/home.css' %}">
+{% endblock %}
+
+{% block content %}
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <img src="{% static 'images/hero-perfume.png' %}" alt="Perfume Bottle">
+    <h2>Discover Your Signature Scent</h2>
+    <button class="cta">Shop Now</button>
+  </section>
+
+  <!-- Collections -->
+  <section class="collections">
+    <h3>The Collections</h3>
+    <div class="collection-grid">
+      <div class="collection-item">
+        <img src="{% static 'images/men.png' %}" alt="Men">
+        <p>Men</p>
+      </div>
+      <div class="collection-item">
+        <img src="{% static 'images/women.png' %}" alt="Women">
+        <p>Women</p>
+      </div>
+      <div class="collection-item">
+        <img src="{% static 'images/unisex.png' %}" alt="Unisex">
+        <p>Unisex</p>
+      </div>
+      <div class="collection-item">
+        <img src="{% static 'images/luxury.png' %}" alt="Luxury">
+        <p>Luxury</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Iconic Selections -->
+  <section class="iconic">
+    <div class="section-header">
+      <h3>Iconic Selections</h3>
+      <a href="#" class="view-all">View All</a>
+    </div>
+    <p class="subtitle">The most desired sensations in our collection.</p>
+    <div class="product-grid">
+      <div class="product">
+        <img src="{% static 'images/oud-silk.png' %}" alt="Oud Silk">
+        <h4>Oud Silk</h4>
+        <p>Magnifique — ₹799.00</p>
+      </div>
+      <div class="product">
+        <img src="{% static 'images/amber-intense.png' %}" alt="Amber Intense">
+        <h4>Amber Intense</h4>
+        <p>Golden Night — ₹899.00</p>
+      </div>
+      <div class="product">
+        <img src="{% static 'images/marine-noir.png' %}" alt="Marine Noir">
+        <h4>Marine Noir</h4>
+        <p>Oceanic Mist — ₹999.00</p>
+      </div>
+      <div class="product">
+        <img src="{% static 'images/rose-absolute.png' %}" alt="Rose Absolute">
+        <h4>Rose Absolute</h4>
+        <p>Velvet Petals — ₹849.00</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- New Arrivals -->
+  <section class="new-arrivals">
+    <h3>New Arrivals <span class="tag">Limited Edition</span></h3>
+    <div class="product-grid">
+      <div class="product">
+        <img src="{% static 'images/sunset-nomad.png' %}" alt="Sunset Nomad">
+        <h4>Sunset Nomad</h4>
+        <p>₹1,099.00</p>
+      </div>
+      <div class="product">
+        <img src="{% static 'images/charcoal-essence.png' %}" alt="Charcoal Essence">
+        <h4>Charcoal Essence</h4>
+        <p>₹999.00</p>
+      </div>
+      <div class="product">
+        <img src="{% static 'images/crystal-glow.png' %}" alt="Crystal Glow">
+        <h4>Crystal Glow</h4>
+        <p>₹1,249.00</p>
+      </div>
+      <div class="product">
+        <img src="{% static 'images/liquid-gold.png' %}" alt="Liquid Gold">
+        <h4>Liquid Gold</h4>
+        <p>₹1,349.00</p>
+      </div>
+    </div>
+  </section>
+
+
+{% endblock %}

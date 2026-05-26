@@ -1,0 +1,209 @@
+/* Sidebar */
+.sidebar {
+  width: 240px;
+  background-color: #1a1a1a;
+  color: #fff;
+  padding: 30px 20px;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+}
+
+.profile-summary {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.profile-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: #2a2a2a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 10px;
+  font-size: 24px;
+  color: #c59a3a;
+}
+
+.member-tier {
+  font-size: 12px;
+  color: #aaa;
+}
+
+.sidebar-menu {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar-menu li {
+  margin: 15px 0;
+}
+
+.sidebar-menu a {
+  color: #ccc;
+  text-decoration: none;
+  font-size: 15px;
+}
+
+.sidebar-menu li.active a,
+.sidebar-menu a:hover {
+  color: #c59a3a;
+}
+
+/* Main Content */
+.address-content {
+  margin-left: 260px;
+  padding: 40px 60px;
+  color: #fff;
+}
+
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+}
+
+.header-row h2 {
+  font-size: 28px;
+  margin-bottom: 5px;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: #aaa;
+}
+
+.add-btn {
+  background-color: #c59a3a;
+  color: #000;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.add-btn:hover {
+  background-color: #e0b84a;
+}
+
+/* Address Cards */
+.address-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 25px;
+  margin-bottom: 50px;
+}
+
+.address-card {
+  background-color: #1e1e1e;
+  padding: 25px;
+  border-radius: 8px;
+}
+
+.address-card.default {
+  border: 1px solid #c59a3a;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.tag {
+  font-size: 12px;
+  color: #c59a3a;
+  text-transform: uppercase;
+}
+
+.status {
+  font-size: 11px;
+  color: #c59a3a;
+}
+
+.address-card h4 {
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.address-card p {
+  font-size: 13px;
+  color: #ccc;
+  margin-bottom: 6px;
+}
+
+.address-card i {
+  color: #c59a3a;
+  margin-right: 8px;
+}
+
+.card-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.btn {
+  background-color: #2a2a2a;
+  color: #ccc;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.btn:hover {
+  background-color: #3a3a3a;
+}
+
+.btn.default {
+  background-color: #c59a3a;
+  color: #000;
+  font-weight: 600;
+}
+
+.btn.default:hover {
+  background-color: #e0b84a;
+}
+
+/* Concierge Section */
+.concierge {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+  background-color: #1e1e1e;
+  padding: 30px;
+  border-radius: 8px;
+}
+
+.concierge-image img {
+  width: 180px;
+  border-radius: 6px;
+}
+
+.concierge-text .section-label {
+  font-size: 12px;
+  color: #c59a3a;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.concierge-text h3 {
+  font-size: 22px;
+  margin-bottom: 10px;
+  color: #fff;
+}
+
+.concierge-text p {
+  font-size: 13px;
+  color: #aaa;
+  line-height: 1.6;
+}

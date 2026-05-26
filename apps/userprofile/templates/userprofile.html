@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title%}
+profile
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/userprofile.css' %}">
+{% endblock %}
+
+{% block content %}
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="profile-summary">
+      <div class="profile-icon">
+        <i class="fa-solid fa-user"></i>
+      </div>
+      <h3>Welcome back</h3>
+      <p class="member-tier">Luxury Member</p>
+    </div>
+
+    <ul class="sidebar-menu">
+      <li class="active"><a href="#">Dashboard</a></li>
+      <li><a href="#">My Orders</a></li>
+      <li><a href="#">Wishlist</a></li>
+      <li><a href="{% url 'address_book' %}">Address Book</a></li>
+      <li><a href="#">Wallet</a></li>
+      <li><a href="#">Edit Profile</a></li>
+      <li><a href="#">Logout</a></li>
+    </ul>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="dashboard-content">
+    <h2>Welcome back, {{ current_user.full_name }}</h2>
+    <p class="referral">Referral Code: MCBES</p>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+      <div class="stat-box">
+        <i class="fa-solid fa-box"></i>
+        <h4>Total Orders</h4>
+        <p>{{ total_orders }}</p>
+      </div>
+      <div class="stat-box">
+        <i class="fa-regular fa-heart"></i>
+        <h4>Wishlist Items</h4>
+        <p>{{ wishlist_count }}</p>
+      </div>
+      <div class="stat-box">
+        <i class="fa-solid fa-wallet"></i>
+        <h4>Wallet Balance</h4>
+        <p>{{ wallet_balance }}</p>
+      </div>
+      <div class="stat-box">
+        <i class="fa-solid fa-clock"></i>
+        <h4>Pending Orders</h4>
+        <p>{{ pending_orders }}</p>
+      </div>
+    </div>
+
+    <!-- Recent Orders -->
+    <section class="recent-orders">
+      <div class="section-header">
+        <h3>Recent Orders</h3>
+        <a href="#" class="view-all">View All</a>
+      </div>
+
+      <div class="order-card">
+        <div class="order-image">
+          <img src="{% static 'images/noir-absolute.png' %}" alt="Noir Absolute">
+        </div>
+        <div class="order-details">
+          <h4>Noir Absolute</h4>
+          <p>Order #SO-29841</p>
+          <span class="status">In Transit</span>
+        </div>
+        <button class="details-btn">Details</button>
+      </div>
+    </section>
+  </main>
+{% endblock %}

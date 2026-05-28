@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title%}
+edit profile
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/edit_profile.css' %}">
+{% endblock %}
+
+{% block content %}
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="profile-summary">
+      <div class="profile-icon">
+        <i class="fa-solid fa-user"></i>
+      </div>
+      <h3>Welcome back</h3>
+      <p class="member-tier">Luxury Member</p>
+    </div>
+
+    <ul class="sidebar-menu">
+      <li><a href="{% url 'profile_dashboard' %}">Dashboard</a></li>
+      <li><a href="#">My Orders</a></li>
+      <li><a href="#">Wishlist</a></li>
+      <li><a href="{% url 'address_book' %}">Address Book</a></li>
+      <li><a href="#">Wallet</a></li>
+      <li class="active"><a href="#">Edit Profile</a></li>
+      <li><a href="#">Logout</a></li>
+    </ul>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="profile-content">
+    <h2>Edit Profile</h2>
+
+    <!-- Profile Identity -->
+<section class="profile-section">
+
+    <form class="profile-form" method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="section-header">
+
+            <!-- hidden file input -->
+            <input type="file" id="profileImage" name="profile_image" hidden>
+
+            <!-- clickable profile avatar -->
+            <label for="profileImage" class="icon-circle profile-avatar">
+
+                {% if user.profile_image %}
+                    <img src="{{ user.profile_image.url }}" id="profile-image" id="previewImage">
+                {% else %}
+                    <i class="fa-solid fa-user-plus"></i>
+                {% endif %}
+
+            </label>
+
+            <div>
+                <h3>Profile</h3>
+                <p class="section-desc">
+                    Update your public presence and personal details.
+                </p>
+            </div>
+
+        </div>
+
+        <label>Full Name</label>
+        <input type="text" name="full_name" value="{{ user.full_name }}">
+
+        <label>Mobile Number</label>
+        <input type="text" name="mobile_number" value="{{ user.mobile_number }}">
+
+        <label>Email Address</label>
+        <input type="email" name="email" value="{{ user.email }}">
+
+        <div class="form-actions">
+            <button type="button" class="btn cancel">Cancel</button>
+            <button type="submit" name="update_profile" class="btn save">Save Changes</button>
+        </div>
+
+    </form>
+
+</section>
+
+    <!-- Security -->
+    <section class="profile-section">
+      <div class="section-header">
+        <div class="icon-circle"><i class="fa-solid fa-lock"></i></div>
+        <h3>Security</h3>
+      </div>
+      <p class="section-desc">Manage your account password and security settings.</p>
+
+      <form method="POST" class="security-form">
+        {% csrf_token %}
+        <label>Current Password</label>
+        <input type="password" placeholder="Enter current password" name="current_password">
+
+        <div class="password-row">
+          <div>
+            <label>New Password</label>
+            <input type="password" placeholder="Enter new password" name="new_password">
+          </div>
+          <div>
+            <label>Confirm New Password</label>
+            <input type="password" placeholder="Confirm new password" name="confirm_password">
+          </div>
+        </div>
+        <div class="form-actions">
+            <button type="button" class="btn cancel">Cancel</button>
+            <button type="submit" class="btn save" name="change_password">Verify & Change Password</button>
+        </div>
+      </form>
+    </section>   
+    
+  </main>
+{% endblock %}
+

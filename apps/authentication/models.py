@@ -22,6 +22,13 @@ class User(AbstractUser):
         null=True
     )
 
+    profile_image = models.ImageField(
+        upload_to='profile_images/',
+        blank=True,
+        null=True
+    )
+
+
     status = models.CharField(
         max_length=10,
         default='active'

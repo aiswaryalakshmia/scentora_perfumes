@@ -1,4 +1,5 @@
 from django.shortcuts import render,redirect
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404
 from .models import Address
@@ -92,3 +93,72 @@ def edit_address(request,address_id):
         return redirect('address_book')
     return render(request,'add_address.html',
                   {'address':address})
+
+@login_required
+def edit_profile(request):
+    user=request.user
+
+    if request.method=='POST':
+        if 'update_profile' in request.POST:
+
+            user.full_name=request.POST.get('full_name')
+            user.email = request.POST.get('email')
+            user.mobile_number = request.POST.get('mobile_number')
+            if request.FILES.get('profile_image'):
+                user.profile_image = request.FILES['profile_image']
+
+            user.save()
+
+        # PASSWORD CHANGE
+        elif 'change_password' in request.POST: 
+            current_password=request.POST.get('current_password')
+            new_password = request.POST.get('new_password')
+            confirm_password = request.POST.get('confirm_password')   
+
+            # current password check
+            if not user.check_password(current_password):
+                return render(request,'edit_profile.html',{
+                            'error': 'Current password is incorrect'})
+            
+            # password match
+            if new_password != confirm_password:
+
+                return render(request, 'edit_profile.html', {
+                    'error': 'Passwords do not match'
+                })
+            
+            # same password check
+            if current_password == new_password:
+
+                return render(request, 'edit_profile.html', {
+                    'error': 'New password cannot be same as old password'
+                })
+            
+            # generate otp
+            otp = str(random.randint(100000, 999999))
+
+            OTP.objects.create(
+                user=user,
+                otp_code=otp
+            )
+            
+            # send mail
+            send_mail(
+                'Scentora Password Change OTP',
+                f'Your OTP is {otp}',
+                settings.EMAIL_HOST_USER,
+                [user.email],
+                fail_silently=False,
+            )
+
+            # store session
+            request.session['reset_email'] = user.email
+
+            request.session['otp_purpose'] = 'change_password'
+
+            request.session['new_password'] = new_password  
+
+            return redirect('verify_otp')
+
+        return redirect('edit_profile')
+    return render(request, 'edit_profile.html', {'user': user})

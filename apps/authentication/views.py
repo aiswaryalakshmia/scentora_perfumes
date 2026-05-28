@@ -171,6 +171,9 @@ def verify_otp(request):
 
             if otp_purpose=='signup':
                 return redirect('login')
+            
+            elif otp_purpose=='change_password':
+                return redirect('edit_profile')
 
             return redirect('reset_password')
 

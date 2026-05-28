@@ -1,0 +1,133 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scentora Admin Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="{% static 'css/admin_dashboard.css' %}">
+</head>
+<body>
+
+  <div class="dashboard-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <h2 class="logo">SCENTORA</h2>
+      <p class="tagline">Luxury Home Console</p>
+      <ul class="menu">
+        <li class="active"><i class="fa-solid fa-chart-line"></i> Dashboard</li>
+        <li><i class="fa-solid fa-box"></i> Products</li>
+        <li><i class="fa-solid fa-layer-group"></i> Categories</li>
+        <li><i class="fa-solid fa-receipt"></i> Orders</li>
+        <li><a href="{% url 'user_management' %}"><i class="fa-solid fa-users"></i> Customers</a></li>
+        <li><i class="fa-solid fa-ticket"></i> Coupons</li>
+        <li><i class="fa-solid fa-file-lines"></i> Sales Report</li>
+        <li><i class="fa-solid fa-gift"></i> Offers</li>
+        <li class="logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</li>
+      </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <header class="topbar">
+        <div class="user-info">
+          <span class="user-name">Admin User</span>
+          <i class="fa-solid fa-user-shield"></i>
+        </div>
+      </header>
+
+      <section class="overview">
+        <h3>Dashboard Overview</h3>
+        <div class="cards">
+          <div class="card">
+            <p class="label">Total Sales</p>
+            <h4>₹124,500</h4>
+            <span class="growth">+12%</span>
+          </div>
+          <div class="card">
+            <p class="label">Total Orders</p>
+            <h4>1,240</h4>
+            <span class="growth">+5%</span>
+          </div>
+          <div class="card">
+            <p class="label">Total Customers</p>
+            <h4>850</h4>
+            <span class="growth">+8%</span>
+          </div>
+          <div class="card">
+            <p class="label">Revenue</p>
+            <h4>₹82,300</h4>
+            <span class="growth">+15%</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="analytics">
+        <div class="chart-box">
+          <h4>Revenue Over Time</h4>
+          <canvas id="revenueChart"></canvas>
+        </div>
+
+        <div class="collections">
+          <h4>Top Collections</h4>
+          <div class="collection-item">
+            <img src="{% static 'images/noir-nite.png' %}" alt="Noir Nite">
+            <div>
+              <p>Noir Nite</p>
+              <span>₹18,400</span>
+            </div>
+          </div>
+          <div class="collection-item">
+            <img src="{% static 'images/oud-royale.png' %}" alt="Oud Royale">
+            <div>
+              <p>Oud Royale</p>
+              <span>₹22,150</span>
+            </div>
+          </div>
+          <div class="collection-item">
+            <img src="{% static 'images/velvet-rose.png' %}" alt="Velvet Rose">
+            <div>
+              <p>Velvet Rose</p>
+              <span>₹14,800</span>
+            </div>
+          </div>
+          <button class="view-btn">View All Products</button>
+        </div>
+      </section>
+
+      <section class="transactions">
+        <h4>Recent Transactions</h4>
+        <table>
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Customer</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>#ORD-9912</td><td>Julienne V.</td><td>₹620.00</td><td class="delivered">Delivered</td><td>Oct 18, 2023</td>
+            </tr>
+            <tr>
+              <td>#ORD-9910</td><td>Marcus Thorne</td><td>₹1,250.00</td><td class="delivered">Delivered</td><td>Oct 17, 2023</td>
+            </tr>
+            <tr>
+              <td>#ORD-9915</td><td>Serafina L.</td><td>₹890.00</td><td class="delivered">Delivered</td><td>Oct 15, 2023</td>
+            </tr>
+            <tr>
+              <td>#ORD-9912</td><td>Adrian Knight</td><td>₹215.00</td><td class="cancelled">Cancelled</td><td>Oct 10, 2023</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="table-footer">
+          <button class="export-btn">Export CSV</button>
+          <button class="view-btn">View More Orders</button>
+        </div>
+      </section>
+    </main>
+  </div>

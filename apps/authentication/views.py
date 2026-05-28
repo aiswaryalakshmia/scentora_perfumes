@@ -5,6 +5,7 @@ import random
 from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
+from django.contrib.auth import update_session_auth_hash
 
 def signup(request):
 
@@ -33,20 +34,20 @@ def signup(request):
             return render(request, 'signup.html', {
                 'error': 'Mobile number already exists'
             })
+        
+        request.session['signup_data'] = {
+            'full_name': full_name,
+            'email': email,
+            'mobile_number': mobile_number,
+            'password': password,
+            'referral': referral
+        }
 
-        # create user
-        user = User.objects.create_user(
-            username=email,
-            full_name=full_name,
-            email=email,
-            mobile_number=mobile_number,
-            password=password,
-            referral_code=referral
-        )
+        
         otp = str(random.randint(100000, 999999))
 
         OTP.objects.create(
-            user=user,
+            email=email,
             otp_code=otp
         )
 
@@ -99,14 +100,12 @@ def forgot_password(request):
 
         email = request.POST.get('email')
 
-        try:
-
-            user = User.objects.get(email=email)
+        try:           
 
             otp = str(random.randint(100000, 999999))
 
             OTP.objects.create(
-                user=user,
+                email=email,
                 otp_code=otp
             )
 
@@ -148,12 +147,10 @@ def verify_otp(request):
         email = request.session.get('reset_email')
         otp_purpose = request.session.get('otp_purpose')
 
-        try:
-
-            user = User.objects.get(email=email)
+        try:            
 
             otp_obj = OTP.objects.filter(
-                user=user,
+                email=email,
                 otp_code=entered_otp,
                 is_used=False
             ).latest('created_at')
@@ -170,9 +167,26 @@ def verify_otp(request):
             otp_obj.save()
 
             if otp_purpose=='signup':
+
+                user_details=request.session.get('signup_data')
+                #create user
+                user = User.objects.create_user(
+                    username=user_details['email'],
+                    full_name=user_details['full_name'],
+                    email=user_details['email'],
+                    mobile_number=user_details['mobile_number'],
+                    password=user_details['password'],
+                    referral_code=user_details['referral']
+                )
+
                 return redirect('login')
             
             elif otp_purpose=='change_password':
+                new_password=request.session.get('new_password')
+                user = request.user
+                user.set_password(new_password)
+                user.save()
+                update_session_auth_hash(request, user) 
                 return redirect('edit_profile')
 
             return redirect('reset_password')
@@ -216,19 +230,17 @@ def resend_otp(request):
     if not email:
         return redirect('forgot_password')
 
-    try:
-
-        user = User.objects.get(email=email)
+    try:        
 
         OTP.objects.filter(
-            user=user,
+            email=email,
             is_used=False
         ).update(is_used=True)
 
         otp = str(random.randint(100000, 999999))
 
         OTP.objects.create(
-            user=user,
+            email=email,
             otp_code=otp
         )
 

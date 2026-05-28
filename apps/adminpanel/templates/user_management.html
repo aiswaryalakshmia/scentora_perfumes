@@ -1,0 +1,145 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customers Management | Scentora Admin</title>
+  <link rel="stylesheet" href="{% static 'css/all.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/user_management.css' %}">
+</head>
+<body>
+
+  <div class="dashboard-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <h2 class="logo">SCENTORA</h2>
+      <p class="tagline">Luxury Admin Console</p>
+      <ul class="menu">
+        <li><i class="fa-solid fa-chart-line"></i> Dashboard</li>
+        <li><i class="fa-solid fa-box"></i> Products</li>
+        <li><i class="fa-solid fa-layer-group"></i> Categories</li>
+        <li><i class="fa-solid fa-receipt"></i> Orders</li>
+        <li class="active"><i class="fa-solid fa-users"></i> Customers</li>
+        <li><i class="fa-solid fa-ticket"></i> Coupons</li>
+        <li><i class="fa-solid fa-file-lines"></i> Sales Report</li>
+        <li><i class="fa-solid fa-gift"></i> Offers</li>
+        <li class="logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</li>
+      </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <header class="topbar">
+        <div class="user-info">
+          <span class="user-name">Admin User</span>
+          <span class="role">Scentora Creator</span>
+          <i class="fa-solid fa-user-shield"></i>
+        </div>
+      </header>
+
+      <section class="customers-section">
+        <h3>Customers Management</h3>
+        <form method="GET">
+            <div class="search-bar">
+                <input type="text" name="search" value="{{ search_query }}" placeholder="Search by name, ID, or email...">
+                <button type="submit">
+                    Search
+                </button>
+
+                <a class="btn" href="{% url 'user_management' %}">
+                    Clear
+                </a>
+            </div>
+        </form>
+
+        
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>SL No</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Mobile Number</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>              
+                {% for user in users %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+
+                    <td class="username">
+                    {{ user.full_name|default:user.username }}
+                    </td>
+
+                    <td>{{ user.email }}</td>
+
+                    <td>{{ user.mobile_number }}</td>
+
+                    <td>
+                    {% if user.is_active %}
+                        <span class="status active">ACTIVE</span>
+                    {% else %}
+                        <span class="status blocked">BLOCKED</span>
+                    {% endif %}
+                    </td>
+
+                    <td class="actions">
+                    <i class="fa-solid fa-eye"></i>
+
+                    {% if user.is_active %}
+                        <i class="fa-solid fa-ban"></i>
+                    {% else %}
+                        <i class="fa-solid fa-check-circle"></i>
+                    {% endif %}
+                    </td>
+
+                </tr>
+                {% endfor %}
+            </tbody>
+          </table>
+
+          <div class="pagination">
+
+            <p>
+                Showing {{ page_obj.start_index }} to {{ page_obj.end_index }}
+                of {{ page_obj.paginator.count }} customers
+            </p>
+
+            <div class="page-controls">
+
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
+                    &lt;
+                </a>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <a class="active">{{ num }}</a>
+                {% else %}
+                    <a href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}">
+                    {{ num }}
+                    </a>
+                {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
+                    &gt;
+                </a>
+                {% endif %}
+
+            </div>
+        </div>
+
+        </div>
+      </section>
+    </main>
+  </div>
+
+</body>
+</html>

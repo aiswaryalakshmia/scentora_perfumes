@@ -24,6 +24,7 @@ urlpatterns = [
     path('', include('apps.home.urls')),
     path('', include('apps.userprofile.urls')),
     path('accounts/', include('allauth.urls')),
+    path('admin-panel/',include('apps.adminpanel.urls')),
 ]
 
 urlpatterns += static(

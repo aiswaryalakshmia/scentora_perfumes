@@ -107,6 +107,9 @@ edit profile
             <input type="password" placeholder="Confirm new password" name="confirm_password">
           </div>
         </div>
+        {% if error %}
+          <p style="color:red;">{{ error }}</p>
+        {% endif %}
         <div class="form-actions">
             <button type="button" class="btn cancel">Cancel</button>
             <button type="submit" class="btn save" name="change_password">Verify & Change Password</button>

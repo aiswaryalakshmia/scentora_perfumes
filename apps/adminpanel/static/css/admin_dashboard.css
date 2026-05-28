@@ -1,0 +1,297 @@
+/* Global */
+body {
+  background-color: #000;
+  color: #fff;
+  font-family: 'Poppins', sans-serif;
+  margin: 0;
+}
+
+/* Layout */
+.dashboard-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 240px;
+  background-color: #1a1a1a;
+  padding: 30px 20px;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+}
+
+.logo {
+  color: #c59a3a;
+  font-size: 22px;
+  letter-spacing: 2px;
+  margin-bottom: 5px;
+}
+
+.tagline {
+  font-size: 12px;
+  color: #aaa;
+  margin-bottom: 30px;
+}
+
+.menu {
+  list-style: none;
+  padding: 0;
+}
+
+.menu li {
+  color: #ccc;
+  font-size: 15px;
+  margin: 15px 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ✅ FIX FOR LINKS (IMPORTANT) */
+.menu li a,
+.menu li a:visited,
+.menu li a:active,
+.menu li a:link {
+  text-decoration: none;
+  color: #ccc;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.menu li a:hover {
+  color: #c59a3a;
+}
+
+/* Active + hover for plain li items */
+.menu li.active,
+.menu li:hover {
+  color: #c59a3a;
+}
+
+.logout {
+  margin-top: 40px;
+  color: #c59a3a;
+}
+
+/* Main Content */
+.main-content {
+  flex: 1;
+  margin-left: 240px;
+  padding: 30px 40px;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 25px;
+}
+
+/* Topbar */
+.topbar {
+  grid-column: 1 / 3;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #c59a3a;
+  font-weight: 500;
+}
+
+/* Overview Section */
+.overview {
+  grid-column: 1 / 3;
+}
+
+.overview h3 {
+  color: #c59a3a;
+  font-size: 18px;
+  margin-bottom: 20px;
+}
+
+.cards {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.card {
+  background-color: #1e1e1e;
+  flex: 1;
+  min-width: 180px;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+.card .label {
+  font-size: 13px;
+  color: #aaa;
+}
+
+.card h4 {
+  font-size: 20px;
+  margin: 8px 0;
+  color: #fff;
+}
+
+.card .growth {
+  font-size: 12px;
+  color: #c59a3a;
+}
+
+/* Analytics Section */
+.analytics {
+  grid-column: 1 / 3;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 25px;
+}
+
+.chart-box,
+.collections {
+  background-color: #1e1e1e;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.chart-box h4,
+.collections h4 {
+  color: #c59a3a;
+  font-size: 16px;
+  margin-bottom: 15px;
+}
+
+/* Collections */
+.collection-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.collection-item img {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.collection-item p {
+  font-size: 14px;
+  color: #fff;
+  margin: 0;
+}
+
+.collection-item span {
+  font-size: 13px;
+  color: #c59a3a;
+}
+
+.view-btn {
+  background-color: #c59a3a;
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.view-btn:hover {
+  background-color: #e0b84a;
+}
+
+/* Transactions */
+.transactions {
+  grid-column: 1 / 3;
+  background-color: #1e1e1e;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.transactions h4 {
+  color: #c59a3a;
+  font-size: 16px;
+  margin-bottom: 15px;
+}
+
+.transactions table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.transactions th,
+.transactions td {
+  padding: 10px;
+  text-align: left;
+  font-size: 13px;
+  color: #ccc;
+}
+
+.transactions th {
+  color: #c59a3a;
+  font-weight: 500;
+}
+
+.transactions tr:nth-child(even) {
+  background-color: #2a2a2a;
+}
+
+.delivered {
+  color: #4caf50;
+  font-weight: 600;
+}
+
+.cancelled {
+  color: #f44336;
+  font-weight: 600;
+}
+
+.table-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+}
+
+.export-btn,
+.view-btn {
+  background-color: #c59a3a;
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.export-btn:hover,
+.view-btn:hover {
+  background-color: #e0b84a;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .main-content {
+    grid-template-columns: 1fr;
+  }
+
+  .analytics {
+    grid-template-columns: 1fr;
+  }
+
+  .cards {
+    flex-direction: column;
+  }
+}

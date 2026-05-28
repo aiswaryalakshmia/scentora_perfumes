@@ -53,10 +53,8 @@ class User(AbstractUser):
     
 class OTP(models.Model):
 
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE
-    )
+    
+    email = models.EmailField(null=True, blank=True)
 
     otp_code = models.CharField(
         max_length=6

@@ -2,20 +2,24 @@ from django.shortcuts import render,redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404
+from apps.authentication.models import User, OTP
 from .models import Address
+import random
+from django.core.mail import send_mail
+from django.conf import settings
+
 
 @login_required
 def profile_dashboard(request):
     user=request.user
 
-    context = {   
+    context = {
         'current_user':user,
         'total_orders': 0,
         'wishlist_count': 0,
         'wallet_balance': 0,
         'pending_orders': 0,
     }
-    
     return render(request,'userprofile.html',context)
     
 @login_required   
@@ -88,11 +92,9 @@ def edit_address(request,address_id):
         address.address_type = request.POST.get('address_type')
         address.is_default=True if request.POST.get('is_default') else False
 
-        
         address.save()
         return redirect('address_book')
-    return render(request,'add_address.html',
-                  {'address':address})
+    return render(request,'add_address.html', {'address':address})
 
 @login_required
 def edit_profile(request):
@@ -110,7 +112,7 @@ def edit_profile(request):
             user.save()
 
         # PASSWORD CHANGE
-        elif 'change_password' in request.POST: 
+        elif 'change_password' in request.POST:
             current_password=request.POST.get('current_password')
             new_password = request.POST.get('new_password')
             confirm_password = request.POST.get('confirm_password')   
@@ -138,7 +140,7 @@ def edit_profile(request):
             otp = str(random.randint(100000, 999999))
 
             OTP.objects.create(
-                user=user,
+                email=user.email,
                 otp_code=otp
             )
             
@@ -156,7 +158,7 @@ def edit_profile(request):
 
             request.session['otp_purpose'] = 'change_password'
 
-            request.session['new_password'] = new_password  
+            request.session['new_password'] = new_password
 
             return redirect('verify_otp')
 

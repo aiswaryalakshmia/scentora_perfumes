@@ -63,7 +63,7 @@
                 <th>Email</th>
                 <th>Mobile Number</th>
                 <th>Status</th>
-                <th>Action</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>              
@@ -88,13 +88,23 @@
                     </td>
 
                     <td class="actions">
-                    <i class="fa-solid fa-eye"></i>
 
-                    {% if user.is_active %}
-                        <i class="fa-solid fa-ban"></i>
-                    {% else %}
-                        <i class="fa-solid fa-check-circle"></i>
-                    {% endif %}
+                        <i class="fa-solid fa-eye"></i>
+
+                        <a href="{% url 'toggle_user_status' user.id %}"
+                            {% if user.is_active %}
+                                onclick="return confirm('Are you sure you want to block this user?')"
+                            {% else %}
+                                onclick="return confirm('Are you sure you want to unblock this user?')"
+                            {% endif %}
+                        >
+                            {% if user.is_active %}
+                                <i class="fa-solid fa-ban"></i>
+                            {% else %}
+                                <i class="fa-solid fa-check-circle"></i>
+                            {% endif %}
+                        </a>
+
                     </td>
 
                 </tr>

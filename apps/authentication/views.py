@@ -81,7 +81,11 @@ def login_view(request):
         )
 
         if user is not None:
-
+            # blocked user check
+            if not user.is_active:
+                return render(request, 'login.html', {
+                    'error': 'Your account has been blocked'
+                })
             login(request, user)
 
             return redirect('home')

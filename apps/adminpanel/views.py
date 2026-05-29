@@ -1,5 +1,6 @@
 from django.shortcuts import render,redirect
 from django.contrib.auth import authenticate, login
+from django.shortcuts import redirect, get_object_or_404
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
@@ -55,3 +56,19 @@ def user_management(request):
         "page_obj": page_obj,
         "search_query": search_query
     })
+
+def toggle_user_status(request,user_id):
+    user = get_object_or_404(
+        User,
+        id=user_id
+    )
+    
+     # prevent blocking admin
+    if not user.is_superuser:
+
+        user.is_active = not user.is_active
+
+        user.save()
+
+    return redirect('user_management')
+

@@ -6,6 +6,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
 from django.contrib.auth import update_session_auth_hash
+import re
 
 def signup(request):
 
@@ -18,22 +19,70 @@ def signup(request):
         confirm_password = request.POST.get('confirm_password')
         referral = request.POST.get('referral')
 
-        # password match validation
-        if password != confirm_password:
+        # FULL NAME VALIDATION
+        if len(full_name) < 3:
             return render(request, 'signup.html', {
-                'error': 'Passwords do not match'
+                'error': 'Full name must contain at least 3 characters'
             })
 
-        # email already exists
+        # EMAIL EXISTS
         if User.objects.filter(email=email).exists():
             return render(request, 'signup.html', {
                 'error': 'Email already exists'
             })
-        #mobile number validation
+
+        # MOBILE VALIDATION
+        if not mobile_number.isdigit():
+            return render(request, 'signup.html', {
+                'error': 'Mobile number must contain only digits'
+            })
+
+        if len(mobile_number) != 10:
+            return render(request, 'signup.html', {
+                'error': 'Mobile number must be 10 digits'
+            })
+
+        # MOBILE EXISTS
         if User.objects.filter(mobile_number=mobile_number).exists():
             return render(request, 'signup.html', {
                 'error': 'Mobile number already exists'
             })
+
+        # PASSWORD LENGTH
+        if len(password) < 8:
+            return render(request, 'signup.html', {
+                'error': 'Password must be at least 8 characters'
+            })
+
+        # PASSWORD UPPERCASE
+        if not re.search(r'[A-Z]', password):
+            return render(request, 'signup.html', {
+                'error': 'Password must contain at least one uppercase letter'
+            })
+
+        # PASSWORD LOWERCASE
+        if not re.search(r'[a-z]', password):
+            return render(request, 'signup.html', {
+                'error': 'Password must contain at least one lowercase letter'
+            })
+
+        # PASSWORD NUMBER
+        if not re.search(r'[0-9]', password):
+            return render(request, 'signup.html', {
+                'error': 'Password must contain at least one number'
+            })
+
+        # PASSWORD SPECIAL CHARACTER
+        if not re.search(r'[@$!%*?&]', password):
+            return render(request, 'signup.html', {
+                'error': 'Password must contain at least one special character'
+            })
+
+        # PASSWORD MATCH
+        if password != confirm_password:
+            return render(request, 'signup.html', {
+                'error': 'Passwords do not match'
+            })     
         
         request.session['signup_data'] = {
             'full_name': full_name,

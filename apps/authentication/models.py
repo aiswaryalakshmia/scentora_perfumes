@@ -78,4 +78,4 @@ class OTP(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{str(self.user)} - {self.otp_code}"
+        return f"{str(self.email)} - {self.otp_code}"

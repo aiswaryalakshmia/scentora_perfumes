@@ -13,7 +13,7 @@
       <div class="left-section">
       <h1 class="brand">SCENTORA</h1>
       <div class="product-image">
-        <img src="{% static 'images/HeroImage.svg' %}" alt="Scentora Perfume">
+        <img src="{% static 'images/login.png' %}" alt="Scentora Perfume">
       </div>
       <div class="welcome-text">
         <h2>Welcome Back to Scentora</h2>
@@ -25,7 +25,10 @@
       <div class="form-container">
         <h2>Sign In</h2>
         <p class="subtitle">Enter your credentials to continue</p>
-        <form method="post" autocomplete="off">
+        {% if error %}
+          <p style="color:red;">{{ error }}</p>
+        {% endif %}
+        <form method="post" novalidate>
           {% csrf_token %}
           <input type="email" name="email" placeholder="Email Address" required>
           <div class="password-field">

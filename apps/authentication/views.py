@@ -153,6 +153,16 @@ def login_view(request):
         email = request.POST.get('email')
         password = request.POST.get('password')
 
+        if not email:
+            return render(request, 'login.html', {
+                'error': 'Email is required'
+            })
+
+        if not password:
+            return render(request, 'login.html', {
+                'error': 'Password is required'
+            })
+
         user = authenticate(
             request,
             username=email,
@@ -166,11 +176,9 @@ def login_view(request):
                     'error': 'Your account has been blocked'
                 })
             login(request, user)
-
             return redirect('home')
 
         else:
-
             return render(request, 'login.html', {
                 'error': 'Invalid email or password'
             })

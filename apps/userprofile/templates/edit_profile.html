@@ -21,15 +21,56 @@ edit profile
     </div>
 
     <ul class="sidebar-menu">
-      <li><a href="{% url 'profile_dashboard' %}">Dashboard</a></li>
-      <li><a href="#">My Orders</a></li>
-      <li><a href="#">Wishlist</a></li>
-      <li><a href="{% url 'address_book' %}">Address Book</a></li>
-      <li><a href="#">Wallet</a></li>
-      <li class="active"><a href="#">Edit Profile</a></li>
-      <li><a href="{% url 'logout' %}">Logout</a></li>
+      <li class="{% if request.path == '/profile/dashboard/' %}active{% endif %}">
+        <a href="{% url 'profile_dashboard' %}">
+            <i class="fa-solid fa-table-cells-large"></i>
+            Dashboard
+        </a>
+      </li>
+
+      <li>
+          <a href="#">
+              <i class="fa-regular fa-clipboard"></i>
+              My Orders
+          </a>
+      </li>
+
+      <li>
+          <a href="#">
+              <i class="fa-regular fa-heart"></i>
+              Wishlist
+          </a>
+      </li>
+
+      <li class="{% if request.path == '/profile/addressbook/' %}active{% endif %}">
+        <a href="{% url 'address_book' %}">
+            <i class="fa-solid fa-location-dot"></i>
+            Address Book
+        </a>
+      </li>
+
+      <li>
+          <a href="#">
+              <i class="fa-solid fa-wallet"></i>
+              Wallet
+          </a>
+      </li>
+
+      <li class="{% if request.path == '/profile/edit_profile/' %}active{% endif %}">
+        <a href="{% url 'edit_profile' %}">
+            <i class="fa-regular fa-pen-to-square"></i>
+            Edit Profile
+        </a>
+      </li>
+
+      <li>
+          <a href="{% url 'logout' %}">
+              <i class="fa-solid fa-right-from-bracket"></i>
+              Logout
+          </a>
+      </li>
     </ul>
-  </aside>
+</aside>
 
   <!-- Main Content -->
   <main class="profile-content">

@@ -207,3 +207,25 @@
   color: #aaa;
   line-height: 1.6;
 }
+
+.sidebar-menu li a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: #d0d0d0;
+    padding: 12px 16px;
+}
+
+.sidebar-menu li a i {
+    width: 20px;
+    font-size: 18px;
+}
+
+.sidebar-menu li.active a {
+    color: #c59a3a;
+}
+
+.sidebar-menu li.active a i {
+    color: #c59a3a;
+}

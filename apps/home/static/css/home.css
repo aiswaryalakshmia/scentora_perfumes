@@ -58,11 +58,20 @@
 }
 
 .section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  position: relative;
   width: 80%;
   margin: 0 auto;
+  text-align: center;
+}
+
+.view-all {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #c59a3a;
+  text-decoration: none;
+  font-size: 13px;
 }
 
 .view-all {

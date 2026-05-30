@@ -7,6 +7,7 @@ from .models import Address
 import random
 from django.core.mail import send_mail
 from django.conf import settings
+import re
 
 
 @login_required
@@ -35,25 +36,116 @@ def address_book(request):
 @login_required
 def add_address(request):
     if request.method == 'POST':
+
+        full_name = request.POST.get('full_name', '').strip()
+        phone_number = request.POST.get('phone_number', '').strip()
+        address_line1 = request.POST.get('address_line1', '').strip()
+        address_line2 = request.POST.get('address_line2', '').strip()
+        city = request.POST.get('city', '').strip()
+        state = request.POST.get('state', '').strip()
+        country = request.POST.get('country', '').strip()
+        pincode = request.POST.get('pincode', '').strip()
+        address_type = request.POST.get('address_type', '').strip()
+
+        # FULL NAME
+        if not full_name:
+            return render(request, 'add_address.html', {
+                'error': 'Full name is required'
+            })
+
+        if not re.match(r'^[A-Za-z ]+$', full_name):
+            return render(request, 'add_address.html', {
+                'error': 'Full name can contain only letters'
+            })
+
+        if len(full_name) < 3:
+            return render(request, 'add_address.html', {
+                'error': 'Full name must be at least 3 characters'
+            })
+
+        # PHONE NUMBER
+        if not phone_number:
+            return render(request, 'add_address.html', {
+                'error': 'Phone number is required'
+            })
+
+        if not re.match(r'^\d{10}$', phone_number):
+            return render(request, 'add_address.html', {
+                'error': 'Enter a valid 10-digit phone number'
+            })
+
+        # ADDRESS LINE 1
+        if not address_line1:
+            return render(request, 'add_address.html', {
+                'error': 'Address Line 1 is required'
+            })
+
+        # CITY
+        if not city:
+            return render(request, 'add_address.html', {
+                'error': 'City is required'
+            })
+
+        if not re.match(r'^[A-Za-z ]+$', city):
+            return render(request, 'add_address.html', {
+                'error': 'City can contain only letters'
+            })
+
+        # STATE
+        if not state:
+            return render(request, 'add_address.html', {
+                'error': 'State is required'
+            })
+
+        if not re.match(r'^[A-Za-z ]+$', state):
+            return render(request, 'add_address.html', {
+                'error': 'State can contain only letters'
+            })
+
+        # COUNTRY
+        if not country:
+            return render(request, 'add_address.html', {
+                'error': 'Please select a country'
+            })
+
+        # PINCODE
+        if not pincode:
+            return render(request, 'add_address.html', {
+                'error': 'Pincode is required'
+            })
+
+        if not re.match(r'^\d{6}$', pincode):
+            return render(request, 'add_address.html', {
+                'error': 'Enter a valid 6-digit pincode'
+            })
+
+        # ADDRESS TYPE
+        if not address_type:
+            return render(request, 'add_address.html', {
+                'error': 'Please select an address type'
+            })
+
+        # DEFAULT ADDRESS
         if request.POST.get('is_default'):
             Address.objects.filter(user=request.user).update(is_default=False)
 
         Address.objects.create(
-              user=request.user,
-              full_name=request.POST.get('full_name'),
-              phone_number=request.POST.get('phone_number'),
-              address_line1=request.POST.get('address_line1'),
-              address_line2=request.POST.get('address_line2'),
-              city=request.POST.get('city'),
-              state=request.POST.get('state'),
-              country=request.POST.get('country'),
-              pincode=request.POST.get('pincode'),
-              address_type=request.POST.get('address_type'),
-              is_default=True if request.POST.get('is_default') else False
+            user=request.user,
+            full_name=full_name,
+            phone_number=phone_number,
+            address_line1=address_line1,
+            address_line2=address_line2,
+            city=city,
+            state=state,
+            country=country,
+            pincode=pincode,
+            address_type=address_type,
+            is_default=True if request.POST.get('is_default') else False
         )
-        return redirect('address_book')
-    return render(request,'add_address.html')
 
+        return redirect('address_book')
+
+    return render(request, 'add_address.html')
 @login_required
 def delete_address(request,address_id):
     address=get_object_or_404(

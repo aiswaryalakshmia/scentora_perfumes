@@ -50,7 +50,7 @@ body {
   gap: 10px;
 }
 
-/* ✅ FIX FOR LINKS (IMPORTANT) */
+
 .menu li a,
 .menu li a:visited,
 .menu li a:active,
@@ -295,3 +295,4 @@ body {
     flex-direction: column;
   }
 }
+

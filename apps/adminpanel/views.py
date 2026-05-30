@@ -6,6 +6,7 @@ from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from apps.authentication.models import User
+from django.contrib.auth import logout
 
 def admin_login(request):
     if request.method == 'POST':
@@ -62,7 +63,7 @@ def toggle_user_status(request,user_id):
         User,
         id=user_id
     )
-    
+
      # prevent blocking admin
     if not user.is_superuser:
 
@@ -72,3 +73,6 @@ def toggle_user_status(request,user_id):
 
     return redirect('user_management')
 
+def admin_logout(request):
+    logout(request)
+    return redirect('admin_login')

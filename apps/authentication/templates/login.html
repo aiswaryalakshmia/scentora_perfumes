@@ -9,7 +9,8 @@
 </head>
 <body>
   <div class="container">
-    <div class="left-section">
+    <div class="content-section">
+      <div class="left-section">
       <h1 class="brand">SCENTORA</h1>
       <div class="product-image">
         <img src="{% static 'images/HeroImage.svg' %}" alt="Scentora Perfume">
@@ -18,12 +19,6 @@
         <h2>Welcome Back to Scentora</h2>
         <p>Rediscover your olfactory journey. Access your private collection and curated heritage scents.</p>
       </div>
-      <footer>
-        <a href="#">Privacy</a>
-        <a href="#">Terms</a>
-        <a href="#">Boutiques</a>
-        <a href="#">Contact</a>
-      </footer>
     </div>
 
     <div class="right-section">
@@ -42,16 +37,22 @@
 
         <div class="divider">OR</div>
 
-        <button class="google-btn">
-          <img src="{% static 'images/google-icon.png' %}" alt="Google Icon">
-          <a href="/accounts/google/login/">
-            Continue with Google
-          </a>
-        </button>
+        <a href="/accounts/google/login/" class="google-btn">
+          <img src="{% static 'images/GoogleLogo.svg' %}" alt="Google Icon">
+          <span>Continue with Google</span>
+        </a>
 
         <p class="signup-text">Don’t have an account? <a href="{% url 'signup' %}">Sign Up</a></p>
       </div>
     </div>
+    </div>
+      <footer>
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+        <a href="#">Boutiques</a>
+        <a href="#">Contact</a>
+      </footer>
+    
   </div>
 </body>
 </html>

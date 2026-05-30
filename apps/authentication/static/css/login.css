@@ -5,10 +5,22 @@ body {
   color: #fff;
 }
 
+* {
+  box-sizing: border-box;
+}
+
 .container {
   display: flex;
-  height: 100vh;
+  flex-direction: column;
+  min-height: 100vh;
 }
+
+.content-section {
+  display: flex;
+  flex: 1;
+}
+
+/* LEFT SECTION */
 
 .left-section {
   flex: 1;
@@ -24,15 +36,19 @@ body {
   color: #c59a3a;
   letter-spacing: 4px;
   font-size: 24px;
+  text-align: center;
 }
 
 .product-image img {
-  width: 280px;
+  width: 100%;
+  max-width: 280px;
+  height: auto;
   filter: drop-shadow(0 0 20px rgba(197, 154, 58, 0.5));
 }
 
 .welcome-text {
   text-align: center;
+  max-width: 500px;
 }
 
 .welcome-text h2 {
@@ -43,18 +59,10 @@ body {
 .welcome-text p {
   font-size: 14px;
   color: #aaa;
+  line-height: 1.6;
 }
 
-footer {
-  display: flex;
-  gap: 20px;
-  font-size: 12px;
-}
-
-footer a {
-  color: #c59a3a;
-  text-decoration: none;
-}
+/* RIGHT SECTION */
 
 .right-section {
   flex: 1;
@@ -62,10 +70,11 @@ footer a {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 40px 20px;
 }
 
 .form-container {
-  width: 80%;
+  width: 100%;
   max-width: 400px;
 }
 
@@ -80,6 +89,8 @@ footer a {
   margin-bottom: 20px;
 }
 
+/* FORM */
+
 form input {
   width: 100%;
   padding: 12px;
@@ -92,6 +103,11 @@ form input {
 
 form input::placeholder {
   color: #777;
+}
+
+form input:focus {
+  outline: none;
+  border-color: #c59a3a;
 }
 
 .password-field {
@@ -122,6 +138,8 @@ form button:hover {
   background-color: #e0b84a;
 }
 
+/* DIVIDER */
+
 .divider {
   text-align: center;
   margin: 20px 0;
@@ -129,23 +147,38 @@ form button:hover {
   font-size: 12px;
 }
 
+/* GOOGLE BUTTON */
+
 .google-btn {
   width: 100%;
   padding: 12px;
   background-color: #333;
-  border: none;
   color: #fff;
+  border: 1px solid #444;
   font-weight: bold;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  cursor: pointer;
+  text-decoration: none;
+  transition: 0.3s;
+}
+
+.google-btn:hover {
+  background-color: #444;
+  border-color: #c59a3a;
 }
 
 .google-btn img {
-  width: 18px;
+  width: 22px;
+  height: 22px;
 }
+
+.google-btn span {
+  color: #fff;
+}
+
+/* SIGNUP */
 
 .signup-text {
   text-align: center;
@@ -156,4 +189,107 @@ form button:hover {
 .signup-text a {
   color: #c59a3a;
   text-decoration: none;
+}
+
+/* FOOTER */
+
+footer {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  padding: 20px;
+  flex-wrap: wrap;
+  font-size: 14px;
+}
+
+footer a {
+  color: #c59a3a;
+  text-decoration: none;
+}
+
+/* TABLET */
+
+@media (max-width: 992px) {
+  .product-image img {
+    max-width: 220px;
+  }
+
+  .welcome-text h2 {
+    font-size: 22px;
+  }
+}
+
+/* MOBILE */
+
+@media (max-width: 768px) {
+  .content-section {
+    flex-direction: column;
+  }
+
+  .left-section,
+  .right-section {
+    padding: 30px 20px;
+  }
+
+  .brand {
+    font-size: 22px;
+  }
+
+  .welcome-text h2 {
+    font-size: 22px;
+  }
+
+  .welcome-text p {
+    font-size: 13px;
+  }
+
+  .product-image img {
+    max-width: 180px;
+  }
+
+  .form-container {
+    max-width: 100%;
+  }
+}
+
+/* SMALL MOBILE */
+
+@media (max-width: 480px) {
+  .left-section,
+  .right-section {
+    padding: 20px 15px;
+  }
+
+  .brand {
+    font-size: 20px;
+    letter-spacing: 2px;
+  }
+
+  .welcome-text h2 {
+    font-size: 20px;
+  }
+
+  .welcome-text p {
+    font-size: 12px;
+  }
+
+  .forgot-link {
+    position: static;
+    display: block;
+    text-align: right;
+    margin-top: -8px;
+    margin-bottom: 12px;
+  }
+
+  form input,
+  form button,
+  .google-btn {
+    font-size: 13px;
+    padding: 10px;
+  }
+
+  footer {
+    gap: 12px;
+    font-size: 12px;
+  }
 }

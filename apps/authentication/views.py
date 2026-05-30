@@ -7,6 +7,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.contrib.auth import update_session_auth_hash
 import re
+from django.contrib.auth import logout
 
 def signup(request):
 
@@ -19,19 +20,39 @@ def signup(request):
         confirm_password = request.POST.get('confirm_password')
         referral = request.POST.get('referral')
 
-        # FULL NAME VALIDATION
+        if len(full_name)==0:
+            return render(request,'signup.html', {
+                'error':'Full name is required'
+            })
+
         if len(full_name) < 3:
             return render(request, 'signup.html', {
                 'error': 'Full name must contain at least 3 characters'
             })
+        
+        if len(email)==0:
+            return render(request,'signup.html', {
+                'error':'Email is required'
+            })
+        
+        email_pattern = r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
 
+        if not re.match(email_pattern, email):
+            return render(request, 'signup.html', {
+                'error': 'Enter a valid email address'
+            })
+        
         # EMAIL EXISTS
         if User.objects.filter(email=email).exists():
             return render(request, 'signup.html', {
                 'error': 'Email already exists'
             })
-
-        # MOBILE VALIDATION
+        
+        if len(mobile_number)==0:
+            return render(request,'signup.html', {
+                'error':'Mobile number is required'
+            })
+        
         if not mobile_number.isdigit():
             return render(request, 'signup.html', {
                 'error': 'Mobile number must contain only digits'
@@ -47,7 +68,12 @@ def signup(request):
             return render(request, 'signup.html', {
                 'error': 'Mobile number already exists'
             })
-
+        
+        if len(password)==0:
+            return render(request,'signup.html', {
+                'error':'Password is required'
+            })
+        
         # PASSWORD LENGTH
         if len(password) < 8:
             return render(request, 'signup.html', {
@@ -77,12 +103,17 @@ def signup(request):
             return render(request, 'signup.html', {
                 'error': 'Password must contain at least one special character'
             })
-
+        
+        if len(confirm_password)==0:
+            return render(request,'signup.html', {
+                'error':'Password is required'
+            })
+        
         # PASSWORD MATCH
         if password != confirm_password:
             return render(request, 'signup.html', {
                 'error': 'Passwords do not match'
-            })     
+            })
         
         request.session['signup_data'] = {
             'full_name': full_name,
@@ -91,7 +122,6 @@ def signup(request):
             'password': password,
             'referral': referral
         }
-
         
         otp = str(random.randint(100000, 999999))
 
@@ -310,3 +340,7 @@ def resend_otp(request):
     except User.DoesNotExist:
 
         return redirect('forgot_password')
+    
+def logout_view(request):
+    logout(request)
+    return redirect('login')

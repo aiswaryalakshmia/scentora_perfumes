@@ -1,23 +1,25 @@
+"""
+Allow logged-in users to update profile details and securely
+change their password using OTP verification.
+"""
+import random
+import re
 from django.shortcuts import render,redirect
 from django.views.decorators.cache import never_cache
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404
-from apps.authentication.models import User, OTP
-from .models import Address
-import random
 from django.core.mail import send_mail
 from django.conf import settings
-import re
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
-
+from apps.authentication.models import User, OTP
+from .models import Address
 
 @login_required
 @never_cache
 def profile_dashboard(request):
     user=request.user
-
     context = {
         'current_user':user,
         'total_orders': 0,
@@ -26,23 +28,20 @@ def profile_dashboard(request):
         'pending_orders': 0,
     }
     return render(request,'userprofile.html',context)
-    
+
 @login_required
 @never_cache   
 def address_book(request):
-     addresses=Address.objects.filter(user=request.user)
-
-     context={
+    addresses = Address.objects.filter(user=request.user)
+    context = {
           'addresses':addresses
      }
-
-     return render(request,'address_book.html',context)
+    return render(request,'address_book.html',context)
 
 @login_required
 @never_cache
 def add_address(request):
     if request.method == 'POST':
-
         full_name = request.POST.get('full_name', '').strip()
         phone_number = request.POST.get('phone_number', '').strip()
         address_line1 = request.POST.get('address_line1', '').strip()
@@ -84,6 +83,12 @@ def add_address(request):
         if not address_line1:
             return render(request, 'add_address.html', {
                 'error': 'Address Line 1 is required'
+            })
+        
+        # ADDRESS LINE 2
+        if not address_line2:
+            return render(request, 'add_address.html', {
+                'error': 'Address Line 2 is required'
             })
 
         # CITY
@@ -148,10 +153,27 @@ def add_address(request):
             address_type=address_type,
             is_default=True if request.POST.get('is_default') else False
         )
-
         return redirect('address_book')
 
     return render(request, 'add_address.html')
+
+@login_required
+@never_cache
+def set_default_address(request, address_id):
+    address = get_object_or_404(
+        Address,
+        id=address_id,
+        user=request.user
+    )
+
+    Address.objects.filter(
+        user=request.user
+    ).update(is_default=False)
+
+    address.is_default = True
+    address.save()
+
+    return redirect('address_book')
 
 @login_required
 @never_cache
@@ -163,7 +185,6 @@ def delete_address(request,address_id):
     )
 
     address.delete()
-
     return redirect('address_book')
 
 @login_required
@@ -176,7 +197,7 @@ def edit_address(request,address_id):
             )
     except Address.DoesNotExist:
         return redirect('address_book')    
-    
+
     if request.method=='POST':
 
         if request.POST.get('is_default'):
@@ -201,7 +222,6 @@ def edit_address(request,address_id):
 @never_cache
 def edit_profile(request):
     user=request.user
-
     if request.method=='POST':
         if 'update_profile' in request.POST:
 
@@ -270,23 +290,6 @@ def edit_profile(request):
             # Profile Image Validation
             if request.FILES.get('profile_image'):
                 image = request.FILES['profile_image']
-
-                allowed_extensions = ['jpg', 'jpeg', 'png', 'webp']
-
-                extension = image.name.split('.')[-1].lower()
-
-                if extension not in allowed_extensions:
-                    return render(request, 'edit_profile.html', {
-                        'user': user,
-                        'error': 'Only JPG, JPEG, PNG and WEBP images are allowed'
-                    })
-
-                if image.size > 5 * 1024 * 1024:
-                    return render(request, 'edit_profile.html', {
-                        'user': user,
-                        'error': 'Image size must be less than 5 MB'
-                    })
-
                 user.profile_image = image
 
             user.full_name = full_name
@@ -294,12 +297,13 @@ def edit_profile(request):
             user.mobile_number = mobile_number
 
             user.save()
+            messages.success(request, "Profile updated successfully!")
 
         # PASSWORD CHANGE
         elif 'change_password' in request.POST:
             current_password=request.POST.get('current_password')
             new_password = request.POST.get('new_password')
-            confirm_password = request.POST.get('confirm_password')   
+            confirm_password = request.POST.get('confirm_password')
 
             if not current_password:
                 return render(request, 'edit_profile.html', {
@@ -318,12 +322,12 @@ def edit_profile(request):
                     'user': user,
                     'password_error': 'Confirm password is required'
                 })
-            
+
             if len(new_password)==0:
                 return render(request,'edit_profile.html', {
                     'password_error':'Password is required'
                 })
-            
+
             # PASSWORD LENGTH
             if len(new_password) < 8:
                 return render(request, 'edit_profile.html', {
@@ -358,30 +362,28 @@ def edit_profile(request):
             if not user.check_password(current_password):
                 return render(request,'edit_profile.html',{
                             'password_error': 'Current password is incorrect'})
-            
+
             # password match
             if new_password != confirm_password:
 
                 return render(request, 'edit_profile.html', {
                     'password_error': 'Passwords do not match'
                 })
-            
+
             # same password check
             if current_password == new_password:
 
                 return render(request, 'edit_profile.html', {
                     'password_error': 'New password cannot be same as old password'
                 })
-            
-            # generate otp
+
             otp = str(random.randint(100000, 999999))
 
             OTP.objects.create(
                 email=user.email,
                 otp_code=otp
             )
-            
-            # send mail
+
             send_mail(
                 'Scentora Password Change OTP',
                 f'Your OTP is {otp}',
@@ -392,11 +394,8 @@ def edit_profile(request):
 
             # store session
             request.session['current_user_email'] = user.email
-
             request.session['otp_purpose'] = 'change_password'
-
             request.session['new_password'] = new_password
-
             return redirect('verify_otp')
 
         return redirect('edit_profile')

@@ -141,9 +141,9 @@ address book
         </a>
 
         {% if not address.is_default %}
-        <button class="btn default">
-            Set as Default
-        </button>
+        <a  class="btn default" href="{% url 'set_default_address' address.id %}">
+          Set as Default
+        </a>
         {% endif %}
 
         </div>

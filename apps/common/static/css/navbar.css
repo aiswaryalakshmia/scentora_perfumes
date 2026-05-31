@@ -33,3 +33,15 @@
   margin-left: 15px;
   color: #c59a3a;
 }
+
+.login-btn {
+    padding: 10px 20px;
+    background: black;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+}
+
+.login-btn:hover {
+    opacity: 0.9;
+}

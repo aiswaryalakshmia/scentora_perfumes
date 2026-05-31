@@ -1,14 +1,21 @@
 from django.shortcuts import render,redirect
 from django.contrib.auth import authenticate, login
-from django.shortcuts import redirect, get_object_or_404
+from django.shortcuts import get_object_or_404
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-from apps.authentication.models import User
 from django.contrib.auth import logout
+from django.views.decorators.cache import never_cache
+from apps.authentication.models import User
 
+
+@never_cache
 def admin_login(request):
+
+    if request.user.is_authenticated and request.user.is_superuser:
+        return redirect('admin_dashboard')
+    
     if request.method == 'POST':
         email=request.POST.get('email')
         password=request.POST.get('password')
@@ -34,11 +41,19 @@ def admin_login(request):
     return render(request,'admin_login.html')
 
 @login_required
+@never_cache
 def admin_dashboard(request):
+    if not request.user.is_superuser:
+        return redirect('login')
+
     return render(request,'admin_dashboard.html')
 
 @login_required
+@never_cache
 def user_management(request):
+
+    if not request.user.is_superuser:
+        return redirect('login')
 
     search_query=request.GET.get('search','')
 
@@ -59,6 +74,10 @@ def user_management(request):
     })
 
 def toggle_user_status(request,user_id):
+
+    if not request.user.is_superuser:
+        return redirect('login')
+    
     user = get_object_or_404(
         User,
         id=user_id
@@ -73,6 +92,7 @@ def toggle_user_status(request,user_id):
 
     return redirect('user_management')
 
+@never_cache
 def admin_logout(request):
     logout(request)
     return redirect('admin_login')

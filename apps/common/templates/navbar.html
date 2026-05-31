@@ -1,5 +1,6 @@
 <header class="navbar">
     <h1 class="brand">SCENTORA</h1>
+
     <nav>
       <ul>
         <li><a href="#">Home</a></li>
@@ -9,10 +10,21 @@
         <li><a href="#">Contact Us</a></li>
       </ul>
     </nav>
-    <div class="icons">
-        <i class="fas fa-search"></i>
-        <i class="far fa-heart"></i>
-        <i class="fas fa-shopping-cart"></i>
-        <a href="/profile/dashboard/"><i class="fas fa-user"></i></a>
-    </div>
+
+    {% if request.user.is_authenticated %}
+        <div class="icons">
+            <i class="fas fa-search"></i>
+            <i class="far fa-heart"></i>
+            <i class="fas fa-shopping-cart"></i>
+            <a href="/profile/dashboard/">
+                <i class="fas fa-user"></i>
+            </a>
+        </div>
+    {% else %}
+        <div class="auth-buttons">
+            <a href="{% url 'login' %}" class="login-btn">
+                Login
+            </a>
+        </div>
+    {% endif %}
 </header>

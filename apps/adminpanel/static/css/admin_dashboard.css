@@ -73,6 +73,10 @@ body {
   color: #c59a3a;
 }
 
+.menu li.active a {
+  color: #c59a3a;
+}
+
 .logout {
   margin-top: 40px;
   color: #c59a3a;

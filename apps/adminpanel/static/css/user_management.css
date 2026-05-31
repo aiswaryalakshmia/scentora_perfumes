@@ -49,8 +49,29 @@ body {
   gap: 10px;
 }
 
+.menu li a,
+.menu li a:visited,
+.menu li a:active,
+.menu li a:link {
+  text-decoration: none;
+  color: #ccc;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.menu li a:hover {
+  color: #c59a3a;
+}
+
+/* Active + hover for plain li items */
 .menu li.active,
 .menu li:hover {
+  color: #c59a3a;
+}
+
+.menu li.active a {
   color: #c59a3a;
 }
 
@@ -199,5 +220,9 @@ td {
     cursor: pointer;
     text-decoration: None;
     font-size: 13px;
+}
+
+.clear-btn {
+  color: #fff;
 }
 

@@ -1,10 +1,8 @@
-from django.shortcuts import render
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
+from django.shortcuts import redirect, render
 from django.views.decorators.cache import never_cache
 
-
-@login_required
 @never_cache
 def home(request):
+    if request.user.is_superuser:
+        return redirect('admin_dashboard')
     return render(request, 'home.html')

@@ -391,7 +391,7 @@ def edit_profile(request):
             )
 
             # store session
-            request.session['reset_email'] = user.email
+            request.session['current_user_email'] = user.email
 
             request.session['otp_purpose'] = 'change_password'
 

@@ -1,3 +1,7 @@
+"""
+Authentication views for user registration, login, logout, OTP verification,
+password reset, password change, and session management.
+"""
 from django.shortcuts import render, redirect
 from django.views.decorators.cache import never_cache
 from .models import User,OTP
@@ -24,101 +28,110 @@ def signup(request):
         confirm_password = request.POST.get('confirm_password')
         referral = request.POST.get('referral')
 
+        #full name empty check
         if len(full_name)==0:
             return render(request,'signup.html', {
                 'error':'Full name is required'
             })
 
+        #minimum length check
         if len(full_name) < 3:
             return render(request, 'signup.html', {
                 'error': 'Full name must contain at least 3 characters'
             })
-        
+
+        #email empty check
         if len(email)==0:
             return render(request,'signup.html', {
                 'error':'Email is required'
             })
-        
+
         email_pattern = r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
 
+        #regex validation
         if not re.match(email_pattern, email):
             return render(request, 'signup.html', {
                 'error': 'Enter a valid email address'
             })
-        
-        # EMAIL EXISTS
+
+        #Duplicate email check
         if User.objects.filter(email=email).exists():
             return render(request, 'signup.html', {
                 'error': 'Email already exists'
             })
-        
+
+        #mobile number empty check
         if len(mobile_number)==0:
             return render(request,'signup.html', {
                 'error':'Mobile number is required'
             })
-        
+
+        #digits only check
         if not mobile_number.isdigit():
             return render(request, 'signup.html', {
                 'error': 'Mobile number must contain only digits'
             })
 
+        #mobile number length check
         if len(mobile_number) != 10:
             return render(request, 'signup.html', {
                 'error': 'Mobile number must be 10 digits'
             })
 
-        # MOBILE EXISTS
+        #Duplicate mobile number check
         if User.objects.filter(mobile_number=mobile_number).exists():
             return render(request, 'signup.html', {
                 'error': 'Mobile number already exists'
             })
-        
+
+        #password empty check
         if len(password)==0:
             return render(request,'signup.html', {
                 'error':'Password is required'
             })
-        
-        # PASSWORD LENGTH
+
+        #password length check
         if len(password) < 8:
             return render(request, 'signup.html', {
                 'error': 'Password must be at least 8 characters'
             })
 
-        # PASSWORD UPPERCASE
+        #uppercase check
         if not re.search(r'[A-Z]', password):
             return render(request, 'signup.html', {
                 'error': 'Password must contain at least one uppercase letter'
             })
 
-        # PASSWORD LOWERCASE
+        #lowercase check
         if not re.search(r'[a-z]', password):
             return render(request, 'signup.html', {
                 'error': 'Password must contain at least one lowercase letter'
             })
 
-        # PASSWORD NUMBER
+        #number check
         if not re.search(r'[0-9]', password):
             return render(request, 'signup.html', {
                 'error': 'Password must contain at least one number'
             })
 
-        # PASSWORD SPECIAL CHARACTER
+        #special character check
         if not re.search(r'[@$!%*?&]', password):
             return render(request, 'signup.html', {
                 'error': 'Password must contain at least one special character'
             })
-        
+
+        #confirm password empty check
         if len(confirm_password)==0:
             return render(request,'signup.html', {
                 'error':'Password is required'
             })
-        
-        # PASSWORD MATCH
+
+        #password match check
         if password != confirm_password:
             return render(request, 'signup.html', {
                 'error': 'Passwords do not match'
             })
-        
+
         request.session['signup_data'] = {
             'full_name': full_name,
             'email': email,
@@ -126,7 +139,7 @@ def signup(request):
             'password': password,
             'referral': referral
         }
-        
+
         otp = str(random.randint(100000, 999999))
 
         OTP.objects.create(
@@ -142,7 +155,7 @@ def signup(request):
             fail_silently=False,
         )
 
-        request.session['reset_email'] = email
+        request.session['current_user_email'] = email
         request.session['otp_purpose'] = 'signup'
 
         return redirect('verify_otp')
@@ -218,7 +231,7 @@ def forgot_password(request):
                 fail_silently=False,
             )
 
-            request.session['reset_email'] = email
+            request.session['current_user_email'] = email
             request.session['otp_purpose'] = 'forgotp'
 
             return redirect('verify_otp')
@@ -234,7 +247,7 @@ def forgot_password(request):
 
 @never_cache
 def verify_otp(request):
-    email = request.session.get('reset_email')
+    email = request.session.get('current_user_email')
     otp_purpose = request.session.get('otp_purpose')
 
     if not otp_purpose:
@@ -284,11 +297,11 @@ def verify_otp(request):
                 )
 
                 request.session.pop('signup_data', None)
-                request.session.pop('reset_email', None)
+                request.session.pop('current_user_email', None)
                 request.session.pop('otp_purpose', None)
 
                 return redirect('login')
-                        
+
             elif otp_purpose=='change_password':
                 new_password=request.session.get('new_password')
                 user = request.user
@@ -298,10 +311,10 @@ def verify_otp(request):
                 request.session.pop('otp_purpose', None)
                 request.session.pop('new_password', None)
                 return redirect('edit_profile')
-            
+
             elif otp_purpose=='forgotp':
                 request.session.pop('otp_purpose', None)
-                request.session.pop('reset_email', None)
+                request.session.pop('current_user_email', None)
                 return redirect('reset_password')
 
         except OTP.DoesNotExist:
@@ -325,7 +338,7 @@ def reset_password(request):
                 'error': 'Passwords do not match'
             })
 
-        email = request.session.get('reset_email')
+        email = request.session.get('current_user_email')
 
         user = User.objects.get(email=email)
 
@@ -339,12 +352,19 @@ def reset_password(request):
 @never_cache
 def resend_otp(request):
 
-    email = request.session.get('reset_email')
+    email = request.session.get('current_user_email')
+    otp_purpose = request.session.get('otp_purpose')
 
-    if not email:
+    if not email and otp_purpose=='forgotp':
         return redirect('forgot_password')
 
-    try:        
+    elif not email and otp_purpose=='signup':
+        return redirect('signup.html')
+
+    elif not email and otp_purpose=='change_password':
+        return redirect('edit_profile.html')
+
+    try:
 
         OTP.objects.filter(
             email=email,

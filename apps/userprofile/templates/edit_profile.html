@@ -78,8 +78,10 @@ edit profile
 
     <!-- Profile Identity -->
 <section class="profile-section">
-
-    <form class="profile-form" method="POST" enctype="multipart/form-data">
+  {% if error %}
+    <p style="color:red;">{{ error }}</p>
+  {% endif %}
+    <form class="profile-form" method="POST" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
 
         <div class="section-header">
@@ -148,8 +150,8 @@ edit profile
             <input type="password" placeholder="Confirm new password" name="confirm_password">
           </div>
         </div>
-        {% if error %}
-          <p style="color:red;">{{ error }}</p>
+        {% if password_error %}
+          <p style="color:red;">{{ password_error }}</p>
         {% endif %}
         <div class="form-actions">
             <button type="button" class="btn cancel">Cancel</button>

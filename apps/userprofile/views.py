@@ -1,4 +1,5 @@
 from django.shortcuts import render,redirect
+from django.views.decorators.cache import never_cache
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404
@@ -8,9 +9,12 @@ import random
 from django.core.mail import send_mail
 from django.conf import settings
 import re
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 
 
 @login_required
+@never_cache
 def profile_dashboard(request):
     user=request.user
 
@@ -23,7 +27,8 @@ def profile_dashboard(request):
     }
     return render(request,'userprofile.html',context)
     
-@login_required   
+@login_required
+@never_cache   
 def address_book(request):
      addresses=Address.objects.filter(user=request.user)
 
@@ -34,6 +39,7 @@ def address_book(request):
      return render(request,'address_book.html',context)
 
 @login_required
+@never_cache
 def add_address(request):
     if request.method == 'POST':
 
@@ -146,7 +152,9 @@ def add_address(request):
         return redirect('address_book')
 
     return render(request, 'add_address.html')
+
 @login_required
+@never_cache
 def delete_address(request,address_id):
     address=get_object_or_404(
         Address,
@@ -159,6 +167,7 @@ def delete_address(request,address_id):
     return redirect('address_book')
 
 @login_required
+@never_cache
 def edit_address(request,address_id):
     try:
         address=Address.objects.get(
@@ -189,17 +198,100 @@ def edit_address(request,address_id):
     return render(request,'add_address.html', {'address':address})
 
 @login_required
+@never_cache
 def edit_profile(request):
     user=request.user
 
     if request.method=='POST':
         if 'update_profile' in request.POST:
 
-            user.full_name=request.POST.get('full_name')
-            user.email = request.POST.get('email')
-            user.mobile_number = request.POST.get('mobile_number')
+            full_name = request.POST.get('full_name', '').strip()
+            email = request.POST.get('email', '').strip()
+            mobile_number = request.POST.get('mobile_number', '').strip()
+
+            # Full Name
+            if not full_name:
+                return render(request, 'edit_profile.html', {
+                    'user': user,
+                    'error': 'Full name is required'
+                })
+
+            if not re.match(r'^[A-Za-z ]+$', full_name):
+                return render(request, 'edit_profile.html', {
+                    'user': user,
+                    'error': 'Full name can contain only letters'
+                })
+
+            if len(full_name) < 3:
+                return render(request, 'edit_profile.html', {
+                    'user': user,
+                    'error': 'Full name must be at least 3 characters'
+                })
+
+            # Email
+            if not email:
+                return render(request, 'edit_profile.html', {
+                    'user': user,
+                    'error': 'Email is required'
+                })
+
+            try:
+                validate_email(email)
+            except ValidationError:
+                return render(request, 'edit_profile.html', {
+                    'user': user,
+                    'error': 'Enter a valid email address'
+                })
+
+            # Email already exists
+            if (
+                User.objects.filter(email=email)
+                .exclude(id=user.id)
+                .exists()
+            ):
+                return render(request, 'edit_profile.html', {
+                    'user': user,
+                    'error': 'Email already exists'
+                })
+
+            # Mobile Number
+            if not mobile_number:
+                return render(request, 'edit_profile.html', {
+                    'user': user,
+                    'error': 'Mobile number is required'
+                })
+
+            if not re.match(r'^\d{10}$', mobile_number):
+                return render(request, 'edit_profile.html', {
+                    'user': user,
+                    'error': 'Enter a valid 10-digit mobile number'
+                })
+
+            # Profile Image Validation
             if request.FILES.get('profile_image'):
-                user.profile_image = request.FILES['profile_image']
+                image = request.FILES['profile_image']
+
+                allowed_extensions = ['jpg', 'jpeg', 'png', 'webp']
+
+                extension = image.name.split('.')[-1].lower()
+
+                if extension not in allowed_extensions:
+                    return render(request, 'edit_profile.html', {
+                        'user': user,
+                        'error': 'Only JPG, JPEG, PNG and WEBP images are allowed'
+                    })
+
+                if image.size > 5 * 1024 * 1024:
+                    return render(request, 'edit_profile.html', {
+                        'user': user,
+                        'error': 'Image size must be less than 5 MB'
+                    })
+
+                user.profile_image = image
+
+            user.full_name = full_name
+            user.email = email
+            user.mobile_number = mobile_number
 
             user.save()
 
@@ -209,23 +301,76 @@ def edit_profile(request):
             new_password = request.POST.get('new_password')
             confirm_password = request.POST.get('confirm_password')   
 
+            if not current_password:
+                return render(request, 'edit_profile.html', {
+                    'user': user,
+                    'password_error': 'Current password is required'
+                })
+
+            if not new_password:
+                return render(request, 'edit_profile.html', {
+                    'user': user,
+                    'password_error': 'New password is required'
+                })
+
+            if not confirm_password:
+                return render(request, 'edit_profile.html', {
+                    'user': user,
+                    'password_error': 'Confirm password is required'
+                })
+            
+            if len(new_password)==0:
+                return render(request,'edit_profile.html', {
+                    'password_error':'Password is required'
+                })
+            
+            # PASSWORD LENGTH
+            if len(new_password) < 8:
+                return render(request, 'edit_profile.html', {
+                    'password_error': 'Password must be at least 8 characters'
+                })
+
+            # PASSWORD UPPERCASE
+            if not re.search(r'[A-Z]', new_password):
+                return render(request, 'edit_profile.html', {
+                    'password_error': 'Password must contain at least one uppercase letter'
+                })
+
+            # PASSWORD LOWERCASE
+            if not re.search(r'[a-z]', new_password):
+                return render(request, 'edit_profile.html', {
+                    'password_error': 'Password must contain at least one lowercase letter'
+                })
+
+            # PASSWORD NUMBER
+            if not re.search(r'[0-9]', new_password):
+                return render(request, 'edit_profile.html', {
+                    'password_error': 'Password must contain at least one number'
+                })
+
+            # PASSWORD SPECIAL CHARACTER
+            if not re.search(r'[@$!%*?&]', new_password):
+                return render(request, 'edit_profile.html', {
+                    'password_error': 'Password must contain at least one special character'
+                })
+
             # current password check
             if not user.check_password(current_password):
                 return render(request,'edit_profile.html',{
-                            'error': 'Current password is incorrect'})
+                            'password_error': 'Current password is incorrect'})
             
             # password match
             if new_password != confirm_password:
 
                 return render(request, 'edit_profile.html', {
-                    'error': 'Passwords do not match'
+                    'password_error': 'Passwords do not match'
                 })
             
             # same password check
             if current_password == new_password:
 
                 return render(request, 'edit_profile.html', {
-                    'error': 'New password cannot be same as old password'
+                    'password_error': 'New password cannot be same as old password'
                 })
             
             # generate otp

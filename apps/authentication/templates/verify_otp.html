@@ -59,7 +59,15 @@
 
       </form>
 
-      <a href="{% url 'login' %}" class="back-link">← Back to Login</a>
+      {%if request.session.otp_purpose == 'forgotp'%}
+        <a href="{% url 'login' %}" class="back-link">← Back to Login</a>
+      {%endif%}
+      {%if request.session.otp_purpose == 'signup'%}
+        <a href="{% url 'signup' %}" class="back-link">← Back to Signup</a>
+      {%endif%}
+      {%if request.session.otp_purpose == 'change_password'%}
+        <a href="{% url 'edit_profile' %}" class="back-link">← Back to Edit Profile</a>
+      {%endif%}
     </div>
   </div>
 

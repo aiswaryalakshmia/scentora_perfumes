@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect
+from django.views.decorators.cache import never_cache
 from .models import User,OTP
 from django.contrib.auth import authenticate, login
 import random
@@ -9,7 +10,10 @@ from django.contrib.auth import update_session_auth_hash
 import re
 from django.contrib.auth import logout
 
+@never_cache
 def signup(request):
+    if request.user.is_authenticated:
+        return redirect('home')
 
     if request.method == 'POST':
 
@@ -145,8 +149,10 @@ def signup(request):
 
     return render(request, 'signup.html')
 
-
+@never_cache
 def login_view(request):
+    if request.user.is_authenticated:
+        return redirect('home')
 
     if request.method == 'POST':
 
@@ -185,13 +191,17 @@ def login_view(request):
 
     return render(request, 'login.html')
 
+@never_cache
 def forgot_password(request):
+
+    if request.user.is_authenticated:
+        return redirect('home')
 
     if request.method == 'POST':
 
         email = request.POST.get('email')
 
-        try:           
+        try:
 
             otp = str(random.randint(100000, 999999))
 
@@ -222,23 +232,26 @@ def forgot_password(request):
         'forgot_password.html'
     )
 
+@never_cache
 def verify_otp(request):
+    email = request.session.get('reset_email')
+    otp_purpose = request.session.get('otp_purpose')
+
+    if not otp_purpose:
+        return redirect('login')
 
     if request.method == 'POST':
 
         entered_otp = (
-        request.POST.get('otp1', '') +
-        request.POST.get('otp2', '') +
-        request.POST.get('otp3', '') +
-        request.POST.get('otp4', '') +
-        request.POST.get('otp5', '') +
-        request.POST.get('otp6', '')
-)
+            request.POST.get('otp1', '') +
+            request.POST.get('otp2', '') +
+            request.POST.get('otp3', '') +
+            request.POST.get('otp4', '') +
+            request.POST.get('otp5', '') +
+            request.POST.get('otp6', '')
+        )
 
-        email = request.session.get('reset_email')
-        otp_purpose = request.session.get('otp_purpose')
-
-        try:            
+        try:
 
             otp_obj = OTP.objects.filter(
                 email=email,
@@ -270,26 +283,35 @@ def verify_otp(request):
                     referral_code=user_details['referral']
                 )
 
+                request.session.pop('signup_data', None)
+                request.session.pop('reset_email', None)
+                request.session.pop('otp_purpose', None)
+
                 return redirect('login')
-            
+                        
             elif otp_purpose=='change_password':
                 new_password=request.session.get('new_password')
                 user = request.user
                 user.set_password(new_password)
                 user.save()
                 update_session_auth_hash(request, user) 
+                request.session.pop('otp_purpose', None)
+                request.session.pop('new_password', None)
                 return redirect('edit_profile')
-
-            return redirect('reset_password')
+            
+            elif otp_purpose=='forgotp':
+                request.session.pop('otp_purpose', None)
+                request.session.pop('reset_email', None)
+                return redirect('reset_password')
 
         except OTP.DoesNotExist:
-
             return render(request, 'verify_otp.html', {
                 'error': 'Invalid OTP'
             })
 
     return render(request, 'verify_otp.html')
 
+@never_cache
 def reset_password(request):
 
     if request.method == 'POST':
@@ -314,6 +336,7 @@ def reset_password(request):
 
     return render(request, 'reset_password.html')
 
+@never_cache
 def resend_otp(request):
 
     email = request.session.get('reset_email')
@@ -348,7 +371,8 @@ def resend_otp(request):
     except User.DoesNotExist:
 
         return redirect('forgot_password')
-    
+
+@never_cache   
 def logout_view(request):
     logout(request)
     return redirect('login')

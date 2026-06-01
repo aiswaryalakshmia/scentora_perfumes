@@ -20,7 +20,6 @@
       <form class="login-form" method="POST">
         {% csrf_token %}
         {% if messages %}
-
         {% for message in messages %}
 
             <p style="color:red; margin-bottom:15px;">
@@ -28,7 +27,6 @@
             </p>
 
         {% endfor %}
-
         {% endif %}
         <label for="email">Email Address</label>
         <input type="email" id="email" name="email" placeholder="admin@scentora.com">

@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Scentora | Sign In</title>
   <link rel="stylesheet" href="{% static 'css/login.css' %}">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
   <div class="container">
@@ -27,6 +28,9 @@
         <p class="subtitle">Enter your credentials to continue</p>
         {% if error %}
           <p style="color:red;">{{ error }}</p>
+        {% endif %}
+        {% if blocked_error %}
+          <p class="blocked-message">{{ blocked_error }}</p>
         {% endif %}
         <form method="post" novalidate>
           {% csrf_token %}
@@ -57,5 +61,16 @@
       </footer>
     
   </div>
+  {% if messages %}
+    {% for message in messages %}
+        <script>
+            Swal.fire({
+                icon: '{{ message.tags }}',
+                title: '{{ message }}',
+                confirmButtonText: 'OK'
+            });
+        </script>
+    {% endfor %}
+{% endif %}
 </body>
 </html>

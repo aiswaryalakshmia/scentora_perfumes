@@ -79,6 +79,11 @@ def toggle_user_status(request,user_id):
         user.is_active = not user.is_active
         user.save()
 
+    if user.is_active:
+            messages.success(request, f"{user.full_name} has been unblocked")
+    else:
+            messages.success(request, f"{user.full_name} has been blocked")    
+
     return redirect('user_management')
 
 @never_cache

@@ -21,13 +21,13 @@
         {% csrf_token %}
         {% if messages %}
         {% for message in messages %}
-
+          {% if "Invalid admin credentials" in message.message %}
             <p style="color:red; margin-bottom:15px;">
-            {{ message }}
+              {{ message }}
             </p>
-
+          {% endif %}
         {% endfor %}
-        {% endif %}
+      {% endif %}
         <label for="email">Email Address</label>
         <input type="email" id="email" name="email" placeholder="admin@scentora.com">
 

@@ -96,12 +96,8 @@
                         <i class="fa-solid fa-eye"></i>
 
                         <a href="{% url 'toggle_user_status' user.id %}"
-                            {% if user.is_active %}
-                                onclick="return confirm('Are you sure you want to block this user?')"
-                            {% else %}
-                                onclick="return confirm('Are you sure you want to unblock this user?')"
-                            {% endif %}
-                        >
+                            onclick="return confirmToggle(event, '{{ user.is_active }}')">
+
                             {% if user.is_active %}
                                 <i class="fa-solid fa-ban"></i>
                             {% else %}
@@ -149,5 +145,30 @@
       </section>
     </main>
   </div>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+function confirmToggle(event, isActive) {
+    event.preventDefault();
+
+    let action = (isActive === "True") ? "block" : "unblock";
+    let url = event.currentTarget.href;
+
+    Swal.fire({
+        title: "Are you sure?",
+        text: `Do you want to ${action} this user?`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Yes",
+        cancelButtonText: "No"
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = url;
+        }
+    });
+
+    return false;
+}
+</script>
 </body>
 </html>

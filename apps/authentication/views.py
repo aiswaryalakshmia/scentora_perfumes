@@ -2,17 +2,18 @@
 Authentication views for user registration, login, logout, OTP verification,
 password reset, password change, and session management.
 """
+import random
+import re
 from django.shortcuts import render, redirect
 from django.views.decorators.cache import never_cache
-from .models import User,OTP
 from django.contrib.auth import authenticate, login
-import random
 from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
 from django.contrib.auth import update_session_auth_hash
-import re
 from django.contrib.auth import logout
+from django.contrib import messages
+from .models import User,OTP
 
 @never_cache
 def signup(request):
@@ -189,13 +190,19 @@ def login_view(request):
         )
 
         if user is not None:
-            # blocked user check
-            if not user.is_active:
-                return render(request, 'login.html', {
-                    'error': 'Your account has been blocked'
-                })
+
             login(request, user)
+            messages.success(
+                request,
+                f'Welcome back, {user.full_name}!'
+)
             return redirect('home')
+
+        # blocked user check
+        elif User.objects.filter(username=email, is_active=False).exists():
+            return render(request, 'login.html', {
+            'blocked_error': 'Your account has been blocked. Please contact support.'
+            })
 
         else:
             return render(request, 'login.html', {
@@ -300,6 +307,11 @@ def verify_otp(request):
                 request.session.pop('current_user_email', None)
                 request.session.pop('otp_purpose', None)
 
+                messages.success(
+                    request,
+                'Account created successfully! Please sign in.'
+)
+
                 return redirect('login')
 
             elif otp_purpose=='change_password':
@@ -308,6 +320,10 @@ def verify_otp(request):
                 user.set_password(new_password)
                 user.save()
                 update_session_auth_hash(request, user) 
+                messages.success(
+                    request,
+                'Password changed successfully!'
+    )
                 request.session.pop('otp_purpose', None)
                 request.session.pop('new_password', None)
                 return redirect('edit_profile')
@@ -315,6 +331,7 @@ def verify_otp(request):
             elif otp_purpose=='forgotp':
                 request.session.pop('otp_purpose', None)
                 request.session.pop('current_user_email', None)
+                
                 return redirect('reset_password')
 
         except OTP.DoesNotExist:

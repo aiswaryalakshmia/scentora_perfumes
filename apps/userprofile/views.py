@@ -153,8 +153,8 @@ def add_address(request):
             address_type=address_type,
             is_default=True if request.POST.get('is_default') else False
         )
-        return redirect('address_book')
-
+        messages.success(request, "Address added successfully!")
+        return redirect('address_book')    
     return render(request, 'add_address.html')
 
 @login_required
@@ -215,6 +215,7 @@ def edit_address(request,address_id):
         address.is_default=True if request.POST.get('is_default') else False
 
         address.save()
+        messages.success(request, "Address updated successfully!")
         return redirect('address_book')
     return render(request,'add_address.html', {'address':address})
 

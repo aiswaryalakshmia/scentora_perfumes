@@ -195,13 +195,13 @@ def login_view(request):
             messages.success(
                 request,
                 f'Welcome back, {user.full_name}!'
-)
+            )
             return redirect('home')
 
         # blocked user check
         elif User.objects.filter(username=email, is_active=False).exists():
             return render(request, 'login.html', {
-            'blocked_error': 'Your account has been blocked. Please contact support.'
+                'blocked_error': 'Your account has been blocked. Please contact support.'
             })
 
         else:
@@ -309,8 +309,8 @@ def verify_otp(request):
 
                 messages.success(
                     request,
-                'Account created successfully! Please sign in.'
-)
+                    'Account created successfully! Please sign in.'
+                )
 
                 return redirect('login')
 
@@ -326,6 +326,24 @@ def verify_otp(request):
     )
                 request.session.pop('otp_purpose', None)
                 request.session.pop('new_password', None)
+                return redirect('edit_profile')
+            
+            elif otp_purpose=='change_email':
+                new_email=request.session.get('new_email')
+                new_fullname=request.session.get('new_fullname')
+                new_mobile_number=request.session.get('new_mobile_number')
+                user = request.user
+                user.full_name = new_fullname
+                user.email = new_email
+                user.mobile_number = new_mobile_number
+
+                user.save()
+                messages.success(request, "Profile updated successfully!")
+
+                request.session.pop('otp_purpose', None)
+                request.session.pop('new_email', None)
+                request.session.pop('new_fullname', None)
+                request.session.pop('new_mobile_number', None)
                 return redirect('edit_profile')
 
             elif otp_purpose=='forgotp':

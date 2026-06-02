@@ -291,14 +291,30 @@ def edit_profile(request):
             # Profile Image Validation
             if request.FILES.get('profile_image'):
                 image = request.FILES['profile_image']
-                user.profile_image = image
+                user.profile_image = image 
 
-            user.full_name = full_name
-            user.email = email
-            user.mobile_number = mobile_number
+            otp = str(random.randint(100000, 999999))
 
-            user.save()
-            messages.success(request, "Profile updated successfully!")
+            OTP.objects.create(
+                email=user.email,
+                otp_code=otp
+            )
+
+            send_mail(
+                'Scentora Email Change OTP',
+                f'Your OTP is {otp}',
+                settings.EMAIL_HOST_USER,
+                [user.email],
+                fail_silently=False,
+            )
+
+            # store session
+            request.session['current_user_email'] = user.email
+            request.session['otp_purpose'] = 'change_email'
+            request.session['new_email'] = email
+            request.session['new_mobile_number'] = mobile_number
+            request.session['new_fullname'] = full_name 
+            return redirect('verify_otp')         
 
         # PASSWORD CHANGE
         elif 'change_password' in request.POST:

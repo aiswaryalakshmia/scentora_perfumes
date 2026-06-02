@@ -170,5 +170,17 @@ function confirmToggle(event, isActive) {
     return false;
 }
 </script>
+
+{% if messages %}
+    {% for message in messages %}
+        <script>
+            Swal.fire({
+                icon: '{{ message.tags }}',
+                title: '{{ message }}',
+                confirmButtonText: 'OK'
+            });
+        </script>
+    {% endfor %}
+{% endif %}
 </body>
 </html>

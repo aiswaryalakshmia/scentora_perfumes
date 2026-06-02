@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+add address 
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/add_address.css' %}">
+{% endblock %}
+
+{% block content %}
+
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="profile-summary">
+      <div class="profile-icon">
+        <i class="fa-solid fa-user"></i>
+      </div>
+      <h3>Welcome back</h3>
+      <p class="member-tier">Luxury Member</p>
+    </div>
+
+    <ul class="sidebar-menu">
+      <li class="{% if request.path == '/profile/dashboard/' %}active{% endif %}">
+        <a href="{% url 'profile_dashboard' %}">
+            <i class="fa-solid fa-table-cells-large"></i>
+            Dashboard
+        </a>
+      </li>
+
+      <li>
+          <a href="#">
+              <i class="fa-regular fa-clipboard"></i>
+              My Orders
+          </a>
+      </li>
+
+      <li>
+          <a href="#">
+              <i class="fa-regular fa-heart"></i>
+              Wishlist
+          </a>
+      </li>
+
+      <li class="{% if request.path == '/profile/addressbook/' %}active{% endif %}">
+        <a href="{% url 'address_book' %}">
+            <i class="fa-solid fa-location-dot"></i>
+            Address Book
+        </a>
+      </li>
+
+      <li>
+          <a href="#">
+              <i class="fa-solid fa-wallet"></i>
+              Wallet
+          </a>
+      </li>
+
+      <li class="{% if request.path == '/profile/edit_profile/' %}active{% endif %}">
+        <a href="{% url 'edit_profile' %}">
+            <i class="fa-regular fa-pen-to-square"></i>
+            Edit Profile
+        </a>
+      </li>
+
+      <li>
+          <a href="{% url 'logout' %}">
+              <i class="fa-solid fa-right-from-bracket"></i>
+              Logout
+          </a>
+      </li>
+    </ul>
+</aside>
+
+  <!-- Main Content -->
+  <main class="address-form-content">
+    <h2>Add New Address</h2>
+    <p class="subtitle">Save a delivery address for faster checkout.</p>
+    {% if error %}
+      <p style="color:red; margin-bottom:15px;">
+          {{ error }}
+      </p>
+    {% endif %}
+    <form method="POST" class="address-form">
+    {% csrf_token %}
+      <!-- Personal Details -->
+      <div class="form-section">
+        <h4 class="section-title">Personal Details</h4>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" placeholder="Enter your full name" 
+                name="full_name" value="{{ address.full_name|default:'' }}">
+          </div>
+          <div class="form-group">
+            <label>Phone Number</label>
+            <input type="text" placeholder="Enter phone number" 
+                name="phone_number" value="{{ address.phone_number|default:'' }}">
+          </div>
+        </div>
+      </div>
+
+      <!-- Address Details -->
+      <div class="form-section">
+        <h4 class="section-title">Address Details</h4>
+        <div class="form-group">
+          <label>Address Line 1</label>
+          <input type="text" placeholder="Street address, P.O. box, company name" 
+            name="address_line1" value="{{ address.address_line1|default:'' }}">
+        </div>
+        <div class="form-group">
+          <label>Address Line 2</label>
+          <input type="text" placeholder="Apartment, suite, unit, building, floor, etc." 
+            name="address_line2" value="{{ address.address_line2|default:'' }}">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>City</label>
+            <input type="text" placeholder="City" name="city" value="{{ address.city|default:'' }}">
+          </div>
+          <div class="form-group">
+            <label>State / Province</label>
+            <input type="text" placeholder="State or Province" name="state" value="{{ address.state|default:'' }}">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>ZIP / Postal Code</label>
+            <input type="text" placeholder="Postal code" name="pincode" value="{{ address.pincode|default:'' }}">
+          </div>
+          <div class="form-group">
+            <label>Country</label>
+            <select name="country">
+              <option value="">Select Country</option>
+              <option value="United States"
+               {% if address.country == 'United States' %}
+                    selected
+                {% endif %}>United States</option>
+              <option value="India"
+              {% if address.country == 'India' %}
+                    selected
+                {% endif %}>India</option>
+              <option value="United Kingdom"
+               {% if address.country == 'United Kingdom' %}
+                    selected
+                {% endif %}>United Kingdom</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Address Type -->
+      <div class="form-section">
+        <h4 class="section-title">Address Type</h4>
+        <div class="address-type">
+
+            <input type="radio" id="home" name="address_type" value="home" checked hidden>
+            <label for="home" class="type-btn">Home</label>
+
+            <input type="radio" id="work" name="address_type" value="work" hidden>
+            <label for="work" class="type-btn">Work</label>
+
+            <input type="radio" id="other" name="address_type" value="other" hidden>
+            <label for="other" class="type-btn">Other</label>
+
+        </div>
+        <div class="checkbox-row">
+          <input type="checkbox" id="default" name="is_default">
+          <label for="default">Set as default delivery address</label>
+        </div>
+      </div>
+
+      <!-- Buttons -->
+      <div class="form-actions">
+        <button type="submit" class="btn save">Save Address</button>
+        <a href="{% url 'address_book' %}" class="btn cancel">Cancel</a>
+      </div>
+    </form>
+  </main>
+
+{% endblock %}

@@ -1,0 +1,53 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scentora Admin Portal</title>
+  <link rel="stylesheet" href="{% static 'css/admin_login.css' %}">
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+</head>
+<body>
+
+  <div class="admin-container">
+    <div class="admin-header">
+      <h1 class="brand">SCENTORA</h1>
+      <p class="portal-title">ADMIN PORTAL</p>
+    </div>
+
+    <div class="login-box">
+      <form class="login-form" method="POST">
+        {% csrf_token %}
+        {% if messages %}
+        {% for message in messages %}
+          {% if "Invalid admin credentials" in message.message %}
+            <p style="color:red; margin-bottom:15px;">
+              {{ message }}
+            </p>
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+        <label for="email">Email Address</label>
+        <input type="email" id="email" name="email" placeholder="admin@scentora.com">
+
+        <label for="password">Password</label>
+        <div class="password-wrapper">
+          <input type="password" id="password" name="password" placeholder="Enter password">
+          <i class="fa-solid fa-eye toggle-password"></i>
+        </div>
+
+        <button type="submit" class="login-btn">ADMIN LOGIN</button>
+      </form>
+
+      <div class="secure-box">
+        <i class="fa-solid fa-shield-halved"></i>
+        <div class="secure-text">
+          <p class="secure-title">Protected Admin Access</p>
+          <p class="secure-subtitle">End-to-end encrypted session</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

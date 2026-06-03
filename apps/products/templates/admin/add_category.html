@@ -1,0 +1,42 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}
+Add Category
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'admin/add_category.css' %}">
+{% endblock %}
+
+{% block content %}
+    <main class="main-content">
+      <header class="header">
+        <h1>Add Category</h1>
+        <button class="back-btn"><i class="fa-solid fa-arrow-left"></i> Back to Categories</button>
+      </header>
+
+      <section class="form-section">
+        <div class="form-card">
+          <div class="form-info">
+            <h3 class="info-title">Essence Details</h3>
+            <p class="info-desc">Primary identifiers and storytelling elements for the collection.</p>
+          </div>
+
+          <form class="category-form">
+            <label for="category-name">Category Name</label>
+            <input type="text" id="category-name" placeholder="Enter category name" />
+
+            <label for="description">Description</label>
+            <textarea id="description" rows="4" placeholder="Enter description"></textarea>
+
+            <div class="form-actions">
+              <button type="button" class="cancel-btn">Cancel</button>
+              <button type="button" class="draft-btn">Save as Draft</button>
+              <button type="submit" class="save-btn">Save Category</button>
+            </div>
+          </form>
+        </div>
+      </section>
+    </main>
+{% endblock %}

@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'apps.common',
     'apps.home',
     'apps.adminpanel',
+    'apps.products',
 ]
 
 MIDDLEWARE = [

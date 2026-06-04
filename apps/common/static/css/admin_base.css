@@ -5,6 +5,10 @@ body {
   margin: 0;
 }
 
+a {
+  text-decoration: none;
+}
+
 /* Sidebar */
 .sidebar {
   width: 200px;

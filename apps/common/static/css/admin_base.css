@@ -5,6 +5,12 @@ body {
   margin: 0;
 }
 
+.main-content-wrapper {
+    flex: 1;
+    width: 100%;
+    box-sizing: border-box;
+}
+
 a {
   text-decoration: none;
 }
@@ -21,12 +27,13 @@ a {
 }
 
 .right-area {
-  margin-left: 240px; /* same as sidebar width */
+  margin-left: 240px;
+  width: calc(100vw - 240px);
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  box-sizing: border-box;
 }
-
 .topbar {
   height: 50px;
   background-color: #121212;
@@ -118,4 +125,17 @@ a {
   gap: 10px;
   color: #c59a3a;
   font-weight: 500;
+}
+
+.page-title {
+    color: #c59a3a;
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0;
+}
+
+.page-subtitle {
+    color: #aaa;
+    font-size: 14px;
+    margin-top: 6px;
 }

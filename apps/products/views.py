@@ -2,8 +2,8 @@ from django.shortcuts import render,redirect,get_object_or_404
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
-from .models import Category
-from .forms import CategoryForm
+from .models import Category,Product, ProductVariant
+from .forms import CategoryForm,ProductForm, ProductVariantForm
 
 def category_management(request):
     search_query = request.GET.get('search','').strip()
@@ -101,3 +101,70 @@ def toggle_category_status(request, category_id):
 
     return redirect('category_management')
 
+def product_management(request):
+    products = Product.objects.order_by("-created_at")
+
+    return render(request,
+        'admin/product_management.html',
+        {
+            'products':products
+        })
+
+def add_product(request):
+    categories = Category.objects.all()
+    print(list(categories))
+
+    if request.method == "POST":
+        product = Product.objects.create(
+            product_name=request.POST['product_name'],
+            description=request.POST['description'],
+            category_id=request.POST['category']
+        )
+
+        return redirect('product_details', product_id=product.id)
+
+    return render(request, 'admin/add_product.html', {
+        'categories': categories
+    })
+
+def product_details(request, product_id):
+
+    product = get_object_or_404(
+        Product,
+        id=product_id
+    )
+
+    if request.method == "POST":
+
+        form = ProductVariantForm(
+            request.POST,
+            request.FILES
+        )
+
+        if form.is_valid():
+
+            variant = form.save(commit=False)
+            variant.product = product
+            variant.save()
+
+            return redirect(
+                'product_details',
+                product_id=product.id
+            )
+
+    else:
+        form = ProductVariantForm()
+
+    variants = ProductVariant.objects.filter(
+        product=product
+    )
+
+    return render(
+        request,
+        'admin/product_details.html',
+        {
+            'product': product,
+            'form': form,
+            'variants': variants
+        }
+    )

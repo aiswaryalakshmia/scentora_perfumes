@@ -1,0 +1,115 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}
+Product Detail
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'admin\product_details.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="product-details-page">
+
+    <div class="product-header-card">
+        <div class="header-top">
+        <a href="{% url 'add_product' %}" class="back-btn">
+            <i class="fa-solid fa-arrow-left"></i>
+            Back to Add Products
+        </a>
+    </div>
+        <h2>{{ product.product_name }}</h2>
+        <p>{{ product.description }}</p>
+        <p>
+            <strong>Category:</strong>
+            {{ product.category.category_name }}
+        </p>
+    </div>
+
+    <div class="variants-section">
+
+        <div class="variants-header">
+            <h3>Product Variants</h3>
+        </div>
+
+        <div class="variant-form">
+
+            <form method="POST" enctype="multipart/form-data">
+
+                {% csrf_token %}
+
+                {{ form.non_field_errors }}
+
+                <div>
+                    <label>Size</label>
+                    {{ form.size }}
+                    {{ form.size.errors }}
+                </div>
+
+                <div>
+                    <label>Price (₹)</label>
+                    {{ form.price }}
+                    {{ form.price.errors }}
+                </div>
+
+                <div>
+                    <label>Stock</label>
+                    {{ form.stock }}
+                    {{ form.stock.errors }}
+                </div>
+
+                <div>
+                    <label>Image</label>
+                    {{ form.image }}
+                    {{ form.image.errors }}
+                </div>
+
+                <div class="variant-actions">
+                    <button type="submit">
+                        Save Variant
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+
+        <hr>
+
+        <div class="variant-container">
+
+            {% for variant in variants %}
+
+            <div class="variant-box">
+
+                {% if variant.image %}
+                    <img
+                        src="{{ variant.image.url }}"
+                        width="80"
+                        height="80"
+                    >
+                {% endif %}
+
+                <div>
+                    <p><strong>Size:</strong> {{ variant.size }}</p>
+                    <p><strong>Price:</strong> ₹{{ variant.price }}</p>
+                    <p><strong>Stock:</strong> {{ variant.stock }}</p>
+                </div>
+
+            </div>
+
+            {% empty %}
+
+            <p>No variants added yet.</p>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

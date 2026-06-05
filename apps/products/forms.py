@@ -1,5 +1,5 @@
 from django import forms
-from .models import Category
+from .models import Category,Product, ProductVariant
 
 class CategoryForm(forms.ModelForm):
 
@@ -41,3 +41,28 @@ class CategoryForm(forms.ModelForm):
         )
 
         return name
+    
+class ProductForm(forms.ModelForm):
+
+    class Meta:
+
+        model = Product
+
+        fields = [
+            'product_name',
+            'category',
+            'description',
+            'status'
+        ]
+
+
+class ProductVariantForm(forms.ModelForm):
+
+    class Meta:
+        model = ProductVariant
+        fields = [
+            'size',
+            'price',
+            'stock',
+            'image'
+        ]

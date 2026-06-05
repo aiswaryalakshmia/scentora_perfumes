@@ -1,0 +1,60 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}
+Add Product
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'admin/add_product.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="add-product-page">
+  <div class="page-header">
+    <h1 class="page-title">Add Product</h1>
+    <a href="{% url 'product_management' %}" class="back-btn">
+        <i class="fa-solid fa-arrow-left"></i> Back to Products
+    </a>
+  </div>
+
+  <form method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="form-grid">
+
+      <!-- Basic Information -->
+      <div class="form-card">
+        <h3>Basic Information</h3>
+
+        <label>Product Name</label>
+        <input type="text" name="product_name" placeholder="Enter product name" required />
+
+        <label>Description</label>
+        <textarea name="description" rows="5" placeholder="Enter product description"></textarea>
+      </div>
+
+      <!-- Taxonomy -->
+      <div class="form-card">
+        <h3>Category Information</h3>
+
+        <label>Category</label>
+        <select name="category" required>
+          {% for category in categories %}
+            <option value="{{ category.id }}">{{ category.category_name }}</option>
+          {% endfor %}
+        </select>
+      </div>      
+
+    </div>
+
+    <div class="form-footer">
+      <button type="button" class="cancel-btn">Cancel</button>
+      <button type="submit" class="save-btn">Save Product</button>
+    </div>
+
+  </form>
+</div>
+
+{% endblock %}

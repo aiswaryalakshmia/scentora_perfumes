@@ -1,0 +1,113 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}
+Product Management
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'admin/product_management.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="product-management">
+  <div class="header-section">
+    <div>
+      <h1 class="page-title">Product Management</h1>
+        <p class="page-subtitle">
+            Manage and curate your luxury perfume collection
+        </p>
+    </div>
+    <a href="{% url 'add_product' %}" class="btn add-product-btn"><i class="fa-solid fa-plus"></i> Add Product</a>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <h3>Total Products</h3>
+      <p class="stat-value">1,284 <span class="trend">↗ +12%</span></p>
+    </div>
+    <div class="stat-card">
+      <h3>Active Listings</h3>
+      <p class="stat-value">1,240 <span class="subtext">96.5%</span></p>
+    </div>
+    <div class="stat-card alert">
+      <h3>Out of Stock</h3>
+      <p class="stat-value">12 <span class="status-tag danger">Action Required</span></p>
+    </div>
+    <div class="stat-card">
+      <h3>Blocked Products</h3>
+      <p class="stat-value">32 <span class="subtext">Under Review</span></p>
+    </div>
+  </div>
+
+  <div class="search-bar">
+    <input type="text" placeholder="Search by Category, Name..." />
+  </div>
+
+  <div class="table-section">
+    <table class="product-table">
+      <thead>
+        <tr>
+          <th>SL NO</th>          
+          <th>Name</th>
+          <th>Description</th>
+          <th>Category</th>          
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+            <tbody>
+
+                {% for product in products %}
+
+                <tr>
+
+                    <td>{{ forloop.counter }}</td>                    
+
+                    <td>{{ product.product_name }}</td>
+
+                    <td>{{ product.description }}</td>
+
+                    <td>{{ product.category.category_name }}</td>                    
+
+                    <td>
+                        <span class="status {{ product.status }}">
+                            {{ product.get_status_display }}
+                        </span>
+                    </td>
+
+                    <td class="actions">
+                        <i class="fa-solid fa-pen"></i>
+                        <a href="{% url 'product_details' product.id %}">
+                            <i class="fa-solid fa-eye"></i>
+                        </a>
+                    </td>
+
+                </tr>
+
+                {% empty %}
+
+                <tr>
+                    <td colspan="6">
+                        No Products Found
+                    </td>
+                </tr>
+
+                {% endfor %}
+
+        </tbody>
+    </table>
+
+    <div class="pagination">
+      <p>Showing 4 of 1,284 products</p>
+      <div class="page-controls">
+        <button class="page active">1</button>
+        <button class="page">2</button>
+        <button class="page">3</button>
+        <span>...</span>
+        <button class="page">128</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

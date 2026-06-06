@@ -185,4 +185,95 @@
   background-color: #2a2a2a;
   border: none;
   color: #fff;
-  padding:
+  
+}
+.actions a {
+    margin-right: 10px;
+    text-decoration: none;
+    font-size: 16px;
+}
+
+.actions i {
+    transition: 0.2s ease;
+}
+
+.actions i:hover {
+    transform: scale(1.2);
+}
+
+/* Optional colors like category page */
+.fa-pen {
+    color: #4caf50;
+}
+
+.fa-eye {
+    color: #2196f3;
+}
+
+.fa-ban {
+    color: #e74c3c;
+}
+
+.fa-check {
+    color: #2ecc71;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 25px;
+}
+
+/* INPUT */
+.search-bar input {
+  width: 300px;
+  padding: 10px 12px;
+  background-color: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #fff;
+  outline: none;
+  transition: 0.3s;
+}
+
+.search-bar input::placeholder {
+  color: #888;
+}
+
+.search-bar input:focus {
+  border-color: #c59a3a;
+}
+
+/* SEARCH BUTTON */
+.search-bar button {
+  background-color: #c59a3a;
+  border: none;
+  color: #000;
+  padding: 10px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: 0.3s;
+}
+
+.search-bar button:hover {
+  background-color: #e0b84a;
+}
+
+.clear-btn {
+  padding: 10px 14px;
+  border: 1px solid #c59a3a;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 13px;
+  color: #c59a3a;
+  background: transparent;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.clear-btn:hover {
+  background-color: #c59a3a;
+  color: #000;
+}

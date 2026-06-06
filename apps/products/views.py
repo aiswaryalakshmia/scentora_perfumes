@@ -102,15 +102,28 @@ def toggle_category_status(request, category_id):
     return redirect('category_management')
 
 def product_management(request):
-    products = Product.objects.order_by("-created_at")
 
-    return render(request,
-        'admin/product_management.html',
-        {
-            'products':products
-        })
+    search_query = request.GET.get('search', '')
+    product_list = Product.objects.select_related('category').order_by("-created_at")
+
+    if search_query:
+        product_list = product_list.filter(
+            Q(product_name__icontains=search_query) |
+            Q(description__icontains=search_query) |
+            Q(category__category_name__icontains=search_query)
+        )
+
+    paginator = Paginator(product_list, 5)
+    page_number = request.GET.get('page')
+    products = paginator.get_page(page_number)
+
+    return render(request, 'admin/product_management.html', {
+        'products': products,
+        'search_query': search_query
+    })
 
 def add_product(request):
+
     categories = Category.objects.all()
     print(list(categories))
 
@@ -121,13 +134,13 @@ def add_product(request):
             category_id=request.POST['category']
         )
 
-        return redirect('product_details', product_id=product.id)
+        return redirect('add_variant', product_id=product.id)
 
     return render(request, 'admin/add_product.html', {
         'categories': categories
     })
 
-def product_details(request, product_id):
+def add_variant(request, product_id):
 
     product = get_object_or_404(
         Product,
@@ -146,9 +159,15 @@ def product_details(request, product_id):
             variant = form.save(commit=False)
             variant.product = product
             variant.save()
+            
+            if "add_product_variant" in request.POST: # go to edit prodct page after adding variant from edit product page
+                return redirect(
+                    'edit_product',
+                    product_id=product.id
+                )
 
-            return redirect(
-                'product_details',
+            return redirect( # go to add variant page after adding variant from add variant page
+                'add_variant',
                 product_id=product.id
             )
 
@@ -161,10 +180,90 @@ def product_details(request, product_id):
 
     return render(
         request,
-        'admin/product_details.html',
+        'admin/add_variant.html',
         {
             'product': product,
             'form': form,
             'variants': variants
         }
     )
+
+
+def edit_product(request, product_id):
+
+    product = get_object_or_404(
+        Product,
+        id=product_id
+    )
+
+    if request.method == "POST":
+
+        form = ProductForm(
+            request.POST,
+            instance=product
+        )
+
+        if form.is_valid():
+
+            form.save()
+
+            return redirect(
+                'edit_product',
+                product_id=product.id
+            )
+
+    else:
+
+        form = ProductForm(
+            instance=product
+        )
+
+    variants = ProductVariant.objects.filter(
+        product=product
+    )
+
+    return render(
+        request,
+        'admin/edit_product.html',
+        {
+            'product': product,
+            'form': form,
+            'variants': variants
+        }
+    )
+
+def update_variant(request, variant_id):
+    variant = get_object_or_404(ProductVariant, id=variant_id)
+
+    if request.method == "POST":
+        variant.size = request.POST.get("size")
+        variant.price = request.POST.get("price")
+        variant.stock = request.POST.get("stock")
+
+        if request.FILES.get("image"):
+            variant.image = request.FILES["image"]
+
+        variant.save()
+
+    return redirect('edit_product', product_id=variant.product.id)
+
+def toggle_product_status(request, product_id):
+
+    product = get_object_or_404(Product, id=product_id)
+
+    if product.status == "active":
+        product.status = "blocked"
+    else:
+        product.status = "active"
+
+    product.save()
+
+    return redirect('product_management')
+
+def delete_variant(request, variant_id):
+    variant = get_object_or_404(ProductVariant, id=variant_id)
+
+    product_id = variant.product.id  # to redirect back
+    variant.delete()
+
+    return redirect('edit_product', product_id=product_id)

@@ -40,9 +40,29 @@ Product Management
     </div>
   </div>
 
-  <div class="search-bar">
-    <input type="text" placeholder="Search by Category, Name..." />
-  </div>
+  <form method="GET">
+    <div class="search-bar">
+
+        <input
+            type="text"
+            name="search"
+            value="{{ search_query }}"
+            placeholder="Search products..."
+        >
+
+        <button type="submit">
+            Search
+        </button>
+
+        {% if search_query %}
+        <a class="btn clear-btn"
+           href="{% url 'product_management' %}">
+            Clear
+        </a>
+        {% endif %}
+
+    </div>
+</form>
 
   <div class="table-section">
     <table class="product-table">
@@ -77,12 +97,26 @@ Product Management
                     </td>
 
                     <td class="actions">
-                        <i class="fa-solid fa-pen"></i>
-                        <a href="{% url 'product_details' product.id %}">
+                        <a href="{% url 'edit_product' product.id %}">
+                            <i class="fa-solid fa-pen"></i>
+                        </a>
+                        <a href="#">
                             <i class="fa-solid fa-eye"></i>
                         </a>
-                    </td>
 
+                        <a href="{% url 'toggle_product_status' product.id %}"
+                            class="status-toggle-btn"
+                            data-status="{{ product.status }}"
+                            title="{% if product.status == 'active' %}Block Product{% else %}Unblock Product{% endif %}">
+
+                                {% if product.status == 'active' %}
+                                    <i class="fa-solid fa-ban"></i>
+                                {% else %}
+                                    <i class="fa-solid fa-check"></i>
+                                {% endif %}
+
+                        </a>
+                    </td>
                 </tr>
 
                 {% empty %}
@@ -99,15 +133,81 @@ Product Management
     </table>
 
     <div class="pagination">
-      <p>Showing 4 of 1,284 products</p>
-      <div class="page-controls">
-        <button class="page active">1</button>
-        <button class="page">2</button>
-        <button class="page">3</button>
-        <span>...</span>
-        <button class="page">128</button>
-      </div>
+
+    <p>
+        Showing {{ products.start_index|default:0 }} to {{ products.end_index|default:0 }}
+        of {{ products.paginator.count }} products
+    </p>
+
+    <div class="page-controls">
+
+        {% if products.has_previous %}
+            <a href="?page={{ products.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
+                &lt;
+            </a>
+        {% endif %}
+
+        {% for num in products.paginator.page_range %}
+
+            {% if products.number == num %}
+                <a class="active">{{ num }}</a>
+            {% else %}
+                <a href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}">
+                    {{ num }}
+                </a>
+            {% endif %}
+
+        {% endfor %}
+
+        {% if products.has_next %}
+            <a href="?page={{ products.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
+                &gt;
+            </a>
+        {% endif %}
+
     </div>
+</div>
   </div>
 </div>
+
+<script>
+document.querySelectorAll('.status-toggle-btn').forEach(button => {
+
+    button.addEventListener('click', function(e) {
+
+        e.preventDefault();
+
+        const url = this.href;
+        const status = this.dataset.status;
+
+        let actionText;
+        let confirmText;
+
+        if (status === 'active') {
+            actionText = 'This product will be blocked.';
+            confirmText = 'Yes, Block It!';
+        } else {
+            actionText = 'This product will be unblocked.';
+            confirmText = 'Yes, Unblock It!';
+        }
+
+        Swal.fire({
+            title: 'Are you sure?',
+            text: actionText,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: confirmText,
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+
+            if (result.isConfirmed) {
+                window.location.href = url;
+            }
+
+        });
+
+    });
+
+});
+</script>
 {% endblock %}

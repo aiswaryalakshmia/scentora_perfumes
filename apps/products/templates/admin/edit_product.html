@@ -1,0 +1,198 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}
+Edit Product
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'admin/edit_product.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="edit-product-page">
+
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Edit Product</h1>
+            <p class="page-subtitle">
+                Update product information and variants
+            </p>
+        </div>
+
+        <a href="{% url 'product_management' %}" class="back-btn">
+            <i class="fa-solid fa-arrow-left"></i>
+            Back to Products
+        </a>
+    </div>
+
+    <form method="POST">
+
+        {% csrf_token %}
+
+        <div class="form-card">
+
+            <h3>Basic Information</h3>
+
+            <label>Product Name</label>
+            {{ form.product_name }}
+
+            <label>Description</label>
+            {{ form.description }}
+
+            <label>Category</label>
+            {{ form.category }}
+
+            <div class="form-footer">
+
+                <a href="{% url 'product_management' %}"
+                class="cancel-btn">
+                    Cancel
+                </a>
+
+                <button
+                    type="submit"
+                    class="save-btn">
+                    Save Changes
+                </button>
+
+            </div>
+
+        </div>
+
+    </form>
+    <!-- VARIANTS -->
+    <div class="variants-section">
+
+        <h3>Variants</h3>
+
+        <div class="variant-grid">
+
+        {% for variant in variants %}
+
+        <div class="variant-card" id="variant-{{ variant.id }}">
+
+            <!-- DELETE -->
+            <form method="POST" action="{% url 'delete_variant' variant.id %}">
+                {% csrf_token %}
+                <button type="submit" class="delete-variant">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </form>
+
+            <!-- ================= VIEW MODE ================= -->
+            <div class="view-mode" id="view-{{ variant.id }}">
+
+                <p><b>Size:</b> {{ variant.size }}</p>
+                <p><b>Price:</b> {{ variant.price }}</p>
+                <p><b>Stock:</b> {{ variant.stock }}</p>
+
+                {% if variant.image %}
+                    <img src="{{ variant.image.url }}" class="variant-image">
+                {% endif %}
+
+                <button type="button"
+                        onclick="enableEdit('{{ variant.id }}')"
+                        class="edit-btn">
+                    Edit
+                </button>
+
+            </div>
+
+            <!-- ================= EDIT MODE ================= -->
+            <form method="POST"
+                enctype="multipart/form-data"
+                action="{% url 'update_variant' variant.id %}"
+                class="edit-mode"
+                id="edit-{{ variant.id }}"
+                style="display:none;">
+
+                {% csrf_token %}
+
+                <label>Size</label>
+                <input type="text" name="size" value="{{ variant.size }}">
+
+                <label>Price</label>
+                <input type="number" step="0.01" name="price" value="{{ variant.price }}">
+
+                <label>Stock</label>
+                <input type="number" name="stock" value="{{ variant.stock }}">
+
+                <label>Image</label>
+                <input type="file" name="image">
+
+                <div class="form-footer">
+
+                    <button type="submit" class="save-btn">
+                        Save
+                    </button>
+
+                    <button type="button"
+                            class="cancel-btn"
+                            onclick="cancelEdit('{{ variant.id }}')">
+                        Cancel
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+        {% endfor %}
+
+        </div>
+
+    </div>
+    
+    <form method="POST" enctype="multipart/form-data"
+      action="{% url 'add_variant' product.id %}">
+        {% csrf_token %}
+
+        <div class="form-card">
+
+            <h3>Add New Variant</h3>
+
+            <label>Size</label>
+            <input type="text" name="size">
+
+            <label>Price</label>
+            <input type="number" step="0.01" name="price">
+
+            <label>Stock</label>
+            <input type="number" name="stock">
+
+            <label>Image</label>
+            <input type="file" name="image">
+
+            <div class="form-footer">
+
+                <a href="{% url 'product_management' %}" class="cancel-btn">
+                    Cancel
+                </a>
+
+                <button type="submit" name="add_product_variant" class="save-btn">
+                    Save Changes
+                </button>
+
+            </div>
+
+        </div>
+    </form>
+
+</div>
+
+<script>
+    function enableEdit(id) {
+        document.getElementById(`view-${id}`).style.display = "none";
+        document.getElementById(`edit-${id}`).style.display = "block";
+    }
+
+    function cancelEdit(id) {
+        document.getElementById(`edit-${id}`).style.display = "none";
+        document.getElementById(`view-${id}`).style.display = "block";
+    }
+</script>
+
+{% endblock %}

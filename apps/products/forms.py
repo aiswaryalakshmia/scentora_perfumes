@@ -51,18 +51,10 @@ class ProductForm(forms.ModelForm):
         fields = [
             'product_name',
             'category',
-            'description',
-            'status'
+            'description'
         ]
-
 
 class ProductVariantForm(forms.ModelForm):
-
     class Meta:
         model = ProductVariant
-        fields = [
-            'size',
-            'price',
-            'stock',
-            'image'
-        ]
+        fields = ['size', 'price', 'stock', 'image']

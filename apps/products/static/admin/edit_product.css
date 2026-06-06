@@ -1,0 +1,261 @@
+/* ==========================
+   PAGE
+========================== */
+
+.edit-product-page {
+    padding: 30px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* ==========================
+   BACK BUTTON
+========================== */
+
+.back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    padding: 10px 16px;
+
+    border: 1px solid #c59a3a;
+    border-radius: 8px;
+
+    color: #c59a3a;
+    text-decoration: none;
+
+    transition: 0.3s;
+
+    margin-bottom: 10px;
+}
+
+.back-btn:hover {
+    background: #c59a3a;
+    color: #000;
+}
+
+/* ==========================
+   FORM CARD
+========================== */
+
+.form-card {
+    background: #141414;
+    border: 1px solid #262626;
+
+    border-radius: 12px;
+
+    padding: 24px;
+
+    margin-bottom: 25px;
+}
+
+.form-card h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+
+    color: #c59a3a;
+    font-size: 20px;
+}
+
+.form-card label {
+    display: block;
+
+    margin-bottom: 8px;
+    margin-top: 15px;
+
+    color: #cfcfcf;
+    font-size: 14px;
+}
+
+.form-card input,
+.form-card textarea,
+.form-card select {
+    width: 100%;
+
+    padding: 12px;
+
+    background: #1d1d1d;
+    border: 1px solid #333;
+
+    border-radius: 8px;
+
+    color: #fff;
+
+    box-sizing: border-box;
+}
+
+.form-card textarea {
+    resize: vertical;
+}
+
+.form-card input:focus,
+.form-card textarea:focus,
+.form-card select:focus {
+    outline: none;
+    border-color: #c59a3a;
+}
+
+.form-card input::placeholder,
+.form-card textarea::placeholder {
+    color: #777;
+}
+
+/* ==========================
+   VARIANTS
+========================== */
+
+.variants-section {
+    margin-bottom: 30px;
+}
+
+.variants-section h3 {
+    color: #c59a3a;
+    margin-bottom: 20px;
+}
+
+.variant-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill,minmax(320px,1fr));
+    gap: 20px;
+}
+
+.variant-card {
+    position: relative;
+
+    background: #141414;
+
+    border: 1px solid #262626;
+    border-radius: 12px;
+
+    padding: 20px;
+}
+
+/* ==========================
+   DELETE BUTTON
+========================== */
+
+.delete-variant {
+    position: absolute;
+
+    top: 12px;
+    right: 12px;
+
+    width: 30px;
+    height: 30px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    border-radius: 50%;
+
+    background: rgba(255, 77, 77, 0.15);
+
+    color: #ff4d4d;
+
+    text-decoration: none;
+
+    transition: 0.3s;
+}
+
+.delete-variant:hover {
+    background: #ff4d4d;
+    color: white;
+}
+
+/* ==========================
+   VARIANT IMAGE
+========================== */
+
+.variant-image {
+    width: 100%;
+    height: 220px;
+
+    object-fit: cover;
+
+    border-radius: 10px;
+
+    margin-top: 10px;
+    margin-bottom: 15px;
+
+    border: 1px solid #333;
+}
+
+/* ==========================
+   FOOTER BUTTONS
+========================== */
+
+.form-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+
+    margin-top: 30px;
+}
+
+.cancel-btn {
+    padding: 12px 24px;
+
+    border: 1px solid #555;
+    border-radius: 8px;
+
+    background: transparent;
+
+    color: #ccc;
+
+    text-decoration: none;
+
+    transition: 0.3s;
+}
+
+.cancel-btn:hover {
+    border-color: #888;
+    color: white;
+}
+
+.save-btn {
+    padding: 12px 24px;
+
+    border: none;
+    border-radius: 8px;
+
+    background: #c59a3a;
+
+    color: #000;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: 0.3s;
+}
+
+.save-btn:hover {
+    background: #ddb24f;
+}
+
+/* ==========================
+   RESPONSIVE
+========================== */
+
+@media (max-width: 768px) {
+
+    .edit-product-page {
+        padding: 20px;
+    }
+
+    .variant-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-footer {
+        flex-direction: column;
+    }
+
+    .cancel-btn,
+    .save-btn {
+        width: 100%;
+        text-align: center;
+    }
+}

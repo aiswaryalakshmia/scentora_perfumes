@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+Shop
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'user/shop_page.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="shop-container">
+  <aside class="filters">
+    <h3>Filters</h3>
+    <div class="filter-section">
+      <h4>Category</h4>
+      <ul>
+        <li><a href="#">Men</a></li>
+        <li><a href="#">Women</a></li>
+        <li><a href="#">Unisex</a></li>
+        <li><a href="#">Luxury</a></li>
+      </ul>
+    </div>
+
+    <div class="filter-section">
+      <h4>Price</h4>
+      <input type="range" min="100" max="350" value="250" class="price-slider">
+      <p>€100 - €350</p>
+    </div>
+
+    <div class="filter-section">
+      <h4>Ratings</h4>
+      <div class="stars">
+        <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
+      </div>
+    </div>
+
+    <button class="clear-filters">Clear Filters</button>
+  </aside>
+
+  <section class="products">
+    <div class="product-grid">
+      <div class="product-card">
+        <img src="noir-intense.jpg" alt="Noir Intense">
+        <h3>Noir Intense</h3>
+        <p>Woody • Spiced • Leather</p>
+        <span class="price">€285.00</span>
+        <button class="add-to-cart">Add to Cart</button>
+      </div>
+
+      <div class="product-card">
+        <img src="oud-royale.jpg" alt="Oud Royale">
+        <h3>Oud Royale</h3>
+        <p>Oriental • Saffron • Agarwood</p>
+        <span class="price">€340.00</span>
+        <button class="add-to-cart">Add to Cart</button>
+      </div>
+
+      <div class="product-card">
+        <img src="silver-smoke.jpg" alt="Silver Smoke">
+        <h3>Silver Smoke</h3>
+        <p>Amber • Musk • Vetiver</p>
+        <span class="price">€260.00</span>
+        <button class="add-to-cart">Add to Cart</button>
+      </div>
+
+      <div class="product-card">
+        <img src="imperial-gold.jpg" alt="Imperial Gold">
+        <h3>Imperial Gold</h3>
+        <p>Citrus • Bergamot • Sandalwood</p>
+        <span class="price">€310.00</span>
+        <button class="add-to-cart">Add to Cart</button>
+      </div>
+
+      <div class="product-card">
+        <img src="midnight-cedar.jpg" alt="Midnight Cedar">
+        <h3>Midnight Cedar</h3>
+        <p>Woody • Patchouli • Cedar</p>
+        <span class="price">€295.00</span>
+        <button class="add-to-cart">Add to Cart</button>
+      </div>
+
+      <div class="product-card">
+        <img src="amber-ember.jpg" alt="Amber Ember">
+        <h3>Amber Ember</h3>
+        <p>Warm • Vanilla • Smoke</p>
+        <span class="price">€235.00</span>
+        <button class="add-to-cart">Add to Cart</button>
+      </div>
+    </div>
+
+    <button class="load-more">Load More</button>
+  </section>
+</div>
+{% endblock %}

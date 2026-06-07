@@ -1,16 +1,9 @@
-/* =========================
-   PRODUCT DETAILS PAGE
-========================= */
 
 .product-details-page {
     padding: 30px;
     max-width: 1300px;
     margin: 0 auto;
 }
-
-/* =========================
-   PRODUCT HEADER
-========================= */
 
 .product-header-card {
     background: #171717;
@@ -38,10 +31,6 @@
     color: #d4a537;
 }
 
-/* =========================
-   VARIANTS SECTION
-========================= */
-
 .variants-section {
     background: #171717;
     border: 1px solid #262626;
@@ -58,10 +47,6 @@
     font-size: 28px;
     font-weight: 700;
 }
-
-/* =========================
-   FORM CARD
-========================= */
 
 .variant-form {
     background: #1f1f1f;
@@ -82,10 +67,6 @@
     flex-direction: column;
 }
 
-/* =========================
-   LABELS
-========================= */
-
 .variant-form label {
     color: #d6d6d6;
     font-size: 14px;
@@ -93,9 +74,6 @@
     margin-bottom: 8px;
 }
 
-/* =========================
-   INPUTS
-========================= */
 
 .variant-form input[type="text"],
 .variant-form input[type="number"],
@@ -130,17 +108,9 @@
         0 0 0 3px rgba(212,165,55,0.15);
 }
 
-/* =========================
-   FILE INPUT
-========================= */
-
 input[type="file"] {
     cursor: pointer;
 }
-
-/* =========================
-   BUTTON SECTION
-========================= */
 
 .variant-actions {
     grid-column: span 2;
@@ -172,19 +142,11 @@ input[type="file"] {
     background: #e4b74a;
 }
 
-/* =========================
-   DIVIDER
-========================= */
-
 hr {
     border: none;
     border-top: 1px solid #2f2f2f;
     margin: 35px 0;
 }
-
-/* =========================
-   VARIANT GRID
-========================= */
 
 .variant-container {
 
@@ -195,10 +157,6 @@ hr {
 
     gap: 22px;
 }
-
-/* =========================
-   VARIANT CARD
-========================= */
 
 .variant-box {
 
@@ -226,10 +184,6 @@ hr {
     transform: translateY(-3px);
 }
 
-/* =========================
-   VARIANT IMAGE
-========================= */
-
 .variant-box img {
 
     width: 90px;
@@ -244,10 +198,6 @@ hr {
     flex-shrink: 0;
 }
 
-/* =========================
-   VARIANT DETAILS
-========================= */
-
 .variant-box p {
 
     margin: 8px 0;
@@ -260,10 +210,6 @@ hr {
 .variant-box strong {
     color: #d4a537;
 }
-
-/* =========================
-   EMPTY STATE
-========================= */
 
 .variant-container > p {
 
@@ -278,10 +224,6 @@ hr {
     border-radius: 14px;
 }
 
-/* =========================
-   FORM ERRORS
-========================= */
-
 .errorlist {
     list-style: none;
     padding: 0;
@@ -292,10 +234,6 @@ hr {
     color: #ff6b6b;
     font-size: 13px;
 }
-
-/* =========================
-   RESPONSIVE
-========================= */
 
 @media (max-width: 768px) {
 

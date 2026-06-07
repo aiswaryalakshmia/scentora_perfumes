@@ -7,6 +7,7 @@ Edit Product
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'admin/edit_product.css' %}">
+<link rel="stylesheet" href="{% static 'admin\variant_form.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -74,9 +75,18 @@ Edit Product
         <div class="variant-card" id="variant-{{ variant.id }}">
 
             <!-- DELETE -->
-            <form method="POST" action="{% url 'delete_variant' variant.id %}">
+            <form
+                method="POST"
+                action="{% url 'delete_variant' variant.id %}"
+                class="delete-variant-form"
+            >
                 {% csrf_token %}
-                <button type="submit" class="delete-variant">
+
+                <button
+                    type="button"
+                    class="delete-variant"
+                    onclick="confirmDelete(this.form)"
+                >
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </form>
@@ -88,9 +98,22 @@ Edit Product
                 <p><b>Price:</b> {{ variant.price }}</p>
                 <p><b>Stock:</b> {{ variant.stock }}</p>
 
-                {% if variant.image %}
-                    <img src="{{ variant.image.url }}" class="variant-image">
-                {% endif %}
+                <div class="variant-images">
+
+                    {% for image in variant.images.all %}
+
+                        <img
+                            src="{{ image.image.url }}"
+                            class="variant-image"
+                        >
+
+                    {% empty %}
+
+                        <p>No images</p>
+
+                    {% endfor %}
+
+                </div>
 
                 <button type="button"
                         onclick="enableEdit('{{ variant.id }}')"
@@ -110,22 +133,68 @@ Edit Product
 
                 {% csrf_token %}
 
-                <label>Size</label>
-                <input type="text" name="size" value="{{ variant.size }}">
+                <div class="form-group">
+                    <label>Size (ml)</label>
+                    <input type="text"
+                        name="size"
+                        value="{{ variant.size }}">
+                </div>
 
-                <label>Price</label>
-                <input type="number" step="0.01" name="price" value="{{ variant.price }}">
+                <div class="form-group">
+                    <label>Price (₹)</label>
+                    <input type="number"
+                        step="0.01"
+                        name="price"
+                        value="{{ variant.price }}">
+                </div>
 
-                <label>Stock</label>
-                <input type="number" name="stock" value="{{ variant.stock }}">
+                <div class="form-group">
+                    <label>Stock</label>
+                    <input type="number"
+                        name="stock"
+                        value="{{ variant.stock }}">
+                </div>
 
-                <label>Image</label>
-                <input type="file" name="image">
+                <!-- EXISTING IMAGES -->
+                <div class="form-group">
+
+                    <label>Current Images</label>
+
+                    <div class="variant-images">
+
+                        {% for image in variant.images.all %}
+
+                            <div class="image-wrapper">
+
+                                <img
+                                    src="{{ image.image.url }}"
+                                    class="variant-image">
+
+                                <a href="{% url 'delete_variant_image' image.id %}"
+                                class="delete-image-btn">
+                                    ✕
+                                </a>
+
+                            </div>
+
+                        {% empty %}
+
+                            <p>No images</p>
+
+                        {% endfor %}
+
+                    </div>
+
+                </div>
+
+                <!-- NEW IMAGES -->
+                {% include 'admin/partials/variant_image_upload.html' %}
 
                 <div class="form-footer">
 
-                    <button type="submit" class="save-btn">
-                        Save
+                    <button type="submit"
+                            class="save-btn">
+                        Save Changes
                     </button>
 
                     <button type="button"
@@ -154,17 +223,16 @@ Edit Product
 
             <h3>Add New Variant</h3>
 
-            <label>Size</label>
+            <label>Size (ml)</label>
             <input type="text" name="size">
 
-            <label>Price</label>
+            <label>Price (₹)</label>
             <input type="number" step="0.01" name="price">
 
             <label>Stock</label>
             <input type="number" name="stock">
 
-            <label>Image</label>
-            <input type="file" name="image">
+            {% include 'admin/partials/variant_image_upload.html' %}
 
             <div class="form-footer">
 
@@ -183,6 +251,8 @@ Edit Product
 
 </div>
 
+{% include 'admin/partials/crop_modal.html' %}
+<script src="{% static 'admin/js/variant_image_cropper.js' %}"></script>
 <script>
     function enableEdit(id) {
         document.getElementById(`view-${id}`).style.display = "none";
@@ -192,6 +262,21 @@ Edit Product
     function cancelEdit(id) {
         document.getElementById(`edit-${id}`).style.display = "none";
         document.getElementById(`view-${id}`).style.display = "block";
+    }
+
+    function confirmDelete(form) {
+        Swal.fire({
+            title: 'Delete Variant?',
+            text: 'This action cannot be undone.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Delete',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                form.submit();
+            }
+        });
     }
 </script>
 

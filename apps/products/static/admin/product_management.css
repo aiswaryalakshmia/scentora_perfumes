@@ -4,7 +4,6 @@
   background-color: #000;
 }
 
-/* Header */
 .header-section {
   display: flex;
   justify-content: space-between;
@@ -32,11 +31,14 @@
   font-weight: 500;
 }
 
+.actions-container {
+  display: flex;
+}
+
 .add-product-btn:hover {
   background-color: #e0b84a;
 }
 
-/* Stats Grid */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -85,7 +87,6 @@
   font-size: 11px;
 }
 
-/* Search Bar */
 .search-bar {
   margin-bottom: 20px;
 }
@@ -99,7 +100,6 @@
   color: #fff;
 }
 
-/* Table */
 .product-table {
   width: 100%;
   border-collapse: collapse;
@@ -165,7 +165,7 @@
   color: #e0b84a;
 }
 
-/* Pagination */
+
 .pagination {
   display: flex;
   justify-content: space-between;
@@ -201,7 +201,7 @@
     transform: scale(1.2);
 }
 
-/* Optional colors like category page */
+
 .fa-pen {
     color: #4caf50;
 }
@@ -225,7 +225,6 @@
   margin-bottom: 25px;
 }
 
-/* INPUT */
 .search-bar input {
   width: 300px;
   padding: 10px 12px;
@@ -245,7 +244,6 @@
   border-color: #c59a3a;
 }
 
-/* SEARCH BUTTON */
 .search-bar button {
   background-color: #c59a3a;
   border: none;

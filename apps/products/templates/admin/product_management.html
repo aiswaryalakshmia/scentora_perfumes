@@ -97,25 +97,27 @@ Product Management
                     </td>
 
                     <td class="actions">
-                        <a href="{% url 'edit_product' product.id %}">
-                            <i class="fa-solid fa-pen"></i>
-                        </a>
-                        <a href="#">
-                            <i class="fa-solid fa-eye"></i>
-                        </a>
+                        <div class="actions-container">
+                            <a href="{% url 'edit_product' product.id %}">
+                                <i class="fa-solid fa-pen"></i>
+                            </a>
+                            <a href="#">
+                                <i class="fa-solid fa-eye"></i>
+                            </a>
 
-                        <a href="{% url 'toggle_product_status' product.id %}"
-                            class="status-toggle-btn"
-                            data-status="{{ product.status }}"
-                            title="{% if product.status == 'active' %}Block Product{% else %}Unblock Product{% endif %}">
+                            <a href="{% url 'toggle_product_status' product.id %}"
+                                class="status-toggle-btn"
+                                data-status="{{ product.status }}"
+                                title="{% if product.status == 'active' %}Block Product{% else %}Unblock Product{% endif %}">
 
-                                {% if product.status == 'active' %}
-                                    <i class="fa-solid fa-ban"></i>
-                                {% else %}
-                                    <i class="fa-solid fa-check"></i>
-                                {% endif %}
+                                    {% if product.status == 'active' %}
+                                        <i class="fa-solid fa-ban"></i>
+                                    {% else %}
+                                        <i class="fa-solid fa-check"></i>
+                                    {% endif %}
 
-                        </a>
+                            </a>
+                        </div>
                     </td>
                 </tr>
 

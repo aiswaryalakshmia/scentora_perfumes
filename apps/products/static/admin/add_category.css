@@ -105,7 +105,6 @@
   background-color: #e0b84a;
 }
 
-/* Responsive Design */
 @media (max-width: 768px) {
   .admin-container {
     flex-direction: column;

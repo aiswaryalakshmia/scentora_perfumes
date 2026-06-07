@@ -2,8 +2,11 @@ from django.shortcuts import render,redirect,get_object_or_404
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
-from .models import Category,Product, ProductVariant
+from django.core.files.base import ContentFile
+from .models import Category,Product,ProductVariant,VariantImage
 from .forms import CategoryForm,ProductForm, ProductVariantForm
+import json
+import base64
 
 def category_management(request):
     search_query = request.GET.get('search','').strip()
@@ -125,13 +128,17 @@ def product_management(request):
 def add_product(request):
 
     categories = Category.objects.all()
-    print(list(categories))
 
     if request.method == "POST":
         product = Product.objects.create(
             product_name=request.POST['product_name'],
             description=request.POST['description'],
             category_id=request.POST['category']
+        )
+
+        messages.success(
+            request,
+            "Product added successfully."
         )
 
         return redirect('add_variant', product_id=product.id)
@@ -159,19 +166,62 @@ def add_variant(request, product_id):
             variant = form.save(commit=False)
             variant.product = product
             variant.save()
-            
-            if "add_product_variant" in request.POST: # go to edit prodct page after adding variant from edit product page
+
+            # Get cropped images JSON
+            cropped_images = request.POST.get("cropped_images")
+
+            if cropped_images:
+
+                try:
+
+                    images = json.loads(cropped_images)
+
+                    for index, image_data in enumerate(images):
+
+                        format_data, imgstr = image_data.split(";base64,")
+
+                        ext = format_data.split("/")[-1]
+
+                        image_file = ContentFile(
+                            base64.b64decode(imgstr),
+                            name=f"variant_{variant.id}_{index}.{ext}"
+                        )
+
+                        VariantImage.objects.create(
+                            variant=variant,
+                            image=image_file
+                        )
+
+                except Exception as e:
+
+                    print("Image processing error:", e)
+
+                    messages.error(
+                        request,
+                        "Error while processing images."
+                    )
+
+            messages.success(
+                request,
+                "Variant added successfully."
+            )
+
+            # Coming from Edit Product page
+            if "add_product_variant" in request.POST:
+
                 return redirect(
-                    'edit_product',
+                    "edit_product",
                     product_id=product.id
                 )
 
-            return redirect( # go to add variant page after adding variant from add variant page
-                'add_variant',
+            # Coming from Add Variant page
+            return redirect(
+                "add_variant",
                 product_id=product.id
             )
 
     else:
+
         form = ProductVariantForm()
 
     variants = ProductVariant.objects.filter(
@@ -180,14 +230,13 @@ def add_variant(request, product_id):
 
     return render(
         request,
-        'admin/add_variant.html',
+        "admin/add_variant.html",
         {
-            'product': product,
-            'form': form,
-            'variants': variants
+            "product": product,
+            "form": form,
+            "variants": variants,
         }
     )
-
 
 def edit_product(request, product_id):
 
@@ -206,6 +255,11 @@ def edit_product(request, product_id):
         if form.is_valid():
 
             form.save()
+
+            messages.success(
+                request,
+                "Product updated successfully."
+            )
 
             return redirect(
                 'edit_product',
@@ -233,26 +287,91 @@ def edit_product(request, product_id):
     )
 
 def update_variant(request, variant_id):
-    variant = get_object_or_404(ProductVariant, id=variant_id)
+
+    variant = get_object_or_404(
+        ProductVariant,
+        id=variant_id
+    )
 
     if request.method == "POST":
+
         variant.size = request.POST.get("size")
         variant.price = request.POST.get("price")
         variant.stock = request.POST.get("stock")
 
-        if request.FILES.get("image"):
-            variant.image = request.FILES["image"]
-
         variant.save()
 
-    return redirect('edit_product', product_id=variant.product.id)
+        # Cropped images from Cropper.js
+        cropped_images = request.POST.get("cropped_images")
+
+        if cropped_images:
+
+            try:
+
+                images = json.loads(cropped_images)
+
+                for index, image_data in enumerate(images):
+
+                    format_data, imgstr = image_data.split(";base64,")
+
+                    ext = format_data.split("/")[-1]
+
+                    image_file = ContentFile(
+                        base64.b64decode(imgstr),
+                        name=f"variant_{variant.id}_{index}.{ext}"
+                    )
+
+                    VariantImage.objects.create(
+                        variant=variant,
+                        image=image_file
+                    )
+
+            except Exception as e:
+
+                print("Crop image error:", e)
+
+                messages.error(
+                    request,
+                    "Error while processing cropped images."
+                )
+
+        messages.success(
+            request,
+            "Variant updated successfully."
+        )
+
+    return redirect(
+        "edit_product",
+        product_id=variant.product.id
+    )
+
+def delete_variant_image(request, image_id):
+
+    image = get_object_or_404(
+        VariantImage,
+        id=image_id
+    )
+
+    product_id = image.variant.product.id
+
+    image.delete()
+
+    messages.success(
+        request,
+        "Image deleted successfully."
+    )
+
+    return redirect(
+        "edit_product",
+        product_id=product_id
+    )
 
 def toggle_product_status(request, product_id):
 
     product = get_object_or_404(Product, id=product_id)
 
     if product.status == "active":
-        product.status = "blocked"
+        product.status = "inactive"
     else:
         product.status = "active"
 
@@ -266,4 +385,12 @@ def delete_variant(request, variant_id):
     product_id = variant.product.id  # to redirect back
     variant.delete()
 
+    messages.success(
+        request,
+        "Variant deleted successfully."
+    )
+
     return redirect('edit_product', product_id=product_id)
+
+def shop(request):
+    return render(request,'user/shop_page.html')

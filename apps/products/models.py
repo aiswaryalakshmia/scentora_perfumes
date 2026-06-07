@@ -1,7 +1,5 @@
 from django.db import models
 
-
-
 class Category(models.Model):
     STATUS_CHOICES = (
         ('active','Active'),
@@ -87,11 +85,7 @@ class ProductVariant(models.Model):
         decimal_places=2
     )
 
-    stock = models.PositiveIntegerField()
-
-    image = models.ImageField(
-        upload_to='products/'
-    )
+    stock = models.PositiveIntegerField()    
 
     status = models.CharField(
         max_length=20,
@@ -117,3 +111,22 @@ class ProductVariant(models.Model):
 
     def __str__(self):
         return f"{self.product.product_name} - {self.size}"
+
+class VariantImage(models.Model):
+
+    variant = models.ForeignKey(
+        ProductVariant,
+        on_delete=models.CASCADE,
+        related_name='images'
+    )
+
+    image = models.ImageField(
+        upload_to='variant_images/'
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )  
+    
+    def __str__(self):
+        return str(self.image)

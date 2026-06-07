@@ -157,7 +157,6 @@
   color: #666;
 }
 
-/* Footer */
 .form-footer {
   display: flex;
   justify-content: flex-end;
@@ -183,7 +182,6 @@
   color: #000;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
   .form-grid {
     grid-template-columns: 1fr;

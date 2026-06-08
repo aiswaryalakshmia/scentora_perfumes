@@ -29,10 +29,12 @@ Add Product
         <h3>Basic Information</h3>
 
         <label>Product Name</label>
-        <input type="text" name="product_name" placeholder="Enter product name" required />
+          {{ form.product_name }}
+          {{ form.product_name.errors }}
 
-        <label>Description</label>
-        <textarea name="description" rows="5" placeholder="Enter product description"></textarea>
+          <label>Description</label>
+          {{ form.description }}
+          {{ form.description.errors }}
       </div>
 
       <!-- Taxonomy -->
@@ -40,11 +42,8 @@ Add Product
         <h3>Category Information</h3>
 
         <label>Category</label>
-        <select name="category" required>
-          {% for category in categories %}
-            <option value="{{ category.id }}">{{ category.category_name }}</option>
-          {% endfor %}
-        </select>
+          {{ form.category }}
+          {{ form.category.errors }}
       </div>      
 
     </div>

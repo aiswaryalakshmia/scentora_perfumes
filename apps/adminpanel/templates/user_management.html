@@ -61,7 +61,7 @@ Customers Management
                     </td>
 
                     <td class="actions">
-
+                        <div class="actions-container">
                         <i class="fa-solid fa-eye"></i>
 
                         <a href="{% url 'toggle_user_status' user.id %}"
@@ -73,6 +73,7 @@ Customers Management
                                 <i class="fa-solid fa-check-circle"></i>
                             {% endif %}
                         </a>
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}

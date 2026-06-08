@@ -171,6 +171,10 @@
   color: #fff;
 }
 
+.actions-container {
+  display: flex;
+}
+
 .search-bar button {
   background-color: #c59a3a;
   border: none;

@@ -126,25 +126,27 @@ def product_management(request):
     })
 
 def add_product(request):
-
-    categories = Category.objects.all()
-
+    
     if request.method == "POST":
-        product = Product.objects.create(
-            product_name=request.POST['product_name'],
-            description=request.POST['description'],
-            category_id=request.POST['category']
-        )
+        form = ProductForm(request.POST)
 
-        messages.success(
-            request,
-            "Product added successfully."
-        )
+        if form.is_valid():
 
-        return redirect('add_variant', product_id=product.id)
+            product = form.save()
+
+            messages.success(
+                request,
+                "Product added successfully."
+            )
+
+            return redirect('add_variant', product_id=product.id)
+        
+    else:
+
+        form = ProductForm()
 
     return render(request, 'admin/add_product.html', {
-        'categories': categories
+        'form': form
     })
 
 def add_variant(request, product_id):
@@ -295,45 +297,62 @@ def update_variant(request, variant_id):
 
     if request.method == "POST":
 
-        variant.size = request.POST.get("size")
-        variant.price = request.POST.get("price")
-        variant.stock = request.POST.get("stock")
+        form = ProductVariantForm(
+            request.POST,
+            instance=variant
+        )
 
-        variant.save()
+        if form.is_valid():
 
-        # Cropped images from Cropper.js
-        cropped_images = request.POST.get("cropped_images")
+            variant = form.save()
 
-        if cropped_images:
+            # Cropped images from Cropper.js
+            cropped_images = request.POST.get("cropped_images")
 
-            try:
+            if cropped_images:
 
-                images = json.loads(cropped_images)
+                try:
 
-                for index, image_data in enumerate(images):
+                    images = json.loads(cropped_images)
 
-                    format_data, imgstr = image_data.split(";base64,")
+                    for index, image_data in enumerate(images):
 
-                    ext = format_data.split("/")[-1]
+                        format_data, imgstr = image_data.split(";base64,")
 
-                    image_file = ContentFile(
-                        base64.b64decode(imgstr),
-                        name=f"variant_{variant.id}_{index}.{ext}"
+                        ext = format_data.split("/")[-1]
+
+                        image_file = ContentFile(
+                            base64.b64decode(imgstr),
+                            name=f"variant_{variant.id}_{index}.{ext}"
+                        )
+
+                        VariantImage.objects.create(
+                            variant=variant,
+                            image=image_file
+                        )
+
+                except Exception as e:
+
+                    print("Crop image error:", e)
+
+                    messages.error(
+                        request,
+                        "Error while processing cropped images."
                     )
+        else:
+            for field, errors in form.errors.get_json_data().items():
 
-                    VariantImage.objects.create(
-                        variant=variant,
-                        image=image_file
+                for error in errors:
+
+                    messages.error(
+                        request,
+                        error["message"]
                     )
-
-            except Exception as e:
-
-                print("Crop image error:", e)
-
-                messages.error(
-                    request,
-                    "Error while processing cropped images."
-                )
+                    
+            return redirect(
+                "edit_product",
+                product_id=variant.product.id
+            )
 
         messages.success(
             request,

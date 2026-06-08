@@ -61,19 +61,32 @@
     </div>
   </div>
     {% if messages %}
-      {% for message in messages %}
-          {% if message.tags == 'success' %}
-          <script>
-              Swal.fire({
-                  icon: 'success',
-                  title: 'Success!',
-                  text: '{{ message }}',
-                  confirmButtonColor: '#c59a3a'
-              });
-          </script>
-          {% endif %}
-      {% endfor %}
-  {% endif %}
+    {% for message in messages %}
+
+        {% if message.tags == 'success' %}
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: '{{ message }}',
+                confirmButtonColor: '#c59a3a'
+            });
+        </script>
+        {% endif %}
+
+        {% if message.tags == 'error' %}
+        <script>
+            Swal.fire({
+                icon: 'error',
+                title: 'Validation Error',
+                text: '{{ message }}',
+                confirmButtonColor: '#c59a3a'
+            });
+        </script>
+        {% endif %}
+
+    {% endfor %}
+{% endif %}
   </body>
 </html>
   

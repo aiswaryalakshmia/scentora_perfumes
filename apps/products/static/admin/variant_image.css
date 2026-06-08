@@ -151,17 +151,15 @@
     inset: 0;
     background: rgba(0,0,0,.85);
     z-index: 9999;
+    margin-left: 200px;
 }
 
 .crop-content {
-    width: 800px;
-    max-width: 90%;
-    margin: 40px auto;
-    background: #111;
-    padding: 20px;
-    border-radius: 12px;
+    width: min(900px, 95vw);
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
 #cropImage {
-    max-width: 100%;
+    max-height: 65vh;
 }

@@ -65,15 +65,17 @@ Category Management
                   </span>
                 </td>
                 <td class="actions">
-                <a href="{% url 'edit_category' category.id %}">
-                  <i class="fa-solid fa-pen"></i>
-              </a>
-                <i class="fa-solid fa-eye"></i>
-                <a href="{% url 'toggle_category_status' category.id %}"
-                class="delete-btn"
-                data-status="{{ category.status }}">
-                  <i class="fa-solid fa-trash"></i>
-              </a>
+                    <div class="actions-container">
+                        <a href="{% url 'edit_category' category.id %}">
+                            <i class="fa-solid fa-pen"></i>
+                        </a>
+                        <i class="fa-solid fa-eye"></i>
+                        <a href="{% url 'toggle_category_status' category.id %}"
+                            class="delete-btn"
+                            data-status="{{ category.status }}">
+                            <i class="fa-solid fa-trash"></i>
+                        </a>
+                    </div>
                 </td>
             </tr>
             {% empty %}

@@ -54,7 +54,84 @@ class ProductForm(forms.ModelForm):
             'description'
         ]
 
+        widgets = {
+
+            'product_name': forms.TextInput(
+                attrs={
+                    'placeholder': 'Enter product name'
+                }
+            ),
+
+            'description': forms.Textarea(
+                attrs={
+                    'rows': 5,
+                    'placeholder': 'Enter product description'
+                }
+            )
+
+        }
+
+    def clean_product_name(self):
+
+        product_name = self.cleaned_data["product_name"]
+
+        existing_product = Product.objects.filter(
+            product_name__iexact=product_name
+        ).exclude(
+            id=self.instance.id
+        )
+
+        if existing_product.exists():
+
+            raise forms.ValidationError(
+                "Product already exists."
+            )
+
+        return product_name 
+
 class ProductVariantForm(forms.ModelForm):
     class Meta:
         model = ProductVariant
         fields = ['size', 'price', 'stock']
+
+    def clean_size(self):
+
+        size = self.cleaned_data['size']
+
+        if size <= 0:
+
+            raise forms.ValidationError(
+                "Size must be greater than 0 ml."
+            )
+
+        if size > 1000:
+
+            raise forms.ValidationError(
+                "Size cannot exceed 1000 ml."
+            )
+
+        return size
+
+    def clean_price(self):
+
+        price = self.cleaned_data['price']
+
+        if price <= 0:
+
+            raise forms.ValidationError(
+                "Price must be greater than 0."
+            )
+
+        return price
+
+    def clean_stock(self):
+
+        stock = self.cleaned_data['stock']
+
+        if stock < 0:
+
+            raise forms.ValidationError(
+                "Stock cannot be negative."
+            )
+
+        return stock

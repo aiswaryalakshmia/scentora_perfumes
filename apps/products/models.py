@@ -76,9 +76,8 @@ class ProductVariant(models.Model):
         related_name='variants'
     )
 
-    size = models.CharField(
-        max_length=20
-    )
+    size = models.PositiveIntegerField()     
+    
 
     price = models.DecimalField(
         max_digits=10,

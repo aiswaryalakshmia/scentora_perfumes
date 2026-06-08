@@ -412,4 +412,27 @@ def delete_variant(request, variant_id):
     return redirect('edit_product', product_id=product_id)
 
 def shop(request):
-    return render(request,'user/shop_page.html')
+
+    variants = ProductVariant.objects.filter(
+        status = 'active',
+        product__status = 'active',
+        product__category__status = 'active'
+
+    )
+
+    selected_categories = request.GET.getlist('category')
+
+    if selected_categories:
+        variants = variants.filter(
+            product__category__category_name__in=selected_categories
+        )
+
+    categories = Category.objects.filter(
+        status='active'
+    )
+    return render(request,'user/shop_page.html',
+                  {
+                      'variants':variants,
+                      'categories':categories,
+                      'selected_categories': selected_categories
+                  })

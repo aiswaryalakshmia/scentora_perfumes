@@ -109,3 +109,67 @@
   padding: 0.7rem 1.5rem;
   cursor: pointer;
 }
+
+.filter-section {
+    margin-bottom: 30px;
+}
+
+.filter-section h4 {
+    margin-bottom: 15px;
+}
+
+/* Category Checkboxes */
+.filter-section label {
+    display: block;
+    margin-bottom: 10px;
+    cursor: pointer;
+    color: #fff;
+    font-size: 16px;
+}
+
+.filter-section input[type="checkbox"],
+.filter-section input[type="radio"] {
+    margin-right: 8px;
+}
+
+/* Apply Button */
+.apply-filter-btn {
+    width: 100%;
+    padding: 12px;
+    margin-top: 20px;
+
+    background: transparent;
+    border: 1px solid #D4AF37;
+
+    color: #D4AF37;
+    cursor: pointer;
+
+    transition: 0.3s;
+}
+
+.apply-filter-btn:hover {
+    background: #D4AF37;
+    color: #000;
+}
+
+/* Clear Filter Link */
+.clear-filters {
+    display: block;
+
+    margin-top: 15px;
+    padding: 12px;
+
+    text-align: center;
+
+    text-decoration: none;
+    color: #D4AF37;
+
+    border: 1px solid #D4AF37;
+
+    transition: 0.3s;
+}
+
+.clear-filters:hover {
+    background: #D4AF37;
+    color: #000;
+}

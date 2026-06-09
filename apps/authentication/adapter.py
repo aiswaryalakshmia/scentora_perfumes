@@ -12,28 +12,29 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
             return
 
         email = email.strip().lower()
-        print("DEBUG pre_social_login email:", email)
 
         try:
             user = User.objects.get(email__iexact=email)
-            # connect Google account to existing user
             sociallogin.connect(request, user)
-            print("DEBUG: connected sociallogin to existing user", user.id)
         except User.DoesNotExist:
-            print("DEBUG: no existing user for", email)
             pass
 
     def save_user(self, request, sociallogin, form=None):
+        email = sociallogin.account.extra_data.get("email", "").strip().lower()
+        
+        original_password = None
+        if email:
+            existing = User.objects.filter(email__iexact=email).first()
+            if existing and existing.has_usable_password():
+                original_password = existing.password  # Save it now
+        
         user = super().save_user(request, sociallogin, form)
-
-        # ensure username = email
+       
+        if original_password:
+            user.password = original_password
+        
         if user.email:
             user.username = user.email
-
-        # preserve existing password if present
-        existing = User.objects.filter(email__iexact=user.email).first()
-        if existing and existing.has_usable_password():
-            user.password = existing.password
 
         user.save()
         return user

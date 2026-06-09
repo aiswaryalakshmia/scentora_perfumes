@@ -91,7 +91,7 @@ Edit Product
                 </button>
             </form>
 
-            <!-- ================= VIEW MODE ================= -->
+            <!-- VIEW MODE -->
             <div class="view-mode" id="view-{{ variant.id }}">
 
                 <p><b>Size:</b> {{ variant.size }}</p>
@@ -123,7 +123,7 @@ Edit Product
 
             </div>
 
-            <!-- ================= EDIT MODE ================= -->
+            <!--  EDIT MODE  -->
             <form method="POST"
                 enctype="multipart/form-data"
                 action="{% url 'update_variant' variant.id %}"

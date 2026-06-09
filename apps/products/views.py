@@ -1,3 +1,5 @@
+import json
+import base64
 from django.shortcuts import render,redirect,get_object_or_404
 from django.contrib import messages
 from django.core.paginator import Paginator
@@ -5,8 +7,6 @@ from django.db.models import Q
 from django.core.files.base import ContentFile
 from .models import Category,Product,ProductVariant,VariantImage
 from .forms import CategoryForm,ProductForm, ProductVariantForm
-import json
-import base64
 
 def category_management(request):
     search_query = request.GET.get('search','').strip()
@@ -36,14 +36,14 @@ def add_category(request):
     # If user submitted form
     if request.method == 'POST':
         form = CategoryForm(request.POST,request.FILES)
-        
+
         if form.is_valid():
             form.save()   # Save the data to database
             messages.success(
                 request,
                 "Category added successfully!"
             )
-           
+
             return redirect('category_management')
 
     # If user just opened page
@@ -116,17 +116,35 @@ def product_management(request):
             Q(category__category_name__icontains=search_query)
         )
 
+    total_products = Product.objects.count()
+
+    active_products = Product.objects.filter(
+        status='active'
+    ).count()
+
+    blocked_products = Product.objects.filter(
+        status='inactive'
+    ).count()
+
+    out_of_stock_products = Product.objects.filter(
+    variants__stock=0
+    ).distinct().count()
+
     paginator = Paginator(product_list, 5)
     page_number = request.GET.get('page')
     products = paginator.get_page(page_number)
 
     return render(request, 'admin/product_management.html', {
         'products': products,
-        'search_query': search_query
+        'search_query': search_query,
+        'total_products': total_products,
+        'active_products': active_products,
+        'blocked_products': blocked_products,
+        'out_of_stock_products': out_of_stock_products,
     })
 
 def add_product(request):
-    
+
     if request.method == "POST":
         form = ProductForm(request.POST)
 
@@ -140,7 +158,7 @@ def add_product(request):
             )
 
             return redirect('add_variant', product_id=product.id)
-        
+
     else:
 
         form = ProductForm()
@@ -348,7 +366,7 @@ def update_variant(request, variant_id):
                         request,
                         error["message"]
                     )
-                    
+
             return redirect(
                 "edit_product",
                 product_id=variant.product.id
@@ -417,9 +435,7 @@ def shop(request):
         status = 'active',
         product__status = 'active',
         product__category__status = 'active'
-
     )
-
     selected_categories = request.GET.getlist('category')
 
     if selected_categories:

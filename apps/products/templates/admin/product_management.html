@@ -24,19 +24,27 @@ Product Management
   <div class="stats-grid">
     <div class="stat-card">
       <h3>Total Products</h3>
-      <p class="stat-value">1,284 <span class="trend">↗ +12%</span></p>
+      <p class="stat-value">{{ total_products }}</p>
     </div>
     <div class="stat-card">
       <h3>Active Listings</h3>
-      <p class="stat-value">1,240 <span class="subtext">96.5%</span></p>
+      <p class="stat-value">{{ active_products }}</p>
     </div>
     <div class="stat-card alert">
-      <h3>Out of Stock</h3>
-      <p class="stat-value">12 <span class="status-tag danger">Action Required</span></p>
+        <h3>Out of Stock</h3>
+        <p class="stat-value">
+            {{ out_of_stock_products }}
+
+            {% if out_of_stock_products %}
+                <span class="status-tag danger">
+                    Action Required
+                </span>
+            {% endif %}
+        </p>
     </div>
     <div class="stat-card">
       <h3>Blocked Products</h3>
-      <p class="stat-value">32 <span class="subtext">Under Review</span></p>
+      <p class="stat-value">{{ blocked_products }}</p>
     </div>
   </div>
 
@@ -82,7 +90,7 @@ Product Management
 
                 <tr>
 
-                    <td>{{ forloop.counter }}</td>                    
+                    <td>{{ products.start_index|add:forloop.counter0 }}</td>                  
 
                     <td>{{ product.product_name }}</td>
 

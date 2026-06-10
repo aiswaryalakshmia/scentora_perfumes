@@ -183,13 +183,46 @@ def add_variant(request, product_id):
 
         if form.is_valid():
 
-            variant = form.save(commit=False)
-            variant.product = product
-            variant.save()
-
             # Get cropped images JSON
             cropped_images = request.POST.get("cropped_images")
 
+            if not cropped_images:
+                messages.error(
+                    request,
+                    "Please upload at least 3 images."
+                )
+                return redirect(
+                    "add_variant",
+                    product_id=product.id
+                )
+
+            try:
+                images = json.loads(cropped_images)
+
+                if len(images) < 3:
+                    messages.error(
+                        request,
+                        "Please upload at least 3 images."
+                    )
+                    return redirect(
+                        "add_variant",
+                        product_id=product.id
+                    )
+
+            except Exception:
+                messages.error(
+                    request,
+                    "Invalid image data."
+                )
+                return redirect(
+                    "add_variant",
+                    product_id=product.id
+                )
+
+            variant = form.save(commit=False)
+            variant.product = product
+            variant.save()
+            
             if cropped_images:
 
                 try:

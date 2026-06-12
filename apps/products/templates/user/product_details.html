@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+{{ variant.product.product_name }}
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'user/product_details.css' %}">
+{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb">
+    <a href="{% url 'home' %}">Home</a> 
+    <span>›</span>
+    <a href="{% url 'shop' %}">Shop</a> 
+    <span>›</span>
+    <a href="{% url 'shop' %}?category={{ variant.product.category.category_name }}">
+        {{ variant.product.category.category_name }}
+    </a>
+    <span>›</span>
+    <span class="current">{{ variant.product.product_name }}</span>
+</nav>
+
+<a href="{% url 'shop' %}" class="back-btn">
+    <i class="fas fa-arrow-left"></i> Back to Shop
+</a>
+
+<div class="product-page">
+  <section class="product-main">
+
+    <div class="product-image">
+      <!-- Main image (first image) -->
+      <img src="{{ variant.images.first.image.url }}" alt="{{ variant.product.product_name }}">
+
+      <!-- Thumbnail row (all images) -->
+      <div class="thumbnail-row">
+        {% for image in variant.images.all %}
+          <img src="{{ image.image.url }}" alt="{{ variant.product.product_name }}">
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="product-details">
+      <h2>{{ variant.product.product_name }}</h2>
+      <p class="tagline">{{ variant.product.description }}</p>
+      <p class="price">₹{{ variant.price }}</p>
+
+      <div class="options">
+
+        <!-- Size selector — links to other variants of same product -->
+        <label>Size:</label>
+        <select onchange="window.location.href=this.value">
+          {% for v in other_variants %}
+            <option value="{% url 'product_details' v.id %}"
+              {% if v.id == variant.id %}selected{% endif %}
+            >
+              {{ v.size }}ml
+            </option>
+          {% endfor %}
+        </select>        
+      </div>
+
+      <!-- Stock info text -->
+      {% if variant.stock > 0 and variant.stock <= 5 %}
+          <p class="stock-low">Only {{ variant.stock }} left in stock!</p>
+      {% endif %}
+
+      <!-- Button -->
+      {% if variant.stock > 0 %}
+          <button class="btn-add">Add to Cart</button>
+      {% else %}
+          <button class="btn-add" disabled>Out of Stock</button>
+      {% endif %}
+
+      <a href="#" class="wishlist">Add to Wishlist
+        <i class="far fa-heart"></i>
+      </a>
+    </div>
+
+  </section>
+
+  <section class="product-description">
+    <h3>About {{ variant.product.product_name }}</h3>
+    <p>{{ variant.product.description }}</p>
+    <p>Category: {{ variant.product.category.category_name }}</p>
+  </section>
+
+  <section class="testimonials">
+    <h3>Customer Reviews</h3>
+
+    <div class="review">
+        <div class="review-header">
+            <h4>Rahul M.</h4>
+            <span class="stars">★★★★★</span>
+        </div>
+        <p>"Absolutely love this fragrance. Lasts the entire day and gets so many compliments!"</p>
+    </div>
+
+    <div class="review">
+        <div class="review-header">
+            <h4>Priya S.</h4>
+            <span class="stars">★★★★☆</span>
+        </div>
+        <p>"Beautiful scent, very elegant. The bottle packaging is also premium quality."</p>
+    </div>
+
+    <div class="review">
+        <div class="review-header">
+            <h4>Arjun K.</h4>
+            <span class="stars">★★★★★</span>
+        </div>
+        <p>"Best perfume I have bought in this price range. Highly recommended!"</p>
+    </div>
+
+</section>
+
+  <section class="related-products">
+    <h3>You May Also Like</h3>
+    <div class="related-grid">
+        {% for related in related_variants %}
+        <a href="{% url 'product_details' related.id %}">
+            <div class="related-item">
+                <img src="{{ related.images.first.image.url }}" alt="{{ related.product.product_name }}">
+                <p>{{ related.product.product_name }}</p>
+                <p>₹{{ related.price }}</p>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+
+</div>
+
+{% endblock %}

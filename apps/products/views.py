@@ -476,6 +476,46 @@ def shop(request):
             product__category__category_name__in=selected_categories
         )
 
+    selected_price = request.GET.get('price')
+
+    if selected_price == 'under_3000':
+        variants = variants.filter(price__lt=3000)
+
+    elif selected_price == '3000_5000':
+        variants = variants.filter(
+            price__gte=3000,
+            price__lte=5000
+        )
+
+    elif selected_price == '5000_8000':
+        variants = variants.filter(
+        price__gte=5000,
+        price__lte=8000
+    )
+
+    elif selected_price == 'above_8000':
+        variants = variants.filter(price__gt=8000)
+
+    search_query = request.GET.get('search','')
+    if search_query:
+        variants = variants.filter(
+            product__product_name__icontains=search_query
+        )
+
+    sort = request.GET.get('sort')
+    if sort == 'price_low':
+        variants = variants.order_by('price')
+    elif sort == 'price_high':
+        variants = variants.order_by('-price')
+    elif sort == 'a_z':
+        variants = variants.order_by('product__product_name')
+    elif sort == 'z_a':
+        variants = variants.order_by('-product__product_name')
+
+    paginator = Paginator(variants, 9)  # 9 products per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     categories = Category.objects.filter(
         status='active'
     )
@@ -483,5 +523,99 @@ def shop(request):
                   {
                       'variants':variants,
                       'categories':categories,
-                      'selected_categories': selected_categories
+                      'selected_categories': selected_categories,
+                      'selected_price': selected_price,
+                      'search_query': search_query,
+                      'sort':sort,
+                      'page_obj': page_obj
                   })
+
+def product_details(request, variant_id):
+    # First check if variant exists
+    try:
+        variant = ProductVariant.objects.get(id=variant_id)
+    except ProductVariant.DoesNotExist:
+        return redirect('shop')
+
+    # Then check if it is active
+    if variant.status != 'active' or variant.product.status != 'active' or variant.product.category.status != 'active':
+        return redirect('shop')
+
+    other_variants = ProductVariant.objects.filter(
+        product=variant.product,
+        status='active',
+        product__status='active',
+        product__category__status='active'
+    )
+
+    related_variants = ProductVariant.objects.filter(
+        product__category = variant.product.category,
+        product__category__status='active',
+        product__status = 'active',
+        status = 'active'
+    ).exclude(product=variant.product)[:4]
+
+    return render(request, 'user/product_details.html', {
+        'variant': variant,
+        'other_variants': other_variants,
+        'related_variants': related_variants
+    })
+
+def collections(request):
+    categories = Category.objects.filter(status='active')
+    return render(request,'user/collections.html',{
+        'categories':categories
+    })
+
+def collection_details(request,category_id):
+
+    try:
+        category = Category.objects.get(id=category_id, status='active')
+    except Category.DoesNotExist:
+        return redirect('collections')
+
+    variants = ProductVariant.objects.filter(
+        product__category = category,
+        product__status = 'active',
+        product__category__status = 'active',
+        status = 'active'
+    )
+
+    search_query = request.GET.get('search', '')
+    selected_price = request.GET.get('price', '')
+    sort = request.GET.get('sort', '')
+
+    # Search
+    if search_query:
+        variants = variants.filter(product__product_name__icontains=search_query)
+
+    # Price filter
+    if selected_price == 'under_3000':
+        variants = variants.filter(price__lt=3000)
+    elif selected_price == '3000_5000':
+        variants = variants.filter(price__gte=3000, price__lte=5000)
+    elif selected_price == '5000_8000':
+        variants = variants.filter(price__gte=5000, price__lte=8000)
+    elif selected_price == 'above_8000':
+        variants = variants.filter(price__gt=8000)
+
+    # Sort
+    if sort == 'price_low':
+        variants = variants.order_by('price')
+    elif sort == 'price_high':
+        variants = variants.order_by('-price')
+    elif sort == 'a_z':
+        variants = variants.order_by('product__product_name')
+    elif sort == 'z_a':
+        variants = variants.order_by('-product__product_name')
+
+    return render(request, 'user/collection_details.html', {
+        'category': category,
+        'variants': variants,
+        'search_query': search_query,
+        'selected_price': selected_price,
+        'sort': sort
+    })
+    
+
+

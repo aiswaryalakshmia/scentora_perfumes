@@ -15,6 +15,24 @@ Shop
     <form method="GET">
       <h3>Filters</h3>
       <div class="filter-section">
+        <div class="search-bar">          
+          <input
+              type="text"
+              name="search"
+              value="{{ search_query }}"
+              placeholder="Search products..."
+          >          
+          <button type="submit" class="search-btn">
+            <i class="fas fa-search"></i>
+          </button>
+        
+          <a class="search-btn clear-search" href="?{% for cat in selected_categories %}category={{ cat }}&{% endfor %}{% if selected_price %}price={{ selected_price }}{% endif %}">
+            <i class="fa-solid fa-xmark"></i>
+          </a>
+          
+        </div>
+      </div>
+      <div class="filter-section">
         <h4>Category</h4>
 
         {% for category in categories %}
@@ -40,25 +58,44 @@ Shop
         <h4>Price</h4>
 
         <label>
-            <input type="radio" name="price" value="under_3000">
+            <input
+                type="radio"
+                name="price"
+                value="under_3000"
+                {% if selected_price == 'under_3000' %}checked{% endif %}
+            >
             Under ₹3000
         </label>
 
         <label>
-            <input type="radio" name="price" value="3000_5000">
+            <input
+                type="radio"
+                name="price"
+                value="3000_5000"
+                {% if selected_price == '3000_5000' %}checked{% endif %}
+            >
             ₹3000 - ₹5000
         </label>
 
         <label>
-            <input type="radio" name="price" value="5000_8000">
+            <input
+                type="radio"
+                name="price"
+                value="5000_8000"
+                {% if selected_price == '5000_8000' %}checked{% endif %}
+            >
             ₹5000 - ₹8000
         </label>
 
         <label>
-            <input type="radio" name="price" value="above_8000">
+            <input
+                type="radio"
+                name="price"
+                value="above_8000"
+                {% if selected_price == 'above_8000' %}checked{% endif %}
+            >
             Above ₹8000
         </label>
-
       </div>
 
       <div class="filter-section">
@@ -68,7 +105,18 @@ Shop
         </div>
       </div>
 
-      <a href="{% url 'shop' %}" class="clear-filters">
+      <div class="filter-section">
+        <h4>Sort By</h4>
+        <select name="sort">
+            <option value="">Default</option>
+            <option value="price_low"  {% if sort == 'price_low'  %}selected{% endif %}>Price: Low to High</option>
+            <option value="price_high" {% if sort == 'price_high' %}selected{% endif %}>Price: High to Low</option>
+            <option value="a_z"        {% if sort == 'a_z'        %}selected{% endif %}>A - Z</option>
+            <option value="z_a"        {% if sort == 'z_a'        %}selected{% endif %}>Z - A</option>
+        </select>
+      </div>
+
+      <a href="{% url 'shop' %}{% if search_query %}?search={{ search_query }}{% endif %}" class="clear-filters">
         Clear Filters
       </a>
       <button
@@ -81,59 +129,53 @@ Shop
 
   <section class="products">
     <div class="product-grid">
-      {% for variant in variants %}
-        <div class="product-card shop-item">
-          <img
-            src="{{ variant.images.first.image.url }}"
-            alt="{{ variant.product.product_name }}"
-          >
-          <h3>{{ variant.product.product_name }}</h3>            
-          
-          <p>{{ variant.size }}ml</p>
-          
-          <span>₹{{ variant.price }}</span>        
-        </div>
-      {% endfor %}
+      {% if variants %}
+        {% for variant in variants %} 
+        <a href="{% url 'product_details' variant.id %}">     
+          <div class="product-card shop-item">
+            <img
+              src="{{ variant.images.first.image.url }}"
+              alt="{{ variant.product.product_name }}"
+            >
+            <h3>{{ variant.product.product_name }}</h3>            
+            
+            <p>{{ variant.size }}ml</p>
+            
+            <span>₹{{ variant.price }}</span>        
+          </div> 
+          </a>    
+        {% endfor %}      
+      {% else %}
+          <p>No matching products</p>
+      {% endif %}
+    </div> 
+    <!-- PAGINATION -->
+   {% if page_obj.paginator.num_pages > 1 %}
+<div class="pagination">
+    <span class="pagination-info">
+        Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} products
+    </span>
+
+    <div class="pagination-controls">
+        {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}&{% for cat in selected_categories %}category={{ cat }}&{% endfor %}{% if selected_price %}price={{ selected_price }}&{% endif %}{% if search_query %}search={{ search_query }}&{% endif %}{% if sort %}sort={{ sort }}{% endif %}">‹</a>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+                <span class="current-page">{{ num }}</span>
+            {% else %}
+                <a href="?page={{ num }}&{% for cat in selected_categories %}category={{ cat }}&{% endfor %}{% if selected_price %}price={{ selected_price }}&{% endif %}{% if search_query %}search={{ search_query }}&{% endif %}{% if sort %}sort={{ sort }}{% endif %}">{{ num }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}&{% for cat in selected_categories %}category={{ cat }}&{% endfor %}{% if selected_price %}price={{ selected_price }}&{% endif %}{% if search_query %}search={{ search_query }}&{% endif %}{% if sort %}sort={{ sort }}{% endif %}">›</a>
+        {% endif %}
     </div>
-
-    <button class="load-more" id="loadMoreBtn">Load More</button>
-  </section>
 </div>
-<script>
-document.addEventListener("DOMContentLoaded", function () {
+{% endif %}  
+  </section>
 
-    const products = document.querySelectorAll(".shop-item");
-    const button = document.getElementById("loadMoreBtn");
-
-    let visibleCount = 9;
-
-    products.forEach((product, index) => {
-        if (index >= visibleCount) {
-            product.style.display = "none";
-        }
-    });
-
-    if (products.length <= 9) {
-        button.style.display = "none";
-    }
-
-    button.addEventListener("click", function () {
-
-        visibleCount += 9;
-
-        products.forEach((product, index) => {
-            if (index < visibleCount) {
-                product.style.display = "";
-            }
-        });
-
-        if (visibleCount >= products.length) {
-            button.style.display = "none";
-        }
-
-    });
-
-});
-
-</script>
+</div>
 {% endblock %}

@@ -15,5 +15,8 @@ urlpatterns = [
     path('admin-panel/variant/<int:variant_id>/update/', views.update_variant, name='update_variant'),
     path('admin-panel/variant/<int:variant_id>/delete/', views.delete_variant, name='delete_variant'),
     path('admin-panel/variant-image/<int:image_id>/delete/',views.delete_variant_image,name="delete_variant_image"),
-    path('shop/', views.shop, name='shop')
+    path('shop/', views.shop, name='shop'),
+    path('shop/product_details/<int:variant_id>/', views.product_details, name='product_details'),
+    path('collections/' ,views.collections, name='collections'),
+    path('collections/<int:category_id>/', views.collection_details, name='collection_details'),
 ]

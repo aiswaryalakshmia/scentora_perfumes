@@ -1,0 +1,104 @@
+.collections-page {
+  color: #d4af37;
+  font-family: 'Poppins', sans-serif;
+  padding: 2rem;
+}
+
+.collections-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.collections-header h2 {
+  color: #b8962e;
+  font-size: 2.5rem;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+}
+
+.collections-header .subtitle {
+  color: #888;
+  font-style: italic;
+  font-size: 0.9rem;
+  letter-spacing: 2px;
+}
+
+.collections-page .collections-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  padding: 0 2rem;
+  margin-bottom: 3rem;
+}
+
+.collections-page .collection-card {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.collections-page .collection-card:hover {
+  transform: scale(1.05);
+}
+
+.collections-page .collection-card img {
+  width: 100%;
+  height: 450px;
+  object-fit: cover;
+  display: block;
+}
+
+.collections-page .collection-info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  padding: 1.5rem;
+  background: linear-gradient(transparent, rgba(0,0,0,0.7));
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.collections-page .collection-info h3 {
+  color: #b8962e;
+  font-size: 1.2rem;
+  margin: 0 0 0.3rem 0;
+}
+
+.collections-page .collection-info p {
+  color: #ccc;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.notes-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  margin-top: 3rem;
+}
+
+.note {
+  border-left: 2px solid #d4af37;
+  padding-left: 1rem;
+}
+
+.note h4 {
+  color: #d4af37;
+  margin-bottom: 0.5rem;
+}
+
+.note p {
+  color: #ccc;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 768px) {
+  .collections-page .collections-grid {
+    grid-template-columns: 1fr;
+  }
+  .notes-section {
+    grid-template-columns: 1fr;
+  }
+}

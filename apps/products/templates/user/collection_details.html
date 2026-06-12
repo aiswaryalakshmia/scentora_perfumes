@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+{{ category.category_name }}
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'user/collection_details.css' %}">
+<link rel="stylesheet" href="{% static 'user/shop_page.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="collection-detail-page">
+
+  <!-- Breadcrumb -->
+  <nav class="breadcrumb">
+    <a href="{% url 'home' %}">Home</a>
+    <span>›</span>
+    <a href="{% url 'collections' %}">Collections</a>
+    <span>›</span>
+    <span class="current">{{ category.category_name }}</span>
+  </nav>
+
+  <section class="collection-header">
+    <h2>{{ category.category_name }}</h2>
+    <p class="subtitle">{{ category.description }}</p>
+  </section>
+
+  <section class="collection-content">
+
+    <aside class="filters">
+      <form method="GET">
+        <h3>Filters</h3>
+
+        <div class="filter-section">
+          <div class="search-bar">
+            <input
+              type="text"
+              name="search"
+              value="{{ search_query }}"
+              placeholder="Search products..."
+            >
+            <button type="submit" class="search-btn">
+              <i class="fas fa-search"></i>
+            </button>
+            <a class="search-btn clear-search" href="?{% if selected_price %}price={{ selected_price }}{% endif %}">
+              <i class="fa-solid fa-xmark"></i>
+            </a>
+          </div>
+        </div>
+
+        <div class="filter-section">
+          <h4>Price</h4>
+          <label>
+            <input type="radio" name="price" value="under_3000"
+              {% if selected_price == 'under_3000' %}checked{% endif %}>
+            Under ₹3000
+          </label>
+          <label>
+            <input type="radio" name="price" value="3000_5000"
+              {% if selected_price == '3000_5000' %}checked{% endif %}>
+            ₹3000 - ₹5000
+          </label>
+          <label>
+            <input type="radio" name="price" value="5000_8000"
+              {% if selected_price == '5000_8000' %}checked{% endif %}>
+            ₹5000 - ₹8000
+          </label>
+          <label>
+            <input type="radio" name="price" value="above_8000"
+              {% if selected_price == 'above_8000' %}checked{% endif %}>
+            Above ₹8000
+          </label>
+        </div>
+
+        <div class="filter-section">
+          <h4>Ratings</h4>
+          <div class="stars">
+            <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
+          </div>
+        </div>
+
+        <div class="filter-section">
+          <h4>Sort By</h4>
+          <select name="sort">
+            <option value="">Default</option>
+            <option value="price_low"  {% if sort == 'price_low'  %}selected{% endif %}>Price: Low to High</option>
+            <option value="price_high" {% if sort == 'price_high' %}selected{% endif %}>Price: High to Low</option>
+            <option value="a_z"        {% if sort == 'a_z'        %}selected{% endif %}>A - Z</option>
+            <option value="z_a"        {% if sort == 'z_a'        %}selected{% endif %}>Z - A</option>
+          </select>
+        </div>
+
+        <a href="{% url 'collection_details' category.id %}" class="clear-filters">
+          Clear Filters
+        </a>
+        <button type="submit" class="apply-filter-btn">Apply Filters</button>
+
+      </form>
+    </aside>
+
+    <div class="product-grid">
+      {% if variants %}
+        {% for variant in variants %}
+        <a href="{% url 'product_details' variant.id %}">
+          <div class="product-card">
+            <img src="{{ variant.images.first.image.url }}" alt="{{ variant.product.product_name }}">
+            <h3>{{ variant.product.product_name }}</h3>
+            <p>{{ variant.size }}ml</p>
+            <p class="price">₹{{ variant.price }}</p>
+          </div>
+        </a>
+        {% endfor %}
+      {% else %}
+        <p>No products in this collection yet.</p>
+      {% endif %}
+    </div>
+
+  </section>
+
+</div>
+
+{% endblock %}

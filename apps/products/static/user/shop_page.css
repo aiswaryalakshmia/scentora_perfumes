@@ -72,7 +72,8 @@
 
 .product-card img {
   width: 100%;
-  height: auto;
+  height: 280px;
+  object-fit: cover;
   margin-bottom: 1rem;
 }
 
@@ -366,4 +367,49 @@ input[type="radio"]:checked::after {
     font-size: 14px;
     font-weight: bold;
     border-bottom: 2px solid #b8962e;
+}
+
+.btn-add-cart {
+  background-color: #d4af37;
+  color: #000;
+  border: none;
+  padding: 0.6rem;
+  width: 100%;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  font-family: 'Poppins', sans-serif;
+}
+
+.btn-add-cart:hover {
+  background-color: #b8962e;
+}
+
+.product-card form {
+  margin: 0;
+  padding: 0;
+}
+
+.card-image {
+  position: relative;
+}
+
+.wishlist-heart {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: rgba(0, 0, 0, 0.5);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.wishlist-heart:hover {
+  background: rgba(0, 0, 0, 0.8);
 }

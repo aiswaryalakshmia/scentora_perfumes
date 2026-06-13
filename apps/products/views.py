@@ -1,13 +1,13 @@
 import json
 import base64
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render,redirect,get_object_or_404
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.core.files.base import ContentFile
-from .models import Category,Product,ProductVariant,VariantImage,Cart,CartItem
+from .models import Category,Product,ProductVariant,VariantImage,Cart,CartItem,Wishlist
 from .forms import CategoryForm,ProductForm, ProductVariantForm
-from django.contrib.auth.decorators import login_required
 
 def category_management(request):
     search_query = request.GET.get('search','').strip()
@@ -416,6 +416,18 @@ def update_variant(request, variant_id):
         product_id=variant.product.id
     )
 
+def toggle_variant_status(request, variant_id):
+    variant = get_object_or_404(ProductVariant, id=variant_id)
+
+    if variant.status == 'active':
+        variant.status = 'inactive'
+    else:
+        variant.status = 'active'
+
+    variant.save()
+
+    return redirect('edit_product', product_id=variant.product.id)
+
 def delete_variant_image(request, image_id):
 
     image = get_object_or_404(
@@ -469,7 +481,7 @@ def shop(request):
         status = 'active',
         product__status = 'active',
         product__category__status = 'active'
-    )
+    ).order_by('-created_at')
     selected_categories = request.GET.getlist('category')
 
     if selected_categories:
@@ -520,6 +532,15 @@ def shop(request):
     categories = Category.objects.filter(
         status='active'
     )
+
+    # get all wishlisted variant ids for this user
+    if request.user.is_authenticated:
+        wishlisted_ids = list(Wishlist.objects.filter(
+            user=request.user
+        ).values_list('product_variant_id', flat=True))
+    else:
+        wishlisted_ids = []
+
     return render(request,'user/shop_page.html',
                   {
                       'variants':variants,
@@ -528,7 +549,8 @@ def shop(request):
                       'selected_price': selected_price,
                       'search_query': search_query,
                       'sort':sort,
-                      'page_obj': page_obj
+                      'page_obj': page_obj,
+                      'wishlisted_ids': wishlisted_ids,
                   })
 
 def product_details(request, variant_id):
@@ -610,12 +632,20 @@ def collection_details(request,category_id):
     elif sort == 'z_a':
         variants = variants.order_by('-product__product_name')
 
+    if request.user.is_authenticated:
+        wishlisted_ids = list(Wishlist.objects.filter(
+            user=request.user
+        ).values_list('product_variant_id', flat=True))
+    else:
+        wishlisted_ids = []
+
     return render(request, 'user/collection_details.html', {
         'category': category,
         'variants': variants,
         'search_query': search_query,
         'selected_price': selected_price,
-        'sort': sort
+        'sort': sort,
+        'wishlisted_ids': wishlisted_ids,
     })
 
 @login_required
@@ -642,7 +672,26 @@ def add_to_cart(request, variant_id):
     if request.method == 'POST':
 
         # get the variant from DB        
-        variant = get_object_or_404(ProductVariant, id=variant_id, status='active')
+        variant = get_object_or_404(ProductVariant, id=variant_id)
+
+        # if not in stock or inactive redirect to product detail page
+        if variant.stock == 0 or variant.status == 'inactive':
+            if variant.status == 'inactive':
+                messages.error(request, "Currently unavailabe!")
+            next_page = request.POST.get('next', '')
+            if next_page == 'product_details':
+                return redirect('product_details', variant.id)
+            
+            elif next_page == 'shop':                                 
+                return redirect('shop')
+            
+            elif next_page == 'wishlist':                 
+                return redirect('wishlist')
+            
+            elif next_page == 'collection_details':                 
+                return redirect('collection_details',variant.product.category.id)
+        
+
 
         # get the cart for this user
         try:
@@ -680,7 +729,23 @@ def add_to_cart(request, variant_id):
                 total_price=variant.price
             )
 
-        messages.success(request, f"{variant.product.product_name} added to cart!")        
+        # remove from wishlist if it exists
+        Wishlist.objects.filter(user=request.user, product_variant=variant).delete()
+
+        messages.success(request, f"{variant.product.product_name} added to cart!")
+
+        # redirect based on where request came from
+        next_page = request.POST.get('next', '')
+        if next_page == 'shop':
+            return redirect('shop')
+
+        elif next_page == 'collection_details':
+            return redirect('collection_details', variant.product.category.id)
+
+        # if request came from wishlist page, redirect back to wishlist
+        elif next_page == 'wishlist':
+            return redirect('wishlist')
+
         return redirect('product_details', variant.id)
 
 @login_required
@@ -737,3 +802,59 @@ def update_cart(request, item_id):
 
         # redirect back to cart page
         return redirect('cart')
+
+@login_required
+def wishlist(request):
+
+    # get all wishlist items for this user
+    wishlist_items = Wishlist.objects.filter(
+        user=request.user,
+        product_variant__status='active',
+        product_variant__product__status='active',
+        product_variant__product__category__status='active')
+
+    return render(request, 'user/wishlist.html', {
+        'wishlist_items': wishlist_items
+    })
+
+@login_required
+def add_to_wishlist(request, variant_id):
+    if request.method == 'POST':
+
+        # get the variant from DB
+        variant = get_object_or_404(ProductVariant, id=variant_id, status='active')
+
+        # check if already in wishlist
+        already_exists = Wishlist.objects.filter(user=request.user, product_variant=variant).exists()
+
+        if already_exists:
+            messages.error(request, "Already in your wishlist!")
+        else:
+            # add to wishlist
+            Wishlist.objects.create(
+                user=request.user,
+                product_variant=variant
+            )
+            messages.success(request, f"{variant.product.product_name} added to wishlist!")
+
+        # redirect based on where request came from
+        next_page = request.POST.get('next', '')
+        if next_page == 'shop':
+            return redirect('shop')
+        elif next_page == 'collection_details':
+            return redirect('collection_details', variant.product.category.id)
+       
+        return redirect('product_details', variant.id)
+
+@login_required
+def remove_from_wishlist(request, variant_id):
+    if request.method == 'POST':
+
+        # get the variant from DB
+        variant = get_object_or_404(ProductVariant, id=variant_id, status='active')
+
+        # delete the wishlist item
+        Wishlist.objects.filter(user=request.user, product_variant=variant).delete()
+        messages.success(request, "Removed from wishlist!")
+        
+        return redirect('wishlist')

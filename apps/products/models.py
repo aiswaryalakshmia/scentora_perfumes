@@ -148,3 +148,14 @@ class CartItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity}x {self.product_variant} in {self.cart}"
+    
+class Wishlist(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='wishlist')
+    product_variant = models.ForeignKey(ProductVariant, on_delete=models.CASCADE, related_name='wishlisted_by')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'product_variant')
+
+    def __str__(self):
+        return f"{self.user.full_name} - {self.product_variant.product.product_name}"

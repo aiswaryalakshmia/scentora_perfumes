@@ -96,10 +96,22 @@
 }
 
 .wishlist {
-  display: inline-block;
+  display: block;
+  text-align: center;
   margin-top: 0.5rem;
   color: #d4af37;
-  text-decoration: underline;
+  text-decoration: none;
+  letter-spacing: 2px;
+  background: none;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  width: 100%;
+  font-family: 'Poppins', sans-serif;
+}
+
+.wishlist:hover {
+  color: #b8962e;
 }
 
 .product-description {
@@ -146,7 +158,6 @@
     color: #b8962e;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
   .product-main {
     flex-direction: column;
@@ -173,15 +184,6 @@
 .options select option {
     background-color: #1a1a1a;
     color: #fff;
-}
-
-.wishlist {
-  display: block;          
-  text-align: center;       
-  margin-top: 0.5rem;
-  color: #888;             
-  text-decoration: none;    
-  letter-spacing: 2px;      
 }
 
 .breadcrumb {

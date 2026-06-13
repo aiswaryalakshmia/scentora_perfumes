@@ -115,11 +115,29 @@ Edit Product
 
                 </div>
 
+                <p>
+                    <b>Status:</b>
+                    {% if variant.status == 'active' %}
+                        <span style="color: green;">Active</span>
+                    {% else %}
+                        <span style="color: red;">Inactive</span>
+                    {% endif %}
+                </p>
+
                 <button type="button"
                         onclick="enableEdit('{{ variant.id }}')"
                         class="edit-btn">
                     Edit
                 </button>
+
+                <form method="POST" action="{% url 'toggle_variant_status' variant.id %}" id="toggle-form-{{ variant.id }}">
+                    {% csrf_token %}
+                    {% if variant.status == 'active' %}
+                        <button type="button" class="edit-btn block-btn" onclick="confirmToggle('{{ variant.id }}', 'block')">Block</button>
+                    {% else %}
+                        <button type="button" class="edit-btn unblock-btn" onclick="confirmToggle('{{ variant.id }}', 'unblock')">Unblock</button>
+                    {% endif %}
+                </form>
 
             </div>
 
@@ -278,6 +296,23 @@ Edit Product
             }
         });
     }
+</script>
+
+<script>
+    function confirmToggle(id, action) {
+    Swal.fire({
+        title: action === 'block' ? 'Block Variant?' : 'Unblock Variant?',
+        text: action === 'block' ? 'This variant will not be visible to users.' : 'This variant will be visible to users again.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: action === 'block' ? 'Yes, Block' : 'Yes, Unblock',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            document.getElementById(`toggle-form-${id}`).submit();
+        }
+    });
+}
 </script>
 
 {% endblock %}

@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+My Wishlist
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'user/wishlist.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="wishlist-page">
+
+  <section class="wishlist-header">
+    <h2>My Wishlist</h2>
+    <p class="subtitle">A curated selection of your most desired sensory journeys.</p>
+  </section>
+
+  <div class="wishlist-grid">
+    {% if wishlist_items %}
+      {% for item in wishlist_items %}
+      <div class="wishlist-card">
+
+        <div class="card-image">
+          <img src="{{ item.product_variant.images.first.image.url }}" alt="{{ item.product_variant.product.product_name }}">
+          <i class="fas fa-heart heart-icon"></i>
+        </div>
+
+        <div class="card-details">
+          <h3>{{ item.product_variant.product.product_name }}</h3>
+          <p class="variant-info">{{ item.product_variant.product.category.category_name }} · {{ item.product_variant.size }}ml</p>
+          <p class="price">₹{{ item.product_variant.price }}</p>
+        </div>
+                
+        {% if item.product_variant.stock > 0 %}
+          <form method="POST" action="{% url 'add_to_cart' item.product_variant.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="wishlist">
+            <button type="submit" class="btn-add-cart">Add to Cart</button>
+          </form>
+        {% else %}
+          <button class="btn-add-cart" disabled>Out of Stock</button>
+        {% endif %}
+
+        <form method="POST" action="{% url 'remove_from_wishlist' item.product_variant.id %}">
+          {% csrf_token %}
+          <button type="submit" class="btn-remove">Remove from List</button>
+        </form>
+
+      </div>
+      {% endfor %}
+    {% else %}
+      <p class="empty-wishlist">Your wishlist is empty.</p>
+    {% endif %}
+  </div>
+
+</div>
+
+{% endblock %}

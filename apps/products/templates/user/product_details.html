@@ -70,15 +70,19 @@
       {% if variant.stock > 0 %}
           <form method="POST" action="{% url 'add_to_cart' variant.id %}">
               {% csrf_token %}
+              <input type="hidden" name="next" value="product_details">
               <button type="submit" class="btn-add">Add to Cart</button>
           </form>
       {% else %}
           <button class="btn-add" disabled>Out of Stock</button>
       {% endif %}
 
-      <a href="#" class="wishlist">Add to Wishlist
-        <i class="far fa-heart"></i>
-      </a>
+      <form method="POST" action="{% url 'add_to_wishlist' variant.id %}">
+        {% csrf_token %}
+        <button type="submit" class="wishlist">
+            Add to Wishlist <i class="far fa-heart"></i>
+        </button>
+    </form>
     </div>
 
   </section>

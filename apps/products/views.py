@@ -5,8 +5,9 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.core.files.base import ContentFile
-from .models import Category,Product,ProductVariant,VariantImage
+from .models import Category,Product,ProductVariant,VariantImage,Cart,CartItem
 from .forms import CategoryForm,ProductForm, ProductVariantForm
+from django.contrib.auth.decorators import login_required
 
 def category_management(request):
     search_query = request.GET.get('search','').strip()
@@ -616,6 +617,123 @@ def collection_details(request,category_id):
         'selected_price': selected_price,
         'sort': sort
     })
-    
 
+@login_required
+def cart(request):
+    # get the cart for this user
+    try:
+        cart = Cart.objects.get(user=request.user)
+    except Cart.DoesNotExist:
+        cart = Cart.objects.create(user=request.user)
 
+    # get all items in that cart
+    items = CartItem.objects.filter(cart=cart)
+
+    subtotal = sum(item.total_price for item in items)
+
+    return render(request, 'user/cart_page.html', {
+        'cart': cart,
+        'items': items,
+        'subtotal': subtotal
+    })
+
+@login_required
+def add_to_cart(request, variant_id):
+    if request.method == 'POST':
+
+        # get the variant from DB        
+        variant = get_object_or_404(ProductVariant, id=variant_id, status='active')
+
+        # get the cart for this user
+        try:
+            cart = Cart.objects.get(user=request.user)
+        except Cart.DoesNotExist:
+            cart = Cart.objects.create(user=request.user)
+
+        # check if this variant is already in the cart
+        try:
+            item = CartItem.objects.get(cart=cart, product_variant=variant)
+
+            # item already exists
+            # check max quantity limit
+            if item.quantity >= 5:
+                messages.error(request, "Maximum 5 items allowed per product!")
+                return redirect('product_details', variant.id)
+
+            # check stock availability
+            if item.quantity + 1 > variant.stock:
+                messages.error(request, "Not enough stock available!")
+                return redirect('product_details', variant.id)
+
+            # all good - increase quantity by 1
+            item.quantity = item.quantity + 1
+            item.total_price = variant.price * item.quantity
+            item.save()
+
+        except CartItem.DoesNotExist:
+
+            # item not in cart yet, create a new cart item
+            item = CartItem.objects.create(
+                cart=cart,
+                product_variant=variant,
+                quantity=1,
+                total_price=variant.price
+            )
+
+        messages.success(request, f"{variant.product.product_name} added to cart!")        
+        return redirect('product_details', variant.id)
+
+@login_required
+def remove_from_cart(request, item_id):
+    if request.method == 'POST':
+
+        # get the cart item
+        # if not found, return 404
+        try:
+            item = CartItem.objects.get(id=item_id, cart__user=request.user)
+        except CartItem.DoesNotExist:
+            messages.error(request, "Item not found in cart!")
+            return redirect('cart')
+
+        item.delete()
+
+        messages.success(request, "Item removed from cart!")
+
+        return redirect('cart')
+
+@login_required
+def update_cart(request, item_id):
+    if request.method == 'POST':
+
+        # get the cart item
+        try:
+            item = CartItem.objects.get(id=item_id, cart__user=request.user)
+        except CartItem.DoesNotExist:
+            messages.error(request, "Item not found in cart!")
+            return redirect('cart')
+
+        # get the quantity from the form
+        quantity = int(request.POST.get('quantity'))
+
+        if quantity > 5:
+            messages.error(request, "Maximum 5 items allowed per product!")
+            return redirect('cart')
+
+        # if quantity is 0 or less, remove the item
+        if quantity < 1:
+            item.delete()
+            messages.success(request, "Item removed from cart!")
+            return redirect('cart')
+
+        # check if requested quantity is available in stock
+        if quantity > item.product_variant.stock:
+            messages.error(request, "Not enough stock!")
+            return redirect('cart')
+
+        # pdate quantity and total price
+        item.quantity = quantity
+        item.total_price = item.product_variant.price * quantity
+        item.save()
+
+        # redirect back to cart page
+        return redirect('cart')

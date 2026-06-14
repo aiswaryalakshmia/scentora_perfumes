@@ -657,7 +657,7 @@ def cart(request):
         cart = Cart.objects.create(user=request.user)
 
     # get all items in that cart
-    items = CartItem.objects.filter(cart=cart)
+    items = CartItem.objects.filter(cart=cart).order_by('id')
 
     subtotal = sum(item.total_price for item in items)
 
@@ -690,9 +690,7 @@ def add_to_cart(request, variant_id):
             
             elif next_page == 'collection_details':                 
                 return redirect('collection_details',variant.product.category.id)
-        
-
-
+              
         # get the cart for this user
         try:
             cart = Cart.objects.get(user=request.user)
@@ -822,7 +820,20 @@ def add_to_wishlist(request, variant_id):
     if request.method == 'POST':
 
         # get the variant from DB
-        variant = get_object_or_404(ProductVariant, id=variant_id, status='active')
+        variant = get_object_or_404(ProductVariant, id=variant_id)
+
+        if variant.status == 'inactive':
+            messages.error(request, "Currently unavailabe!")
+            next_page = request.POST.get('next', '')
+            if next_page == 'product_details':
+                return redirect('product_details', variant.id)
+            
+            elif next_page == 'shop':
+                return redirect('shop')
+            
+            elif next_page == 'collection_details':
+                return redirect('collection_details',variant.product.category.id)
+
 
         # check if already in wishlist
         already_exists = Wishlist.objects.filter(user=request.user, product_variant=variant).exists()

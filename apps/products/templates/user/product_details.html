@@ -31,7 +31,9 @@
 
     <div class="product-image">
       <!-- Main image (first image) -->
-      <img src="{{ variant.images.first.image.url }}" alt="{{ variant.product.product_name }}">
+      <div class="zoom-container">
+        <img src="{{ variant.images.first.image.url }}" alt="{{ variant.product.product_name }}" id="main-image">
+      </div>
 
       <!-- Thumbnail row (all images) -->
       <div class="thumbnail-row">
@@ -79,6 +81,7 @@
 
       <form method="POST" action="{% url 'add_to_wishlist' variant.id %}">
         {% csrf_token %}
+        <input type="hidden" name="next" value="product_details">
         <button type="submit" class="wishlist">
             Add to Wishlist <i class="far fa-heart"></i>
         </button>
@@ -136,7 +139,32 @@
         {% endfor %}
     </div>
 </section>
-
 </div>
+<script>
+    document.querySelectorAll('.thumbnail-row img').forEach(function(thumb) {
+        thumb.addEventListener('click', function() {
+            document.querySelector('.product-image > img').src = this.src;
+        });
+    });
+</script>
+<script>
+  // zoom on hover - follow mouse position
+const zoomContainer = document.querySelector('.zoom-container');
+const mainImage = document.getElementById('main-image');
+
+zoomContainer.addEventListener('mousemove', function(e) {
+    const rect = this.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    mainImage.style.transformOrigin = `${x}% ${y}%`;
+});
+
+// thumbnail click - change main image
+document.querySelectorAll('.thumbnail-row img').forEach(function(thumb) {
+    thumb.addEventListener('click', function() {
+        mainImage.src = this.src;
+    });
+});
+</script>
 
 {% endblock %}

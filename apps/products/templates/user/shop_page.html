@@ -148,32 +148,32 @@ Shop
                 {% else %}
                   <i class="far fa-heart" style="color: #fff;"></i>
                 {% endif %}
-      </button>
-    </form>
-  </div>
-  <a href="{% url 'product_details' variant.id %}">
-    <h3>{{ variant.product.product_name }}</h3>            
-    <p>{{ variant.size }}ml</p>
-    <span>₹{{ variant.price }}</span>
-  </a>
-  {% if variant.stock > 0 %}
-  <form method="POST" action="{% url 'add_to_cart' variant.id %}">
-    {% csrf_token %}
-    <input type="hidden" name="next" value="shop">
-    <button type="submit" class="btn-add-cart">Add to Cart</button>
-  </form>
-  {% else %}
-    <button class="btn-add-cart" disabled>Out of Stock</button>
-  {% endif %}
-</div>
-{% endfor %} 
-      {% else %}
-          <p>No matching products</p>
-      {% endif %}
-    </div> 
-    <!-- PAGINATION -->
-   {% if page_obj.paginator.num_pages > 1 %}
-<div class="pagination">
+              </button>
+            </form>
+          </div>
+          <a href="{% url 'product_details' variant.id %}">
+            <h3>{{ variant.product.product_name }}</h3>            
+            <p>{{ variant.size }}ml</p>
+            <span>₹{{ variant.price }}</span>
+          </a>
+          {% if variant.stock > 0 %}
+          <form method="POST" action="{% url 'add_to_cart' variant.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="shop">
+            <button type="submit" class="btn-add-cart">Add to Cart</button>
+          </form>
+          {% else %}
+            <button class="btn-add-cart" disabled>Out of Stock</button>
+          {% endif %}
+        </div>
+        {% endfor %} 
+        {% else %}
+            <p>No matching products</p>
+        {% endif %}
+      </div> 
+      <!-- PAGINATION -->
+    {% if page_obj.paginator.num_pages > 1 %}
+  <div class="pagination">
     <span class="pagination-info">
         Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} products
     </span>

@@ -46,7 +46,19 @@
     <div class="product-details">
       <h2>{{ variant.product.product_name }}</h2>
       <p class="tagline">{{ variant.product.description }}</p>
-      <p class="price">₹{{ variant.price }}</p>
+      {% if variant.discount_price %}
+        <span class="original-price">
+            <s>₹{{ variant.price }}</s>
+        </span>
+
+        <span class="discount-price">
+            ₹{{ variant.effective_price }}
+        </span>
+      {% else %}
+        <span class="price">
+            ₹{{ variant.price }}
+        </span>
+      {% endif %}
 
       <div class="options">
 

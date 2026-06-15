@@ -69,11 +69,14 @@ Category Management
                         <a href="{% url 'edit_category' category.id %}">
                             <i class="fa-solid fa-pen"></i>
                         </a>
-                        <i class="fa-solid fa-eye"></i>
                         <a href="{% url 'toggle_category_status' category.id %}"
                             class="delete-btn"
                             data-status="{{ category.status }}">
-                            <i class="fa-solid fa-trash"></i>
+                            {% if category.status == 'active' %}
+                                <i class="fa-solid fa-ban"></i>
+                            {% else %}
+                                <i class="fa-solid fa-check"></i>
+                            {% endif %}
                         </a>
                     </div>
                 </td>

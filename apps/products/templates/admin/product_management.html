@@ -99,7 +99,7 @@ Product Management
                     <td>{{ product.category.category_name }}</td>                    
 
                     <td>
-                        <span class="status {{ product.status }}">
+                        <span class="status {% if product.status == 'active' %}active{% else %}blocked{% endif %}">
                             {{ product.get_status_display }}
                         </span>
                     </td>

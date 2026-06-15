@@ -7,6 +7,7 @@ Add Category
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'admin/add_category.css' %}">
+<link rel="stylesheet" href="{% static 'admin/product_details.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -29,7 +30,8 @@ Add Category
           
             <form method="POST"
                   enctype="multipart/form-data"
-                  class="category-form">
+                  class="category-form"
+                  novalidate>
 
                 {% csrf_token %}
 

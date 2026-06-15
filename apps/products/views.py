@@ -6,9 +6,11 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.core.files.base import ContentFile
+from apps.common.decorators import admin_required
 from .models import Category,Product,ProductVariant,VariantImage,Cart,CartItem,Wishlist
 from .forms import CategoryForm,ProductForm, ProductVariantForm
 
+@admin_required
 def category_management(request):
     search_query = request.GET.get('search','').strip()
     categories = Category.objects.order_by('-created_at')
@@ -32,6 +34,7 @@ def category_management(request):
         }
     )
 
+@admin_required
 def add_category(request):
 
     # If user submitted form
@@ -53,6 +56,7 @@ def add_category(request):
 
     return render(request, 'admin/add_category.html', {'form': form})
 
+@admin_required
 def edit_category(request,category_id):
     category = get_object_or_404(
         Category,
@@ -80,31 +84,36 @@ def edit_category(request,category_id):
         }
     )
 
+@admin_required
 def toggle_category_status(request, category_id):
-    category=get_object_or_404(
-        Category,
-        id=category_id
-    )
+    category = get_object_or_404(Category, id=category_id)
 
     if category.status == 'active':
         category.status = 'inactive'
 
-        messages.success(
-            request,
-            f'{category.category_name} blocked successfully.'
-        )
+        # block all products under this category
+        Product.objects.filter(category=category).update(status='inactive')
+
+        # block all variants under this category
+        ProductVariant.objects.filter(product__category=category).update(status='inactive')
+
+        messages.success(request, f'{category.category_name} blocked successfully.')
 
     else:
         category.status = 'active'
 
-        messages.success(
-            request,
-            f'{category.category_name} unblocked successfully.'
-        )
-    category.save()
+        # unblock all products under this category
+        Product.objects.filter(category=category).update(status='active')
 
+        # unblock all variants under this category
+        ProductVariant.objects.filter(product__category=category).update(status='active')
+
+        messages.success(request, f'{category.category_name} unblocked successfully.')
+
+    category.save()
     return redirect('category_management')
 
+@admin_required
 def product_management(request):
 
     search_query = request.GET.get('search', '')
@@ -144,6 +153,7 @@ def product_management(request):
         'out_of_stock_products': out_of_stock_products,
     })
 
+@admin_required
 def add_product(request):
 
     if request.method == "POST":
@@ -168,6 +178,7 @@ def add_product(request):
         'form': form
     })
 
+@admin_required
 def add_variant(request, product_id):
 
     product = get_object_or_404(
@@ -292,6 +303,7 @@ def add_variant(request, product_id):
         }
     )
 
+@admin_required
 def edit_product(request, product_id):
 
     product = get_object_or_404(
@@ -340,6 +352,7 @@ def edit_product(request, product_id):
         }
     )
 
+@admin_required
 def update_variant(request, variant_id):
 
     variant = get_object_or_404(
@@ -416,6 +429,7 @@ def update_variant(request, variant_id):
         product_id=variant.product.id
     )
 
+@admin_required
 def toggle_variant_status(request, variant_id):
     variant = get_object_or_404(ProductVariant, id=variant_id)
 
@@ -428,6 +442,7 @@ def toggle_variant_status(request, variant_id):
 
     return redirect('edit_product', product_id=variant.product.id)
 
+@admin_required
 def delete_variant_image(request, image_id):
 
     image = get_object_or_404(
@@ -449,19 +464,23 @@ def delete_variant_image(request, image_id):
         product_id=product_id
     )
 
+@admin_required
 def toggle_product_status(request, product_id):
-
     product = get_object_or_404(Product, id=product_id)
-
+    
     if product.status == "active":
         product.status = "inactive"
+        # block all variants under this product
+        ProductVariant.objects.filter(product=product).update(status='inactive')
     else:
         product.status = "active"
+        # unblock all variants under this product
+        ProductVariant.objects.filter(product=product).update(status='active')
 
     product.save()
-
     return redirect('product_management')
 
+@admin_required
 def delete_variant(request, variant_id):
     variant = get_object_or_404(ProductVariant, id=variant_id)
 
@@ -475,6 +494,7 @@ def delete_variant(request, variant_id):
 
     return redirect('edit_product', product_id=product_id)
 
+@login_required
 def shop(request):
 
     variants = ProductVariant.objects.filter(
@@ -543,7 +563,7 @@ def shop(request):
 
     return render(request,'user/shop_page.html',
                   {
-                      'variants':variants,
+                      'variants':page_obj,
                       'categories':categories,
                       'selected_categories': selected_categories,
                       'selected_price': selected_price,
@@ -553,6 +573,7 @@ def shop(request):
                       'wishlisted_ids': wishlisted_ids,
                   })
 
+@login_required
 def product_details(request, variant_id):
     # First check if variant exists
     try:
@@ -563,14 +584,15 @@ def product_details(request, variant_id):
     # Then check if it is active
     if variant.status != 'active' or variant.product.status != 'active' or variant.product.category.status != 'active':
         return redirect('shop')
-
+    
+    # for size selector dropdown
     other_variants = ProductVariant.objects.filter(
         product=variant.product,
         status='active',
         product__status='active',
         product__category__status='active'
     )
-
+    
     related_variants = ProductVariant.objects.filter(
         product__category = variant.product.category,
         product__category__status='active',
@@ -584,12 +606,14 @@ def product_details(request, variant_id):
         'related_variants': related_variants
     })
 
+@login_required
 def collections(request):
     categories = Category.objects.filter(status='active')
     return render(request,'user/collections.html',{
         'categories':categories
     })
 
+@login_required
 def collection_details(request,category_id):
 
     try:
@@ -659,12 +683,14 @@ def cart(request):
     # get all items in that cart
     items = CartItem.objects.filter(cart=cart).order_by('id')
 
-    subtotal = sum(item.total_price for item in items)
+    total_discount = sum((item.product_variant.discount_price or 0) for item in items)
+    subtotal = sum(item.total_price - (item.product_variant.discount_price or 0) for item in items)
 
     return render(request, 'user/cart_page.html', {
         'cart': cart,
         'items': items,
-        'subtotal': subtotal
+        'subtotal': subtotal,
+        'total_discount': total_discount
     })
 
 @login_required
@@ -675,21 +701,25 @@ def add_to_cart(request, variant_id):
         variant = get_object_or_404(ProductVariant, id=variant_id)
 
         # if not in stock or inactive redirect to product detail page
-        if variant.stock == 0 or variant.status == 'inactive':
-            if variant.status == 'inactive':
+        if variant.stock == 0 or variant.status == 'inactive' or variant.product.status == 'inactive' or variant.product.category.status == 'inactive':
+            if variant.status == 'inactive' or variant.product.status == 'inactive' or variant.product.category.status == 'inactive':
                 messages.error(request, "Currently unavailabe!")
+
             next_page = request.POST.get('next', '')
             if next_page == 'product_details':
                 return redirect('product_details', variant.id)
             
-            elif next_page == 'shop':                                 
+            elif next_page == 'shop':
                 return redirect('shop')
             
-            elif next_page == 'wishlist':                 
+            elif next_page == 'wishlist':
                 return redirect('wishlist')
             
-            elif next_page == 'collection_details':                 
+            elif next_page == 'collection_details':
                 return redirect('collection_details',variant.product.category.id)
+            
+            else:
+                return redirect('shop')
               
         # get the cart for this user
         try:
@@ -712,7 +742,7 @@ def add_to_cart(request, variant_id):
                 messages.error(request, "Not enough stock available!")
                 return redirect('product_details', variant.id)
 
-            # all good - increase quantity by 1
+            # if all good then increase quantity by 1
             item.quantity = item.quantity + 1
             item.total_price = variant.price * item.quantity
             item.save()
@@ -750,8 +780,7 @@ def add_to_cart(request, variant_id):
 def remove_from_cart(request, item_id):
     if request.method == 'POST':
 
-        # get the cart item
-        # if not found, return 404
+        # get the cart item        
         try:
             item = CartItem.objects.get(id=item_id, cart__user=request.user)
         except CartItem.DoesNotExist:
@@ -793,7 +822,7 @@ def update_cart(request, item_id):
             messages.error(request, "Not enough stock!")
             return redirect('cart')
 
-        # pdate quantity and total price
+        # update quantity and total price
         item.quantity = quantity
         item.total_price = item.product_variant.price * quantity
         item.save()
@@ -822,7 +851,7 @@ def add_to_wishlist(request, variant_id):
         # get the variant from DB
         variant = get_object_or_404(ProductVariant, id=variant_id)
 
-        if variant.status == 'inactive':
+        if variant.status == 'inactive' or variant.product.status == 'inactive' or variant.product.category.status == 'inactive':
             messages.error(request, "Currently unavailabe!")
             next_page = request.POST.get('next', '')
             if next_page == 'product_details':

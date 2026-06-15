@@ -84,6 +84,8 @@ class ProductVariant(models.Model):
         decimal_places=2
     )
 
+    discount_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+
     stock = models.PositiveIntegerField()    
 
     status = models.CharField(
@@ -107,6 +109,12 @@ class ProductVariant(models.Model):
                 name='unique_product_size'
             )
         ]
+    
+    @property
+    def effective_price(self):
+        if self.discount_price:
+            return self.price - self.discount_price
+        return self.price
 
     def __str__(self):
         return f"{self.product.product_name} - {self.size}"
@@ -150,6 +158,7 @@ class CartItem(models.Model):
         return f"{self.quantity}x {self.product_variant} in {self.cart}"
     
 class Wishlist(models.Model):
+    
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='wishlist')
     product_variant = models.ForeignKey(ProductVariant, on_delete=models.CASCADE, related_name='wishlisted_by')
     created_at = models.DateTimeField(auto_now_add=True)

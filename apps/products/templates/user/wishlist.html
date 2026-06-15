@@ -31,7 +31,19 @@ My Wishlist
         <div class="card-details">
           <h3>{{ item.product_variant.product.product_name }}</h3>
           <p class="variant-info">{{ item.product_variant.product.category.category_name }} · {{ item.product_variant.size }}ml</p>
-          <p class="price">₹{{ item.product_variant.price }}</p>
+          {% if item.product_variant.discount_price %}
+                <span class="original-price">
+                    <s>₹{{ item.product_variant.price }}</s>
+                </span>
+
+                <span class="discount-price">
+                    ₹{{ item.product_variant.effective_price }}
+                </span>
+            {% else %}
+                <span>
+                    ₹{{ item.product_variant.price }}
+                </span>
+            {% endif %}
         </div>
                 
         {% if item.product_variant.stock > 0 %}

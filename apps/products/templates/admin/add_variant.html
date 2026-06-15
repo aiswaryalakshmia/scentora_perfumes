@@ -6,8 +6,8 @@ Product Detail
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'admin\product_details.css' %}">
-<link rel="stylesheet" href="{% static 'admin\variant_image.css' %}">
+<link rel="stylesheet" href="{% static 'admin/variant_image.css' %}">
+<link rel="stylesheet" href="{% static 'admin/product_details.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -35,7 +35,7 @@ Product Detail
             <h3>Product Variants</h3>
         </div>
 
-    <form method="POST" enctype="multipart/form-data">
+    <form method="POST" enctype="multipart/form-data" novalidate>
 
         {% csrf_token %}
 
@@ -55,6 +55,12 @@ Product Detail
                     <label>Price (₹)</label>
                     {{ form.price }}
                     {{ form.price.errors }}
+                </div>
+
+                <div class="form-group">
+                    <label>Discount Price (₹)</label>
+                    {{ form.discount_price }}
+                    {{ form.discount_price.errors }}
                 </div>
 
                 <div class="form-group">
@@ -109,6 +115,9 @@ Product Detail
                 <div>
                     <p><strong>Size:</strong> {{ variant.size }}</p>
                     <p><strong>Price:</strong> ₹{{ variant.price }}</p>
+                    {% if variant.discount_price %}
+                        <p><strong>Discount Price:</strong> ₹{{ variant.discount_price }}</p>
+                    {% endif %}
                     <p><strong>Stock:</strong> {{ variant.stock }}</p>
                 </div>
 

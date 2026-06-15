@@ -154,7 +154,19 @@ Shop
           <a href="{% url 'product_details' variant.id %}">
             <h3>{{ variant.product.product_name }}</h3>            
             <p>{{ variant.size }}ml</p>
-            <span>₹{{ variant.price }}</span>
+            {% if variant.discount_price %}
+                <span class="original-price">
+                    <s>₹{{ variant.price }}</s>
+                </span>
+
+                <span class="discount-price">
+                    ₹{{ variant.effective_price }}
+                </span>
+            {% else %}
+                <span>
+                    ₹{{ variant.price }}
+                </span>
+            {% endif %}
           </a>
           {% if variant.stock > 0 %}
           <form method="POST" action="{% url 'add_to_cart' variant.id %}">

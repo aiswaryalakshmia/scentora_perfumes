@@ -1,0 +1,92 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Scentora Admin{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/all.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/admin_base.css' %}">
+  {% block extra_css %}{% endblock %}  
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
+</head>
+<body>
+
+  <div class="dashboard-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <h2 class="logo">SCENTORA</h2>
+      <p class="tagline">Luxury Home Console</p>
+      <ul class="menu">
+        <li class="{% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
+            <a href="{% url 'admin_dashboard' %}"><i class="fa-solid fa-chart-line"></i> Dashboard</a>
+        </li>
+        <li class="{% if request.resolver_match.url_name == 'product_management' %}active{% endif %}">
+            <a href="{% url 'product_management' %}">
+                <i class="fa-solid fa-box"></i> Products
+            </a>
+        </li>
+        <li class="{% if request.resolver_match.url_name == 'category_management' %}active{% endif %}">
+            <a href="{% url 'category_management' %}">
+          <i class="fa-solid fa-layer-group"></i> Categories
+          </a>
+        </li>
+        <li><i class="fa-solid fa-receipt"></i> Orders</li>
+        <li class="{% if request.resolver_match.url_name == 'user_management' %}active{% endif %}">
+            <a href="{% url 'user_management' %}"><i class="fa-solid fa-users"></i> Customers</a>
+        </li>
+        <li><i class="fa-solid fa-ticket"></i> Coupons</li>
+        <li><i class="fa-solid fa-file-lines"></i> Sales Report</li>
+        <li><i class="fa-solid fa-gift"></i> Offers</li>
+        <li class="logout {% if request.resolver_match.url_name == 'admin_logout' %}active{% endif %}">
+            <a href="{% url 'admin_logout' %}"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+        </li>
+      </ul>
+    </aside>
+    <div class="right-area">
+      <header class="topbar">
+        <div class="user-info">
+          <span class="user-name">Admin User</span>
+          <span class="role">Scentora Creator</span>
+          <i class="fa-solid fa-user-shield"></i>
+        </div>
+      </header>
+      <!-- Main Content -->
+      <main class="main-content-wrapper">
+      {% block content %}
+      {% endblock %}
+  </main>
+    </div>
+  </div>
+    {% if messages %}
+    {% for message in messages %}
+
+        {% if message.tags == 'success' %}
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: '{{ message }}',
+                confirmButtonColor: '#c59a3a'
+            });
+        </script>
+        {% endif %}
+
+        {% if message.tags == 'error' %}
+        <script>
+            Swal.fire({
+                icon: 'error',
+                title: 'Validation Error',
+                text: '{{ message }}',
+                confirmButtonColor: '#c59a3a'
+            });
+        </script>
+        {% endif %}
+
+    {% endfor %}
+{% endif %}
+  </body>
+</html>
+  

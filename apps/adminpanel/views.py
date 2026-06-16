@@ -61,7 +61,6 @@ def user_management(request):
 
     return render(request, "user_management.html", {
         "users": page_obj,
-        "page_obj": page_obj,
         "search_query": search_query
     })
 

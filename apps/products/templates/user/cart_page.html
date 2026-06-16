@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+Cart
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'user/cart_page.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="cart-page">
+  <h2 class="cart-title">Your Cart</h2>
+
+  <div class="cart-container">
+    <div class="cart-items">
+
+      {% if items %}
+        {% for item in items %}
+        <div class="cart-item">
+          <img src="{{ item.product_variant.images.first.image.url }}" alt="{{ item.product_variant.product.product_name }}">
+          <div class="item-details">
+            <h3>{{ item.product_variant.product.product_name }}</h3>
+            <p>{{ item.product_variant.size }}ml</p>
+          </div>
+          <div class="item-price">₹{{ item.product_variant.price }}</div>
+          <div class="item-quantity">
+            <form method="POST" action="{% url 'update_cart' item.id %}">
+                {% csrf_token %}
+                <button type="submit" name="quantity" value="{{ item.quantity|add:'-1' }}">-</button>
+                <span>{{ item.quantity }}</span>
+                <button type="submit" name="quantity" value="{{ item.quantity|add:'1' }}">+</button>
+            </form>
+        </div>
+          <form method="POST" action="{% url 'remove_from_cart' item.id %}">
+            {% csrf_token %}
+            <button type="submit" class="remove-item">×</button>
+        </form>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p>Your cart is empty.</p>
+      {% endif %}
+
+    </div>
+
+    <aside class="order-summary">
+      <h3>Order Summary</h3>
+      <div class="summary-details">
+        <p>Subtotal <span>₹{{ subtotal }}</span></p>
+        <p>Standard Shipping <span>₹0.00</span></p>
+        <hr>
+        <p class="total">Total <span>₹{{ subtotal }}</span></p>
+        <p class="total_discount">Total discount <span>₹{{ total_discount }}</span></p>
+      </div>
+      <button class="btn-checkout">Proceed to Checkout</button>
+
+      <div class="promo-code">
+        <label for="promo">Promo Code</label>
+        <input type="text" id="promo" placeholder="Enter code">
+        <button class="btn-apply">Apply</button>
+      </div>
+
+      <p class="secure-text">🔒 Secure Checkout Powered by Scentora</p>
+    </aside>
+  </div>
+</div>
+{% endblock %}

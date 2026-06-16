@@ -1,0 +1,215 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+Shop
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'user/shop_page.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="shop-container">
+  <aside class="filters">
+    <form method="GET">
+      <h3>Filters</h3>
+      <div class="filter-section">
+        <div class="search-bar">          
+          <input
+              type="text"
+              name="search"
+              value="{{ search_query }}"
+              placeholder="Search products..."
+          >          
+          <button type="submit" class="search-btn">
+            <i class="fas fa-search"></i>
+          </button>
+        
+          <a class="search-btn clear-search" href="?{% for cat in selected_categories %}category={{ cat }}&{% endfor %}{% if selected_price %}price={{ selected_price }}{% endif %}">
+            <i class="fa-solid fa-xmark"></i>
+          </a>
+          
+        </div>
+      </div>
+      <div class="filter-section">
+        <h4>Category</h4>
+
+        {% for category in categories %}
+        <label>
+
+            <input
+                type="checkbox"
+                name="category"
+                value="{{ category.category_name }}"
+                {% if category.category_name in selected_categories %}
+                    checked
+                {% endif %}
+            >
+
+            {{ category.category_name }}
+
+        </label>
+        {% endfor %}
+    </div>
+
+      <div class="filter-section">
+
+        <h4>Price</h4>
+
+        <label>
+            <input
+                type="radio"
+                name="price"
+                value="under_3000"
+                {% if selected_price == 'under_3000' %}checked{% endif %}
+            >
+            Under ₹3000
+        </label>
+
+        <label>
+            <input
+                type="radio"
+                name="price"
+                value="3000_5000"
+                {% if selected_price == '3000_5000' %}checked{% endif %}
+            >
+            ₹3000 - ₹5000
+        </label>
+
+        <label>
+            <input
+                type="radio"
+                name="price"
+                value="5000_8000"
+                {% if selected_price == '5000_8000' %}checked{% endif %}
+            >
+            ₹5000 - ₹8000
+        </label>
+
+        <label>
+            <input
+                type="radio"
+                name="price"
+                value="above_8000"
+                {% if selected_price == 'above_8000' %}checked{% endif %}
+            >
+            Above ₹8000
+        </label>
+      </div>
+
+      <div class="filter-section">
+        <h4>Ratings</h4>
+        <div class="stars">
+          <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
+        </div>
+      </div>
+
+      <div class="filter-section">
+        <h4>Sort By</h4>
+        <select name="sort">
+            <option value="">Default</option>
+            <option value="price_low"  {% if sort == 'price_low'  %}selected{% endif %}>Price: Low to High</option>
+            <option value="price_high" {% if sort == 'price_high' %}selected{% endif %}>Price: High to Low</option>
+            <option value="a_z"        {% if sort == 'a_z'        %}selected{% endif %}>A - Z</option>
+            <option value="z_a"        {% if sort == 'z_a'        %}selected{% endif %}>Z - A</option>
+        </select>
+      </div>
+
+      <a href="{% url 'shop' %}{% if search_query %}?search={{ search_query }}{% endif %}" class="clear-filters">
+        Clear Filters
+      </a>
+      <button
+          type="submit"
+          class="apply-filter-btn">
+          Apply Filters
+      </button>
+    </form>
+</aside>
+
+  <section class="products">
+    <div class="product-grid">
+      {% if variants %}
+        {% for variant in variants %} 
+        <div class="product-card shop-item">
+          <div class="card-image">
+            <a href="{% url 'product_details' variant.id %}">
+              <img
+                src="{{ variant.images.first.image.url }}"
+                alt="{{ variant.product.product_name }}"
+              >
+            </a>
+            <form method="POST" action="{% url 'add_to_wishlist' variant.id %}">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="shop">
+              <button type="submit" class="wishlist-heart">
+                {% if variant.id in wishlisted_ids %}
+                  <i class="fas fa-heart" style="color: #d4af37;"></i>
+                {% else %}
+                  <i class="far fa-heart" style="color: #fff;"></i>
+                {% endif %}
+              </button>
+            </form>
+          </div>
+          <a href="{% url 'product_details' variant.id %}">
+            <h3>{{ variant.product.product_name }}</h3>            
+            <p>{{ variant.size }}ml</p>
+            {% if variant.discount_price %}
+                <span class="original-price">
+                    <s>₹{{ variant.price }}</s>
+                </span>
+
+                <span class="discount-price">
+                    ₹{{ variant.effective_price }}
+                </span>
+            {% else %}
+                <span>
+                    ₹{{ variant.price }}
+                </span>
+            {% endif %}
+          </a>
+          {% if variant.stock > 0 %}
+          <form method="POST" action="{% url 'add_to_cart' variant.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="shop">
+            <button type="submit" class="btn-add-cart">Add to Cart</button>
+          </form>
+          {% else %}
+            <button class="btn-add-cart" disabled>Out of Stock</button>
+          {% endif %}
+        </div>
+        {% endfor %} 
+        {% else %}
+            <p>No matching products</p>
+        {% endif %}
+      </div> 
+      <!-- PAGINATION -->
+    {% if page_obj.paginator.num_pages > 1 %}
+  <div class="pagination">
+    <span class="pagination-info">
+        Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} products
+    </span>
+
+    <div class="pagination-controls">
+        {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}&{% for cat in selected_categories %}category={{ cat }}&{% endfor %}{% if selected_price %}price={{ selected_price }}&{% endif %}{% if search_query %}search={{ search_query }}&{% endif %}{% if sort %}sort={{ sort }}{% endif %}">‹</a>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+                <span class="current-page">{{ num }}</span>
+            {% else %}
+                <a href="?page={{ num }}&{% for cat in selected_categories %}category={{ cat }}&{% endfor %}{% if selected_price %}price={{ selected_price }}&{% endif %}{% if search_query %}search={{ search_query }}&{% endif %}{% if sort %}sort={{ sort }}{% endif %}">{{ num }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}&{% for cat in selected_categories %}category={{ cat }}&{% endfor %}{% if selected_price %}price={{ selected_price }}&{% endif %}{% if search_query %}search={{ search_query }}&{% endif %}{% if sort %}sort={{ sort }}{% endif %}">›</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}  
+  </section>
+
+</div>
+{% endblock %}

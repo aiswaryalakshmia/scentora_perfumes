@@ -1,0 +1,99 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}
+Add Category
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'admin/add_category.css' %}">
+<link rel="stylesheet" href="{% static 'admin/product_details.css' %}">
+{% endblock %}
+
+{% block content %}
+    <main class="main-content">
+      <header class="header">
+        <h1 class="page-title">Add Category</h1>
+        <a href="{% url 'category_management' %}" class="back-btn">
+            <i class="fa-solid fa-arrow-left"></i>
+            Back to Categories
+        </a>
+      </header>
+
+      <section class="form-section">
+        <div class="form-card">
+          <div class="form-info">
+            <h3 class="info-title">Essence Details</h3>
+            <p class="info-desc">Primary identifiers and storytelling elements for the collection.</p>
+          </div>
+
+          
+            <form method="POST"
+                  enctype="multipart/form-data"
+                  class="category-form"
+                  novalidate>
+
+                {% csrf_token %}
+
+                <!-- Non-field errors -->
+                {% if form.non_field_errors %}
+                    <div class="error-message">
+                        {{ form.non_field_errors }}
+                    </div>
+                {% endif %}
+
+                <!-- Category Name -->
+                <label for="{{ form.category_name.id_for_label }}">
+                    Category Name
+                </label>
+
+                {{ form.category_name }}
+
+                {% if form.category_name.errors %}
+                    <div class="error-message">
+                        {{ form.category_name.errors }}
+                    </div>
+                {% endif %}
+
+                <!-- Description -->
+                <label for="{{ form.description.id_for_label }}">
+                    Description
+                </label>
+
+                {{ form.description }}
+
+                {% if form.description.errors %}
+                    <div class="error-message">
+                        {{ form.description.errors }}
+                    </div>
+                {% endif %}
+
+                <!-- Image -->
+                <label for="{{ form.image.id_for_label }}">
+                    Category Image
+                </label>
+
+                {{ form.image }}
+
+                {% if form.image.errors %}
+                    <div class="error-message">
+                        {{ form.image.errors }}
+                    </div>
+                {% endif %}                
+
+                <div class="form-actions">
+                    <a href="{% url 'category_management' %}"
+                       class="cancel-btn">
+                        Cancel
+                    </a>
+
+                    <button type="submit" class="save-btn">
+                        Save Category
+                    </button>
+                </div>
+
+            </form>
+        </div>
+      </section>
+    </main>
+{% endblock %}

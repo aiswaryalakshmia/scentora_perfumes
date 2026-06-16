@@ -1,0 +1,168 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}
+Category Management
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'admin/category_management.css' %}">
+{% endblock %}
+
+{% block content %}
+    <div class="category-management">
+      <header class="header">
+        <h1 class="page-title">Category Management</h1>
+        <a href="{% url 'add_category' %}" class="add-btn">
+            <i class="fa-solid fa-plus"></i> Add Category
+        </a>
+      </header>
+
+      <section class="table-section">
+              <form method="GET">
+                  <div class="search-bar">
+
+                      <input
+                          type="text"
+                          name="search"
+                          value="{{ search_query }}"
+                          placeholder="Search categories..."
+                      >
+
+                      <button type="submit">
+                          Search
+                      </button>
+
+                      {% if search_query %}
+                      <a class="btn clear-btn"
+                        href="{% url 'category_management' %}">
+                          Clear
+                      </a>
+                      {% endif %}
+
+                  </div>
+              </form>
+        <table class="category-table">
+          <thead>
+            <tr>
+              <th>SL NO</th>
+              <th>Category</th>
+              <th>Description</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for category in categories %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ category.category_name }}</td>
+                <td>{{ category.description }}</td>
+
+                <td>
+                  <span class="status {% if category.status == 'active' %}active{% else %}blocked{% endif %}">
+                      {{ category.get_status_display }}
+                  </span>
+                </td>
+                <td class="actions">
+                    <div class="actions-container">
+                        <a href="{% url 'edit_category' category.id %}">
+                            <i class="fa-solid fa-pen"></i>
+                        </a>
+                        <a href="{% url 'toggle_category_status' category.id %}"
+                            class="delete-btn"
+                            data-status="{{ category.status }}">
+                            {% if category.status == 'active' %}
+                                <i class="fa-solid fa-ban"></i>
+                            {% else %}
+                                <i class="fa-solid fa-check"></i>
+                            {% endif %}
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5">No categories found</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="pagination">
+
+    <p>
+        Showing {{ categories.start_index }} to {{ categories.end_index }}
+        of {{ categories.paginator.count }} categories
+    </p>
+
+    <div class="page-controls">
+
+        {% if categories.has_previous %}
+        <a href="?page={{ categories.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
+            &lt;
+        </a>
+        {% endif %}
+
+        {% for num in categories.paginator.page_range %}
+            {% if categories.number == num %}
+                <a class="active">{{ num }}</a>
+            {% else %}
+                <a href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}">
+                    {{ num }}
+                </a>
+            {% endif %}
+        {% endfor %}
+
+        {% if categories.has_next %}
+        <a href="?page={{ categories.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
+            &gt;
+        </a>
+        {% endif %}
+
+    </div>
+
+</div>
+      </section>
+    </div>
+    <script>
+        document.querySelectorAll('.delete-btn').forEach(button => {
+
+            button.addEventListener('click', function(e) {
+
+                e.preventDefault();
+
+                const url = this.href;
+                const status = this.dataset.status;
+
+                let actionText;
+                let confirmText;
+
+                if (status === 'active') {
+                    actionText = 'This category will be blocked.';
+                    confirmText = 'Yes, Block It!';
+                } else {
+                    actionText = 'This category will be unblocked.';
+                    confirmText = 'Yes, Unblock It!';
+                }
+
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: actionText,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: confirmText,
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+
+                    if (result.isConfirmed) {
+                        window.location.href = url;
+                    }
+
+                });
+
+            });
+
+        });
+</script>
+{% endblock %}

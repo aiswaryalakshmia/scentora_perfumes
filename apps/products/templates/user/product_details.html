@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+{{ variant.product.product_name }}
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'user/product_details.css' %}">
+{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb">
+    <a href="{% url 'home' %}">Home</a> 
+    <span>›</span>
+    <a href="{% url 'shop' %}">Shop</a> 
+    <span>›</span>
+    <a href="{% url 'shop' %}?category={{ variant.product.category.category_name }}">
+        {{ variant.product.category.category_name }}
+    </a>
+    <span>›</span>
+    <span class="current">{{ variant.product.product_name }}</span>
+</nav>
+
+<a href="{% url 'shop' %}" class="back-btn">
+    <i class="fas fa-arrow-left"></i> Back to Shop
+</a>
+
+<div class="product-page">
+  <section class="product-main">
+
+    <div class="product-image">
+      <!-- Main image (first image) -->
+      <div class="zoom-container">
+        <img src="{{ variant.images.first.image.url }}" alt="{{ variant.product.product_name }}" id="main-image">
+      </div>
+
+      <!-- Thumbnail row (all images) -->
+      <div class="thumbnail-row">
+        {% for image in variant.images.all %}
+          <img src="{{ image.image.url }}" alt="{{ variant.product.product_name }}">
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="product-details">
+      <h2>{{ variant.product.product_name }}</h2>
+      <p class="tagline">{{ variant.product.description }}</p>
+      {% if variant.discount_price %}
+        <span class="original-price">
+            <s>₹{{ variant.price }}</s>
+        </span>
+
+        <span class="discount-price">
+            ₹{{ variant.effective_price }}
+        </span>
+      {% else %}
+        <span class="price">
+            ₹{{ variant.price }}
+        </span>
+      {% endif %}
+
+      <div class="options">
+
+        <!-- Size selector — links to other variants of same product -->
+        <label>Size:</label>
+        <select onchange="window.location.href=this.value">
+          {% for v in other_variants %}
+            <option value="{% url 'product_details' v.id %}"
+              {% if v.id == variant.id %}selected{% endif %}
+            >
+              {{ v.size }}ml
+            </option>
+          {% endfor %}
+        </select>        
+      </div>
+
+      <!-- Stock info text -->
+       {% if variant.stock > 0 and variant.stock <= 5 %}
+          <p class="stock-low">Only {{ variant.stock }} left in stock!</p>
+      {% endif %}
+
+      <!-- Button -->
+      {% if variant.stock > 0 %}
+          <form method="POST" action="{% url 'add_to_cart' variant.id %}">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="product_details">
+              <button type="submit" class="btn-add">Add to Cart</button>
+          </form>
+      {% else %}
+          <button class="btn-add" disabled>Out of Stock</button>
+      {% endif %}
+
+      <form method="POST" action="{% url 'add_to_wishlist' variant.id %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="product_details">
+        <button type="submit" class="wishlist">
+            Add to Wishlist <i class="far fa-heart"></i>
+        </button>
+    </form>
+    </div>
+
+  </section>
+
+  <section class="product-description">
+    <h3>About {{ variant.product.product_name }}</h3>
+    <p>{{ variant.product.description }}</p>
+    <p>Category: {{ variant.product.category.category_name }}</p>
+  </section>
+
+  <section class="testimonials">
+    <h3>Customer Reviews</h3>
+
+    <div class="review">
+        <div class="review-header">
+            <h4>Rahul M.</h4>
+            <span class="stars">★★★★★</span>
+        </div>
+        <p>"Absolutely love this fragrance. Lasts the entire day and gets so many compliments!"</p>
+    </div>
+
+    <div class="review">
+        <div class="review-header">
+            <h4>Priya S.</h4>
+            <span class="stars">★★★★☆</span>
+        </div>
+        <p>"Beautiful scent, very elegant. The bottle packaging is also premium quality."</p>
+    </div>
+
+    <div class="review">
+        <div class="review-header">
+            <h4>Arjun K.</h4>
+            <span class="stars">★★★★★</span>
+        </div>
+        <p>"Best perfume I have bought in this price range. Highly recommended!"</p>
+    </div>
+
+</section>
+
+  <section class="related-products">
+    <h3>You May Also Like</h3>
+    <div class="related-grid">
+        {% for related in related_variants %}
+        <a href="{% url 'product_details' related.id %}">
+            <div class="related-item">
+                <img src="{{ related.images.first.image.url }}" alt="{{ related.product.product_name }}">
+                <p>{{ related.product.product_name }}</p>
+                <p>₹{{ related.price }}</p>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+</div>
+<script>
+    document.querySelectorAll('.thumbnail-row img').forEach(function(thumb) {
+        thumb.addEventListener('click', function() {
+            document.querySelector('.product-image > img').src = this.src;
+        });
+    });
+</script>
+<script>
+  // zoom on hover - follow mouse position
+const zoomContainer = document.querySelector('.zoom-container');
+const mainImage = document.getElementById('main-image');
+
+zoomContainer.addEventListener('mousemove', function(e) {
+    const rect = this.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    mainImage.style.transformOrigin = `${x}% ${y}%`;
+});
+
+// thumbnail click - change main image
+document.querySelectorAll('.thumbnail-row img').forEach(function(thumb) {
+    thumb.addEventListener('click', function() {
+        mainImage.src = this.src;
+    });
+});
+</script>
+
+{% endblock %}

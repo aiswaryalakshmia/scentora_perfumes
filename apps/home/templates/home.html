@@ -19,57 +19,19 @@ Home
     <a href="{% url 'shop' %}"><button class="cta">Shop Now</button></a>
   </section>
 
-  <!-- Collections -->
   <section class="collections">
     <h3>The Collections</h3>
     <div class="collection-grid">
-      <div class="collection-item">
-        <img src="{% static 'images/Men.svg' %}" alt="Men">
-        <p>Men</p>
-      </div>
-      <div class="collection-item">
-        <img src="{% static 'images/Women.svg' %}" alt="Women">
-        <p>Women</p>
-      </div>
-      <div class="collection-item">
-        <img src="{% static 'images/Unisex.svg' %}" alt="Unisex">
-        <p>Unisex</p>
-      </div>
-      <div class="collection-item">
-        <img src="{% static 'images/Luxury.svg' %}" alt="Luxury">
-        <p>Luxury</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- Iconic Selections -->
-  <section class="iconic">
-    <div class="section-header">
-      <h3>Iconic Selections</h3>
-      <a href="#" class="view-all">View All</a>
-    </div>
-    <p class="subtitle">The most desired sensations in our collection.</p>
-    <div class="product-grid">
-      <div class="product">
-        <img src="{% static 'images/Iconic1.svg' %}" alt="Oud Silk">
-        <h4>Oud Silk</h4>
-        <p>Magnifique — ₹799.00</p>
-      </div>
-      <div class="product">
-        <img src="{% static 'images/Iconic2.svg' %}" alt="Amber Intense">
-        <h4>Amber Intense</h4>
-        <p>Golden Night — ₹899.00</p>
-      </div>
-      <div class="product">
-        <img src="{% static 'images/Iconic3.svg' %}" alt="Marine Noir">
-        <h4>Marine Noir</h4>
-        <p>Oceanic Mist — ₹999.00</p>
-      </div>
-      <div class="product">
-        <img src="{% static 'images/Iconic4.svg' %}" alt="Rose Absolute">
-        <h4>Rose Absolute</h4>
-        <p>Velvet Petals — ₹849.00</p>
-      </div>
+    {% for category in categories %}
+        <a href="{% url 'collection_details' category.id %}" class="collection-item">
+            {% if category.image %}
+                <img src="{{ category.image.url }}" alt="{{ category.category_name }}">
+            {% endif %}
+            <div class="collection-info">
+                <h3 style="color: #fff;">{{ category.category_name }}</h3>
+            </div>
+        </a>
+    {% endfor %}
     </div>
   </section>
 
@@ -104,4 +66,5 @@ Home
       </div>
     </div>
   </section>
+
 {% endblock %}

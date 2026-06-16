@@ -1,50 +1,18 @@
+{% extends 'admin_base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Scentora Admin Dashboard</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="{% static 'css/all.min.css' %}">
-  <link rel="stylesheet" href="{% static 'css/admin_dashboard.css' %}">
-</head>
-<body>
 
-  <div class="dashboard-container">
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <h2 class="logo">SCENTORA</h2>
-      <p class="tagline">Luxury Home Console</p>
-      <ul class="menu">
-        <li class="{% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
-            <a href="{% url 'admin_dashboard' %}"><i class="fa-solid fa-chart-line"></i> Dashboard</a>
-        </li>
-        <li><i class="fa-solid fa-box"></i> Products</li>
-        <li><i class="fa-solid fa-layer-group"></i> Categories</li>
-        <li><i class="fa-solid fa-receipt"></i> Orders</li>
-        <li class="{% if request.resolver_match.url_name == 'user_management' %}active{% endif %}">
-            <a href="{% url 'user_management' %}"><i class="fa-solid fa-users"></i> Customers</a>
-        </li>
-        <li><i class="fa-solid fa-ticket"></i> Coupons</li>
-        <li><i class="fa-solid fa-file-lines"></i> Sales Report</li>
-        <li><i class="fa-solid fa-gift"></i> Offers</li>
-        <li class="logout {% if request.resolver_match.url_name == 'admin_logout' %}active{% endif %}">
-            <a href="{% url 'admin_logout' %}"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
-        </li>
-      </ul>
-    </aside>
+{% block title %}
+Admin Dashboard
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/admin_dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
 
     <!-- Main Content -->
     <main class="main-content">
-      <header class="topbar">
-        <div class="user-info">
-          <span class="user-name">Admin User</span>
-          <i class="fa-solid fa-user-shield"></i>
-        </div>
-      </header>
-
       <section class="overview">
         <h3>Dashboard Overview</h3>
         <div class="cards">
@@ -137,4 +105,5 @@
         </div>
       </section>
     </main>
-  </div>
+
+{% endblock %}

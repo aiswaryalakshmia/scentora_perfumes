@@ -347,8 +347,7 @@ def verify_otp(request):
                 return redirect('edit_profile')
 
             elif otp_purpose=='forgotp':
-                request.session.pop('otp_purpose', None)
-                request.session.pop('current_user_email', None)
+                request.session.pop('otp_purpose', None)                
                 
                 return redirect('reset_password')
 
@@ -362,24 +361,35 @@ def verify_otp(request):
 @never_cache
 def reset_password(request):
 
+    email = request.session.get('current_user_email')
+
+    if not email:
+        messages.error(request, "Session expired. Please try again.")
+        return redirect('forgot_password')
+
+    try:
+        user = User.objects.get(email=email)
+    except User.DoesNotExist:
+        messages.error(request, "User not found.")
+        return redirect('forgot_password')
+
     if request.method == 'POST':
 
         password = request.POST.get('password')
         confirm_password = request.POST.get('confirm_password')
 
         if password != confirm_password:
-
             return render(request, 'reset_password.html', {
                 'error': 'Passwords do not match'
             })
 
-        email = request.session.get('current_user_email')
-
-        user = User.objects.get(email=email)
-
         user.set_password(password)
         user.save()
 
+        # clear session AFTER success
+        request.session.pop('current_user_email', None)
+
+        messages.success(request, "Password reset successful. Please login.")
         return redirect('login')
 
     return render(request, 'reset_password.html')

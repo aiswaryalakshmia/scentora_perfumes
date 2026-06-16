@@ -50,10 +50,9 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.email
-    
+
 class OTP(models.Model):
 
-    
     email = models.EmailField(null=True, blank=True)
 
     otp_code = models.CharField(

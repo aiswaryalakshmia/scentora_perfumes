@@ -1,0 +1,141 @@
+body {
+  background-color: #000; /* deep black background */
+  color: #fff; /* ensures text contrast */
+  font-family: 'Poppins', sans-serif; /* optional for a clean look */
+  margin: 0;
+}
+
+.main-content-wrapper {
+    flex: 1;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+a {
+  text-decoration: none;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 200px;
+  background-color: #1a1a1a;
+  padding: 30px 20px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+}
+
+.right-area {
+  margin-left: 240px;
+  width: calc(100vw - 240px);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+.topbar {
+  height: 50px;
+  background-color: #121212;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0 30px;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.logo {
+  color: #c59a3a;
+  font-size: 22px;
+  letter-spacing: 2px;
+  margin-bottom: 5px;
+}
+
+.tagline {
+  font-size: 12px;
+  color: #aaa;
+  margin-bottom: 30px;
+}
+
+.menu {
+  list-style: none;
+  padding: 0;
+}
+
+.menu li {
+  color: #ccc;
+  font-size: 15px;
+  margin: 15px 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.menu li a,
+.menu li a:visited,
+.menu li a:active,
+.menu li a:link {
+  text-decoration: none;
+  color: #ccc;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.menu li a:hover {
+  color: #c59a3a;
+}
+
+/* Active + hover for plain li items */
+.menu li.active,
+.menu li:hover {
+  color: #c59a3a;
+}
+
+.menu li.active a {
+  color: #c59a3a;
+}
+
+.logout {
+  margin-top: 40px;
+  color: #c59a3a;
+}
+
+/* Layout */
+.dashboard-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Main Content */
+.main-content {
+  flex: 1;
+  padding: 30px 40px;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 25px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #c59a3a;
+  font-weight: 500;
+}
+
+.page-title {
+    color: #c59a3a;
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0;
+}
+
+.page-subtitle {
+    color: #aaa;
+    font-size: 14px;
+    margin-top: 6px;
+}

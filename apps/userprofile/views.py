@@ -296,7 +296,7 @@ def edit_profile(request):
             otp = str(random.randint(100000, 999999))
 
             OTP.objects.create(
-                email=user.email,
+                email=email,
                 otp_code=otp
             )
 
@@ -304,12 +304,12 @@ def edit_profile(request):
                 'Scentora Email Change OTP',
                 f'Your OTP is {otp}',
                 settings.EMAIL_HOST_USER,
-                [user.email],
+                [email],
                 fail_silently=False,
             )
 
             # store session
-            request.session['current_user_email'] = user.email
+            request.session['current_user_email'] = email
             request.session['otp_purpose'] = 'change_email'
             request.session['new_email'] = email
             request.session['new_mobile_number'] = mobile_number

@@ -122,9 +122,6 @@ edit profile
         <label>Mobile Number</label>
         <input type="text" name="mobile_number" value="{{ user.mobile_number }}">
 
-        <label>Email Address</label>
-        <input type="email" name="email" value="{{ user.email }}">
-
         <div class="form-actions">
             <button type="button" class="btn cancel">Cancel</button>
             <button type="submit" name="update_profile" class="btn save">Save Changes</button>
@@ -132,6 +129,18 @@ edit profile
 
     </form>
 
+</section>
+<section>
+  <form class="profile-form" method="POST" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        <label>Email Address</label>
+        <input type="email" name="email" value="{{ user.email }}">
+
+        <div class="form-actions">
+            <button type="button" class="btn cancel">Cancel</button>
+            <button type="submit" name="update_email" class="btn save">Verify & Change Email</button>
+        </div>
+  </form>
 </section>
 
     <!-- Security -->

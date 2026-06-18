@@ -225,9 +225,8 @@ def edit_profile(request):
     user=request.user
     if request.method=='POST':
         if 'update_profile' in request.POST:
-
+            
             full_name = request.POST.get('full_name', '').strip()
-            email = request.POST.get('email', '').strip()
             mobile_number = request.POST.get('mobile_number', '').strip()
 
             # Full Name
@@ -249,7 +248,34 @@ def edit_profile(request):
                     'error': 'Full name must be at least 3 characters'
                 })
 
-            # Email
+           
+            # Mobile Number
+            if not mobile_number:
+                return render(request, 'edit_profile.html', {
+                    'user': user,
+                    'error': 'Mobile number is required'
+                })
+
+            if not re.match(r'^\d{10}$', mobile_number):
+                return render(request, 'edit_profile.html', {
+                    'user': user,
+                    'error': 'Enter a valid 10-digit mobile number'
+                })
+
+            # Profile Image Validation
+            if request.FILES.get('profile_image'):
+                image = request.FILES['profile_image']
+                user.profile_image = image
+            
+            user.full_name = full_name
+            user.mobile_number = mobile_number
+
+            user.save()
+            messages.success(request, "Profile updated successfully!")
+
+        elif 'update_email' in request.POST:            
+            email = request.POST.get('email', '').strip()
+             # Email
             if not email:
                 return render(request, 'edit_profile.html', {
                     'user': user,
@@ -275,24 +301,6 @@ def edit_profile(request):
                     'error': 'Email already exists'
                 })
 
-            # Mobile Number
-            if not mobile_number:
-                return render(request, 'edit_profile.html', {
-                    'user': user,
-                    'error': 'Mobile number is required'
-                })
-
-            if not re.match(r'^\d{10}$', mobile_number):
-                return render(request, 'edit_profile.html', {
-                    'user': user,
-                    'error': 'Enter a valid 10-digit mobile number'
-                })
-
-            # Profile Image Validation
-            if request.FILES.get('profile_image'):
-                image = request.FILES['profile_image']
-                user.profile_image = image 
-
             otp = str(random.randint(100000, 999999))
 
             OTP.objects.create(
@@ -307,13 +315,10 @@ def edit_profile(request):
                 [email],
                 fail_silently=False,
             )
-
-            # store session
-            request.session['current_user_email'] = email
+            
             request.session['otp_purpose'] = 'change_email'
             request.session['new_email'] = email
-            request.session['new_mobile_number'] = mobile_number
-            request.session['new_fullname'] = full_name 
+            request.session['current_user_email'] = email
             return redirect('verify_otp')         
 
         # PASSWORD CHANGE

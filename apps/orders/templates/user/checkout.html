@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+Checkout
+{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'user/checkout.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="checkout-page">
+  <h2 class="checkout-title">Checkout</h2>
+
+  <div class="checkout-container">
+    <div class="checkout-left">
+      <!-- Shipping Address -->
+      <section class="shipping-address">
+        <div class="section-header">
+          <h3>Shipping Address</h3>
+          <a href="#" class="add-address">Add New Address</a>
+        </div>
+
+        <form class="address-form">
+          <input type="text" placeholder="Full Name">
+          <div class="form-row">
+            <input type="text" placeholder="Phone Number">
+            <input type="text" placeholder="Zip Code">
+          </div>
+          <input type="text" placeholder="Street Address, Apartment, Suite">
+          <div class="form-row">
+            <input type="text" placeholder="City">
+            <input type="text" placeholder="State">
+          </div>
+        </form>
+      </section>
+
+      <!-- Delivery Options -->
+      <section class="delivery-options">
+        <h3>Delivery Options</h3>
+        <div class="delivery-choice active">
+          <div class="delivery-info">
+            <input type="radio" name="delivery" checked>
+            <div>
+              <h4>Standard Delivery</h4>
+              <p>5–8 business days</p>
+            </div>
+          </div>
+          <span class="price">Free</span>
+        </div>
+
+        <div class="delivery-choice">
+          <div class="delivery-info">
+            <input type="radio" name="delivery">
+            <div>
+              <h4>Express Shipping</h4>
+              <p>Next business day</p>
+            </div>
+          </div>
+          <span class="price">₹25.00</span>
+        </div>
+      </section>
+
+      <!-- Payment Method -->
+      <section class="payment-method">
+        <h3>Payment Method</h3>
+        <div class="payment-tabs">
+          <button class="active">Credit Card</button>
+          <button>UPI Transfer</button>
+          <button>COD</button>
+        </div>
+
+        <form class="card-form">
+          <input type="text" placeholder="Card Number">
+          <div class="form-row">
+            <input type="text" placeholder="Expiry Date (MM/YY)">
+            <input type="text" placeholder="CVV">
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <!-- Order Summary -->
+    <aside class="order-summary">
+      <h3>Order Summary</h3>
+
+      <div class="summary-item">
+        <img src="oud-de-minuit.jpg" alt="Oud de Minuit">
+        <div>
+          <h4>Oud de Minuit</h4>
+          <p>100ml • Eau de Parfum</p>
+          <p>Qty: 1</p>
+        </div>
+        <span>₹245.00</span>
+      </div>
+
+      <div class="summary-item">
+        <img src="santal-noir.jpg" alt="Santal Noir">
+        <div>
+          <h4>Santal Noir</h4>
+          <p>50ml • Limited Edition</p>
+          <p>Qty: 1</p>
+        </div>
+        <span>₹180.00</span>
+      </div>
+
+      <div class="promo-code">
+        <input type="text" placeholder="Promo Code">
+        <button>Apply</button>
+      </div>
+
+      <div class="summary-totals">
+        <p>Subtotal <span>₹425.00</span></p>
+        <p>Shipping <span>Free</span></p>
+        <p>Discount <span>-₹0.00</span></p>
+        <hr>
+        <p class="total">Total <span>₹425.00</span></p>
+      </div>
+
+      <button class="btn-place-order">Place Order</button>
+      <p class="secure-text">🔒 Secure Encrypted Transaction</p>
+    </aside>
+  </div>
+</div>
+{% endblock %}

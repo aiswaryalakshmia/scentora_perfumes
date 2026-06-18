@@ -35,20 +35,31 @@
 }
 
 .collection-grid {
-  display: flex;
-  justify-content: center;
-  gap: 30px;
-  margin-top: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 40px;
+    margin-top: 30px;
+    flex-wrap: wrap;
+}
+
+.collection-item {
+    text-align: center;
 }
 
 .collection-item img {
-  width: 120px;
-  border-radius: 8px;
+    width: 180px;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 15px;
+    display: block;
 }
 
 .collection-item p {
-  margin-top: 10px;
-  color: #c59a3a;
+    margin-top: 15px;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 600;
 }
 
 /* Iconic Selections */

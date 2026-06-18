@@ -600,10 +600,12 @@ def product_details(request, variant_id):
         status = 'active'
     ).exclude(product=variant.product)[:4]
 
+    is_wishlisted = Wishlist.objects.filter(user=request.user, product_variant=variant).exists()
     return render(request, 'user/product_details.html', {
         'variant': variant,
         'other_variants': other_variants,
-        'related_variants': related_variants
+        'related_variants': related_variants,
+        'is_wishlisted':is_wishlisted
     })
 
 @login_required
@@ -795,13 +797,20 @@ def remove_from_cart(request, item_id):
 
 @login_required
 def update_cart(request, item_id):
-    if request.method == 'POST':
-
+    if request.method == 'POST':        
         # get the cart item
         try:
             item = CartItem.objects.get(id=item_id, cart__user=request.user)
         except CartItem.DoesNotExist:
             messages.error(request, "Item not found in cart!")
+            return redirect('cart')
+        
+        if item.product_variant.stock == 0 or item.product_variant.status == 'inactive' or item.product_variant.product.status == 'inactive' or item.product_variant.product.category.status == 'inactive':
+            
+            item.delete()
+
+            messages.error(request, "Item unavailable!")
+
             return redirect('cart')
 
         # get the quantity from the form
@@ -850,10 +859,11 @@ def add_to_wishlist(request, variant_id):
 
         # get the variant from DB
         variant = get_object_or_404(ProductVariant, id=variant_id)
+        next_page = request.POST.get('next', '')
 
         if variant.status == 'inactive' or variant.product.status == 'inactive' or variant.product.category.status == 'inactive':
             messages.error(request, "Currently unavailabe!")
-            next_page = request.POST.get('next', '')
+            
             if next_page == 'product_details':
                 return redirect('product_details', variant.id)
             
@@ -864,21 +874,18 @@ def add_to_wishlist(request, variant_id):
                 return redirect('collection_details',variant.product.category.id)
 
 
-        # check if already in wishlist
-        already_exists = Wishlist.objects.filter(user=request.user, product_variant=variant).exists()
+        # Check first, then decide to add or remove
+        existing = Wishlist.objects.filter(user=request.user, product_variant=variant).first()
 
-        if already_exists:
-            messages.error(request, "Already in your wishlist!")
+        if existing:
+            # Already in wishlist → remove it
+            existing.delete()
+            messages.success(request, f"{variant.product.product_name} removed from wishlist!")
         else:
-            # add to wishlist
-            Wishlist.objects.create(
-                user=request.user,
-                product_variant=variant
-            )
+            # Not in wishlist → add it
+            Wishlist.objects.create(user=request.user, product_variant=variant)
             messages.success(request, f"{variant.product.product_name} added to wishlist!")
-
-        # redirect based on where request came from
-        next_page = request.POST.get('next', '')
+        
         if next_page == 'shop':
             return redirect('shop')
         elif next_page == 'collection_details':
@@ -889,7 +896,7 @@ def add_to_wishlist(request, variant_id):
 @login_required
 def remove_from_wishlist(request, variant_id):
     if request.method == 'POST':
-
+        next_page = request.POST.get('next', '')
         # get the variant from DB
         variant = get_object_or_404(ProductVariant, id=variant_id, status='active')
 
@@ -897,4 +904,7 @@ def remove_from_wishlist(request, variant_id):
         Wishlist.objects.filter(user=request.user, product_variant=variant).delete()
         messages.success(request, "Removed from wishlist!")
         
-        return redirect('wishlist')
+        if next_page == 'product_details':
+            return redirect('product_details',variant.id)
+        else:
+            return redirect('wishlist')

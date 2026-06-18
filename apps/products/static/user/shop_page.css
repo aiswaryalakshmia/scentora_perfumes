@@ -87,10 +87,27 @@
   color: #ccc;
 }
 
+.product-card a {
+    text-decoration: none;
+    color: inherit;
+}
+
+.original-price {
+    color: #888;
+    font-size: 0.95rem;
+    margin-right: 8px;
+}
+
+.discount-price {
+    color: #d4af37;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
 .price {
-  display: block;
-  margin: 0.5rem 0;
-  font-weight: 600;
+    color: #d4af37;
+    font-size: 1.1rem;
+    font-weight: 700;
 }
 
 .add-to-cart {
@@ -379,6 +396,7 @@ input[type="radio"]:checked::after {
   cursor: pointer;
   transition: background-color 0.3s;
   font-family: 'Poppins', sans-serif;
+  margin-top: 10px;
 }
 
 .btn-add-cart:hover {

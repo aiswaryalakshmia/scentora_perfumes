@@ -4,10 +4,37 @@
   padding: 2rem;
 }
 
+
+.checkout-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 2rem;
+  position: relative;
+}
+
 .checkout-title {
   font-size: 2rem;
-  color: #f5f5f5;
-  margin-bottom: 2rem;
+  color: #d4af37;
+  margin-bottom: 0;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.btn-back-cart {
+  color: #aaa;
+  font-size: 0.85rem;
+  text-decoration: none;
+  border: 1px solid #444;
+  padding: 6px 14px;
+  border-radius: 4px;
+  transition: border-color 0.3s, color 0.3s;
+  z-index: 1; 
+}
+
+.btn-back-cart:hover {
+  border-color: #d4af37;
+  color: #d4af37;
 }
 
 .checkout-container {
@@ -33,19 +60,20 @@
   align-items: center;
 }
 
+/* ✅ Single add-address block */
 .add-address {
   color: #d4af37;
-  font-size: 0.9rem;
-  text-decoration: underline;
+  font-size: 0.85rem;
+  text-decoration: none;
+  border: 1px solid #d4af37;
+  padding: 6px 14px;
+  border-radius: 4px;
+  transition: background-color 0.3s, color 0.3s;
 }
 
-.address-form input {
-  width: 100%;
-  padding: 0.6rem;
-  margin-bottom: 1rem;
-  border: 1px solid #444;
-  background-color: #222;
-  color: #f5f5f5;
+.add-address:hover {
+  background-color: #d4af37;
+  color: #000;
 }
 
 .form-row {
@@ -53,6 +81,132 @@
   gap: 1rem;
 }
 
+/* Section spacing */
+.shipping-address,
+.delivery-options,
+.payment-method {
+  margin-bottom: 2rem;
+}
+
+/* Address Cards */
+.address-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.address-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 1rem 1.2rem;
+  cursor: pointer;
+  transition: border-color 0.3s;
+}
+
+.address-card:has(input[type="radio"]:checked) {
+  border-color: #d4af37;
+}
+
+.address-card input[type="radio"] {
+  margin-top: 4px;
+  accent-color: #d4af37;
+  flex-shrink: 0;
+}
+
+.address-info {
+  flex: 1;
+}
+
+.address-info p {
+  margin: 2px 0;
+  color: #ccc;
+  font-size: 0.9rem;
+}
+
+.address-top {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.address-top strong {
+  color: #f5f5f5;
+  font-size: 1rem;
+}
+
+.address-type-badge {
+  background-color: #2a2a2a;
+  border: 1px solid #555;
+  color: #aaa;
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+.default-badge {
+  background-color: #d4af3722;
+  border: 1px solid #d4af37;
+  color: #d4af37;
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+/* ✅ Single address-actions block */
+.address-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.address-actions a {
+  font-size: 0.8rem;
+  text-decoration: none;
+  padding: 4px 12px;
+  border-radius: 4px;
+  text-align: center;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.address-actions a:first-child {
+  border: 1px solid #d4af37;
+  color: #d4af37;
+}
+
+.address-actions a:first-child:hover {
+  background-color: #d4af37;
+  color: #000;
+}
+
+.address-actions a:last-child {
+  border: 1px solid #e74c3c;
+  color: #e74c3c;
+}
+
+.address-actions a:last-child:hover {
+  background-color: #e74c3c;
+  color: #fff;
+}
+
+/* No address state */
+.shipping-address > p {
+  color: #aaa;
+  margin-top: 1rem;
+}
+
+.shipping-address > p a {
+  color: #d4af37;
+  text-decoration: underline;
+}
+
+/* Delivery Options */
 .delivery-options {
   margin-top: 2rem;
 }
@@ -87,6 +241,7 @@
   font-weight: 600;
 }
 
+/* Payment */
 .payment-method {
   margin-top: 2rem;
 }
@@ -111,15 +266,23 @@
   color: #d4af37;
 }
 
-.card-form input {
+.payment-panel input {
   width: 100%;
   padding: 0.6rem;
   margin-bottom: 1rem;
   border: 1px solid #444;
   background-color: #222;
   color: #f5f5f5;
+  border-radius: 4px;
 }
 
+.payment-panel p {
+  color: #ccc;
+  font-size: 0.95rem;
+  margin-top: 0.5rem;
+}
+
+/* Order Summary */
 .summary-item {
   display: flex;
   align-items: center;

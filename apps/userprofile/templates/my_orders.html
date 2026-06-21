@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Orders{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/my_orders.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="profile-summary">
+    <div class="profile-icon">
+      <i class="fa-solid fa-user"></i>
+    </div>
+    <h3>Welcome back</h3>
+    <p class="member-tier">Luxury Member</p>
+  </div>
+
+  <ul class="sidebar-menu">
+    <li class="{% if request.path == '/profile/dashboard/' %}active{% endif %}">
+      <a href="{% url 'profile_dashboard' %}">
+        <i class="fa-solid fa-table-cells-large"></i>
+        Dashboard
+      </a>
+    </li>
+
+    <li class="{% if request.path == '/profile/my-orders/' %}active{% endif %}">
+      <a href="{% url 'my_orders' %}">
+        <i class="fa-regular fa-clipboard"></i>
+        My Orders
+      </a>
+    </li>
+
+    <li>
+      <a href="#">
+        <i class="fa-regular fa-heart"></i>
+        Wishlist
+      </a>
+    </li>
+
+    <li class="{% if request.path == '/profile/addressbook/' %}active{% endif %}">
+      <a href="{% url 'address_book' %}">
+        <i class="fa-solid fa-location-dot"></i>
+        Address Book
+      </a>
+    </li>
+
+    <li>
+      <a href="#">
+        <i class="fa-solid fa-wallet"></i>
+        Wallet
+      </a>
+    </li>
+
+    <li class="{% if request.path == '/profile/edit_profile/' %}active{% endif %}">
+      <a href="{% url 'edit_profile' %}">
+        <i class="fa-regular fa-pen-to-square"></i>
+        Edit Profile
+      </a>
+    </li>
+
+    <li>
+      <a href="{% url 'logout' %}">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        Logout
+      </a>
+    </li>
+  </ul>
+</aside>
+
+<!-- Main Content -->
+<main class="orders-content">
+  <h2>My Orders</h2>
+
+  <!-- Filter Tabs -->
+  <div class="order-tabs">
+    <a href="?status=all" class="tab {% if status_filter == 'all' %}active{% endif %}">All Orders</a>
+    <a href="?status=delivered" class="tab {% if status_filter == 'delivered' %}active{% endif %}">Delivered</a>
+    <a href="?status=pending" class="tab {% if status_filter == 'pending' %}active{% endif %}">Pending</a>
+    <a href="?status=cancelled" class="tab {% if status_filter == 'cancelled' %}active{% endif %}">Cancelled</a>
+  </div>
+
+  <!-- Orders List -->
+  {% if orders %}
+    {% for order in orders %}
+    <div class="order-card">
+
+      <!-- Product Image -->
+      <div class="order-image">
+        {% with order.items.first as first_item %}
+          {% if first_item %}
+            {% with first_item.product_variant.images.first as img %}
+              {% if img %}
+                <img src="{{ img.image.url }}" alt="{{ first_item.product_variant.product.product_name }}">
+              {% else %}
+                <div class="no-image"><i class="fa-solid fa-image"></i></div>
+              {% endif %}
+            {% endwith %}
+          {% endif %}
+        {% endwith %}
+      </div>
+
+      <!-- Order Info -->
+      <div class="order-info">
+        {% with order.items.first as first_item %}
+          {% if first_item %}
+            <h4>{{ first_item.product_variant.product.product_name }}</h4>
+          {% endif %}
+        {% endwith %}
+        <p class="order-id">ORDER #{{ order.order_number }}</p>
+        <p class="order-amount">₹{{ order.final_amount }}</p>
+      </div>
+
+      <!-- Order Status and Date -->
+      <div class="order-meta">
+        <span class="status-badge status-{{ order.order_status }}">
+          ● {{ order.order_status|capfirst }}
+        </span>
+        <p class="order-date">{{ order.created_at|date:"M d, Y" }}</p>
+      </div>
+
+      <!-- Actions -->
+      <div class="order-actions">
+        <a href="{% url 'order_detail' order.id %}" class="btn-view">View Details</a>
+        {% if order.order_status == 'delivered' %}
+          <a href="#" class="btn-track">Track Order</a>
+        {% elif order.order_status == 'cancelled' %}
+          <a href="#" class="btn-reorder">Reorder</a>
+        {% endif %}
+      </div>
+
+    </div>
+    {% endfor %}
+
+  {% else %}
+    <div class="no-orders">
+      <i class="fa-solid fa-box-open"></i>
+      <p>No orders found.</p>
+      <a href="{% url 'shop' %}" class="btn-shop">Start Shopping</a>
+    </div>
+  {% endif %}
+
+</main>
+
+{% endblock %}

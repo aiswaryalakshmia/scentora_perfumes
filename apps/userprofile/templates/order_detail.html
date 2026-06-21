@@ -1,0 +1,241 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Order Details{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/order_detail.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="profile-summary">
+    <div class="profile-icon">
+      <i class="fa-solid fa-user"></i>
+    </div>
+    <h3>Welcome back</h3>
+    <p class="member-tier">Luxury Member</p>
+  </div>
+
+  <ul class="sidebar-menu">
+    <li class="{% if request.path == '/profile/dashboard/' %}active{% endif %}">
+      <a href="{% url 'profile_dashboard' %}">
+        <i class="fa-solid fa-table-cells-large"></i>
+        Dashboard
+      </a>
+    </li>
+
+    <li class="active">
+      <a href="{% url 'my_orders' %}">
+        <i class="fa-regular fa-clipboard"></i>
+        My Orders
+      </a>
+    </li>
+
+    <li>
+      <a href="#">
+        <i class="fa-regular fa-heart"></i>
+        Wishlist
+      </a>
+    </li>
+
+    <li class="{% if request.path == '/profile/addressbook/' %}active{% endif %}">
+      <a href="{% url 'address_book' %}">
+        <i class="fa-solid fa-location-dot"></i>
+        Address Book
+      </a>
+    </li>
+
+    <li>
+      <a href="#">
+        <i class="fa-solid fa-wallet"></i>
+        Wallet
+      </a>
+    </li>
+
+    <li class="{% if request.path == '/profile/edit_profile/' %}active{% endif %}">
+      <a href="{% url 'edit_profile' %}">
+        <i class="fa-regular fa-pen-to-square"></i>
+        Edit Profile
+      </a>
+    </li>
+
+    <li>
+      <a href="{% url 'logout' %}">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        Logout
+      </a>
+    </li>
+  </ul>
+</aside>
+
+<!-- Main Content -->
+<main class="order-detail-content">
+
+  <!-- Header -->
+  <div class="detail-header">
+    <div>
+      <h2>Order Details</h2>
+      <p class="order-id-text">Order ID: #{{ order.order_number }}</p>
+    </div>
+    <div class="header-actions">
+      <a href="#" class="btn-invoice">
+        <i class="fa-solid fa-download"></i> Download Invoice
+      </a>
+      <a href="#" class="btn-reorder">Reorder</a>
+    </div>
+  </div>
+
+  <!-- Info Cards -->
+  <div class="info-cards">
+    <div class="info-card">
+      <p class="info-label">ORDER DATE</p>
+      <p class="info-value">{{ order.created_at|date:"M d, Y" }}</p>
+    </div>
+    <div class="info-card">
+      <p class="info-label">PAYMENT METHOD</p>
+      <p class="info-value">
+        <i class="fa-solid fa-money-bill"></i>
+        {{ order.get_payment_method_display }}
+      </p>
+    </div>
+    <div class="info-card">
+      <p class="info-label">ORDER STATUS</p>
+      <span class="status-badge status-{{ order.order_status }}">
+        ● {{ order.order_status|capfirst }}
+      </span>
+    </div>
+    <div class="info-card">
+      <p class="info-label">TOTAL AMOUNT</p>
+      <p class="info-value">₹{{ order.final_amount }}</p>
+    </div>
+  </div>
+
+  <!-- Delivery Progress -->
+  <div class="delivery-progress">
+    <h3>Delivery Progress</h3>
+    <div class="progress-bar">
+
+      <div class="progress-step {% if order.order_status in 'pending,processing,shipped,delivered' %}completed{% endif %}">
+        <div class="step-circle"><i class="fa-solid fa-check"></i></div>
+        <p class="step-label">Order Placed</p>
+        <p class="step-date">{{ order.created_at|date:"M d, Y" }}</p>
+      </div>
+
+      <div class="progress-line {% if order.order_status in 'processing,shipped,delivered' %}active{% endif %}"></div>
+
+      <div class="progress-step {% if order.order_status in 'processing,shipped,delivered' %}completed{% endif %}">
+        <div class="step-circle"><i class="fa-solid fa-check"></i></div>
+        <p class="step-label">Processing</p>
+        <p class="step-date">—</p>
+      </div>
+
+      <div class="progress-line {% if order.order_status in 'shipped,delivered' %}active{% endif %}"></div>
+
+      <div class="progress-step {% if order.order_status in 'shipped,delivered' %}completed{% endif %}">
+        <div class="step-circle"><i class="fa-solid fa-check"></i></div>
+        <p class="step-label">Shipped</p>
+        <p class="step-date">—</p>
+      </div>
+
+      <div class="progress-line {% if order.order_status == 'delivered' %}active{% endif %}"></div>
+
+      <div class="progress-step {% if order.order_status == 'delivered' %}completed{% endif %}">
+        <div class="step-circle"><i class="fa-solid fa-check"></i></div>
+        <p class="step-label">Delivered</p>
+        <p class="step-date">—</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Items Ordered -->
+  <div class="items-section">
+    <h3>Items Ordered</h3>
+    {% for item in order_items %}
+    <div class="order-item-card">
+      {% with item.product_variant.images.first as img %}
+        {% if img %}
+          <img src="{{ img.image.url }}" alt="{{ item.product_variant.product.product_name }}">
+        {% else %}
+          <div class="no-img"><i class="fa-solid fa-image"></i></div>
+        {% endif %}
+      {% endwith %}
+      <div class="item-details">
+        <h4>{{ item.product_variant.product.product_name }}</h4>
+        <p>{{ item.product_variant.size }}ml</p>
+      </div>
+      <div class="item-qty">
+        <p class="qty-label">QUANTITY</p>
+        <p>{{ item.quantity }}</p>
+      </div>
+      <div class="item-price">
+        <p class="qty-label">UNIT PRICE</p>
+        <p>₹{{ item.price }}</p>
+      </div>
+      <div class="item-total">
+        <p class="qty-label">TOTAL</p>
+        <p class="total-price">₹{{ item.total }}</p>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Bottom Cards -->
+  <div class="bottom-cards">
+
+    <!-- Shipping Address -->
+    <div class="bottom-card">
+      <h3><i class="fa-solid fa-location-dot"></i> Shipping Address</h3>
+      <strong>{{ order.order_address.full_name }}</strong>
+      <p>{{ order.order_address.address_line1 }}{% if order.order_address.address_line2 %}, {{ order.order_address.address_line2 }}{% endif %}</p>
+      <p>{{ order.order_address.city }}, {{ order.order_address.state }} - {{ order.order_address.pincode }}</p>
+      <p>{{ order.order_address.country }}</p>
+      <p>📞 {{ order.order_address.phone_number }}</p>
+    </div>
+
+    <!-- Payment Details -->
+    <div class="bottom-card">
+      <h3><i class="fa-solid fa-credit-card"></i> Payment Details</h3>
+      <div class="payment-row">
+        <span class="pay-label">METHOD</span>
+        <span>Cash on Delivery</span>
+      </div>
+      <div class="payment-row">
+        <span class="pay-label">STATUS</span>
+        <span class="pay-status">
+          {% if order.order_status == 'delivered' %}Paid{% else %}Pending{% endif %}
+        </span>
+      </div>
+      <div class="payment-row">
+        <span class="pay-label">SUBTOTAL</span>
+        <span>₹{{ order.total_amount }}</span>
+      </div>
+      <div class="payment-row">
+        <span class="pay-label">SHIPPING</span>
+        <span>{% if order.total_amount == order.final_amount %}Complementary{% else %}₹{{ order.final_amount|add:"-order.total_amount" }}{% endif %}</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Write a Review -->
+  <div class="review-link">
+    <a href="#">Write a Review</a>
+  </div>
+
+  <!-- Bottom Actions -->
+  <div class="bottom-actions">
+    <a href="#" class="btn-track-order">
+      <i class="fa-solid fa-truck"></i> Track Order
+    </a>
+    <a href="#" class="btn-get-help">
+      <i class="fa-solid fa-headset"></i> Get Help
+    </a>
+  </div>
+
+</main>
+
+{% endblock %}

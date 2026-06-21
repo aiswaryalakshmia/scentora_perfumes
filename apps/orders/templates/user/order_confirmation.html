@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Order Confirmed{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'user/order_confirmation.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="confirmation-page">
+
+  <!-- Header -->
+  <div class="confirmation-header">
+    <div class="success-icon">✓</div>
+    <h1>Order Confirmed</h1>
+    <p>Thank you for your purchase. Your order has been placed successfully.</p>
+
+    <div class="order-meta">
+      <div class="meta-item">
+        <span class="meta-label">ORDER ID</span>
+        <span class="meta-value">#{{ order.order_number }}</span>
+      </div>
+      <div class="meta-divider"></div>
+      <div class="meta-item">
+        <span class="meta-label">ORDER DATE</span>
+        <span class="meta-value">{{ order.created_at|date:"d M Y" }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="confirmation-container">
+
+    <!-- Order Summary -->
+    <div class="confirmation-left">
+      <h3>Order Summary</h3>
+
+      {% for item in order_items %}
+      <div class="order-item">
+        {% with item.product_variant.images.first as img %}
+          {% if img %}
+            <img src="{{ img.image.url }}" alt="{{ item.product_variant.product.product_name }}">
+          {% endif %}
+        {% endwith %}
+        <div class="item-info">
+          <h4>{{ item.product_variant.product.product_name }}</h4>
+          <p>{{ item.product_variant.size }}ml</p>
+          <p>QTY {{ item.quantity }}</p>
+        </div>
+        <span>₹{{ item.total }}</span>
+      </div>
+      {% endfor %}
+
+      <div class="order-totals">
+        <p>Subtotal <span>₹{{ order.total_amount }}</span></p>
+        <p>Shipping <span>{% if order.total_amount == order.final_amount %}Free{% else %}₹{{ order.final_amount|add:"-order.total_amount" }}{% endif %}</span></p>
+        <hr>
+        <p class="final-total">Total <span>₹{{ order.final_amount }}</span></p>
+      </div>
+    </div>
+
+    <!-- Shipping Details -->
+    <div class="confirmation-right">
+      <h3>Shipping Details</h3>
+
+      <div class="detail-group">
+        <span class="detail-label">CUSTOMER</span>
+        <strong>{{ order.order_address.full_name }}</strong>
+      </div>
+
+      <div class="detail-group">
+        <span class="detail-label">DELIVERY ADDRESS</span>
+        <p>{{ order.order_address.address_line1 }}{% if order.order_address.address_line2 %}, {{ order.order_address.address_line2 }}{% endif %}</p>
+        <p>{{ order.order_address.city }}, {{ order.order_address.state }} - {{ order.order_address.pincode }}</p>
+        <p>{{ order.order_address.country }}</p>
+      </div>
+
+      <div class="detail-group">
+        <span class="detail-label">CONTACT</span>
+        <p>{{ order.order_address.phone_number }}</p>
+      </div>
+
+      <div class="confirmation-actions">
+        <a href="#" class="btn-track">Track Order →</a>
+        <a href="{% url 'shop' %}" class="btn-continue">Continue Shopping</a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Quote Section -->
+  <div class="quote-section">
+    <p class="quote-label">THE SCENTORA EXPERIENCE</p>
+    <h2 class="quote-text">"A fragrance is more than a scent; it is a signature of your spirit."</h2>
+    <p class="quote-sub">Your selection is being hand-wrapped in our signature Scentora keepsake box, accompanied by a wax-sealed certificate of authenticity from our master distillers.</p>
+  </div>
+
+</div>
+{% endblock %}

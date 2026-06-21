@@ -29,13 +29,12 @@ address book
         </a>
       </li>
 
-      <li>
-          <a href="#">
-              <i class="fa-regular fa-clipboard"></i>
-              My Orders
-          </a>
-      </li>
-
+      <li class="{% if request.path == '/profile/my-orders/' %}active{% endif %}">
+        <a href="{% url 'my_orders' %}">
+          <i class="fa-regular fa-clipboard"></i>
+          My Orders
+        </a>
+    </li>
       <li>
           <a href="#">
               <i class="fa-regular fa-heart"></i>

@@ -30,12 +30,12 @@ add address
         </a>
       </li>
 
-      <li>
-          <a href="#">
-              <i class="fa-regular fa-clipboard"></i>
-              My Orders
-          </a>
-      </li>
+      <li class="{% if request.path == '/profile/my-orders/' %}active{% endif %}">
+        <a href="{% url 'my_orders' %}">
+          <i class="fa-regular fa-clipboard"></i>
+          My Orders
+        </a>
+    </li>
 
       <li>
           <a href="#">
@@ -85,6 +85,7 @@ add address
     {% endif %}
     <form method="POST" class="address-form">
     {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
       <!-- Personal Details -->
       <div class="form-section">
         <h4 class="section-title">Personal Details</h4>
@@ -175,7 +176,7 @@ add address
       <!-- Buttons -->
       <div class="form-actions">
         <button type="submit" class="btn save">Save Address</button>
-        <a href="{% url 'address_book' %}" class="btn cancel">Cancel</a>
+        <a href="{% if next == 'checkout' %}{% url 'checkout' %}{% else %}{% url 'address_book' %}{% endif %}" class="btn cancel">Cancel</a>
       </div>
     </form>
   </main>

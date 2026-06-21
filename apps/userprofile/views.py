@@ -15,6 +15,7 @@ from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from apps.authentication.models import User, OTP
 from .models import Address
+from apps.orders.models import Order
 
 @login_required
 @never_cache
@@ -154,8 +155,13 @@ def add_address(request):
             is_default=True if request.POST.get('is_default') else False
         )
         messages.success(request, "Address added successfully!")
+        next_page = request.POST.get('next', '')
+        if next_page == 'checkout':
+            return redirect('checkout')
         return redirect('address_book')    
-    return render(request, 'add_address.html')
+    return render(request, 'add_address.html', {
+    'next': request.GET.get('next', '')
+})
 
 @login_required
 @never_cache
@@ -185,6 +191,9 @@ def delete_address(request,address_id):
     )
 
     address.delete()
+    next_page = request.GET.get('next', '')  # ← reads from URL param
+    if next_page == 'checkout':
+        return redirect('checkout')
     return redirect('address_book')
 
 @login_required
@@ -216,8 +225,14 @@ def edit_address(request,address_id):
 
         address.save()
         messages.success(request, "Address updated successfully!")
+        next_page = request.POST.get('next', '')
+        if next_page == 'checkout':
+            return redirect('checkout')
         return redirect('address_book')
-    return render(request,'add_address.html', {'address':address})
+    return render(request, 'add_address.html', {
+    'address': address,
+    'next': request.GET.get('next', '')
+})
 
 @login_required
 @never_cache
@@ -422,3 +437,40 @@ def edit_profile(request):
 
         return redirect('edit_profile')
     return render(request, 'edit_profile.html', {'user': user})
+
+@login_required
+@never_cache
+def my_orders(request):
+    user = request.user
+
+    # get filter from URL
+    status_filter = request.GET.get('status', 'all')
+
+    # fetch all orders of user, newest first
+    orders = Order.objects.filter(user=user).order_by('-created_at')
+
+    # apply filter based on selected tab
+    if status_filter == 'delivered':
+        orders = orders.filter(order_status='delivered')
+    elif status_filter == 'pending':
+        orders = orders.filter(order_status='pending')
+    elif status_filter == 'cancelled':
+        orders = orders.filter(order_status='cancelled')
+
+    context = {
+        'orders': orders,
+        'status_filter': status_filter,
+    }
+    return render(request, 'my_orders.html', context)
+
+@login_required
+@never_cache
+def order_detail(request, order_id):
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    order_items = order.items.select_related('product_variant__product').all()
+
+    context = {
+        'order': order,
+        'order_items': order_items,
+    }
+    return render(request, 'order_detail.html', context)

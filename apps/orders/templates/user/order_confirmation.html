@@ -82,7 +82,7 @@
       </div>
 
       <div class="confirmation-actions">
-        <a href="#" class="btn-track">Track Order →</a>
+        <a href="{% url 'order_detail' order.id %}" class="btn-track">Track Order →</a>
         <a href="{% url 'shop' %}" class="btn-continue">Continue Shopping</a>
       </div>
     </div>

@@ -7,71 +7,11 @@ address book
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/address_book.css' %}">
+<link rel="stylesheet" href="{% static 'css/side_bar.css' %}">
 {% endblock %}
 
 {% block content %}
-
-  <!-- Sidebar -->
-  <aside class="sidebar">
-    <div class="profile-summary">
-      <div class="profile-icon">
-        <i class="fa-solid fa-user"></i>
-      </div>
-      <h3>Welcome back</h3>
-      <p class="member-tier">Luxury Member</p>
-    </div>
-
-    <ul class="sidebar-menu">
-      <li class="{% if request.path == '/profile/dashboard/' %}active{% endif %}">
-        <a href="{% url 'profile_dashboard' %}">
-            <i class="fa-solid fa-table-cells-large"></i>
-            Dashboard
-        </a>
-      </li>
-
-      <li class="{% if request.path == '/profile/my-orders/' %}active{% endif %}">
-        <a href="{% url 'my_orders' %}">
-          <i class="fa-regular fa-clipboard"></i>
-          My Orders
-        </a>
-    </li>
-      <li>
-          <a href="#">
-              <i class="fa-regular fa-heart"></i>
-              Wishlist
-          </a>
-      </li>
-
-      <li class="{% if request.path == '/profile/addressbook/' %}active{% endif %}">
-        <a href="{% url 'address_book' %}">
-            <i class="fa-solid fa-location-dot"></i>
-            Address Book
-        </a>
-      </li>
-
-      <li>
-          <a href="#">
-              <i class="fa-solid fa-wallet"></i>
-              Wallet
-          </a>
-      </li>
-
-      <li class="{% if request.path == '/profile/edit_profile/' %}active{% endif %}">
-        <a href="{% url 'edit_profile' %}">
-            <i class="fa-regular fa-pen-to-square"></i>
-            Edit Profile
-        </a>
-      </li>
-
-      <li>
-          <a href="{% url 'logout' %}">
-              <i class="fa-solid fa-right-from-bracket"></i>
-              Logout
-          </a>
-      </li>
-    </ul>
-</aside>
-
+  {% include 'side_bar.html' %}
   <!-- Main Content -->
   <main class="address-content">
     <div class="header-row">

@@ -1,0 +1,323 @@
+.order-management,
+.order-detail-page {
+  padding: 30px;
+  color: #fff;
+  background: #000;
+}
+
+.order-header,
+.detail-topbar,
+.section-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.page-title {
+  color: #f2f2f2;
+  font-size: 36px;
+  font-family: Georgia, serif;
+  font-weight: 400;
+}
+
+.page-subtitle {
+  color: #b7b0a4;
+}
+
+.order-filters {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 60px;
+  flex-wrap: wrap;
+}
+
+.search-box {
+  width: 420px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #282828;
+  border: 1px solid #4a3f2b;
+  padding: 0 12px;
+}
+
+.search-box i {
+  color: #c8b57d;
+}
+
+.search-box input,
+.order-filters select,
+.status-card select,
+.status-card input {
+  background: #282828;
+  border: 1px solid #333;
+  color: #ddd;
+  height: 38px;
+  border-radius: 4px;
+  padding: 0 12px;
+  outline: none;
+}
+
+.search-box input {
+  border: 0;
+  flex: 1;
+}
+
+.order-filters button,
+.status-card button {
+  background: #f3c84b;
+  color: #111;
+  border: 0;
+  border-radius: 4px;
+  padding: 0 18px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.clear-btn,
+.back-btn {
+  border: 1px solid #3b3425;
+  color: #d8cfae;
+  padding: 10px 16px;
+  border-radius: 20px;
+}
+
+.orders-table-card,
+.items-card,
+.detail-card,
+.status-card,
+.history-card {
+  background: #1f1f1f;
+  border: 1px solid #302b21;
+  border-radius: 8px;
+}
+
+.orders-table-card,
+.items-card {
+  overflow: hidden;
+}
+
+.orders-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.orders-table th {
+  background: #292929;
+  color: #f3c84b;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-align: left;
+  padding: 16px;
+}
+
+.orders-table td {
+  color: #d7d2c8;
+  padding: 22px 16px;
+  border-bottom: 1px solid #292929;
+  font-size: 14px;
+}
+
+.orders-table td span {
+  display: block;
+  color: #9c968b;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.amount {
+  color: #f3c84b !important;
+  font-weight: 700;
+}
+
+.status-pill {
+  display: inline-block !important;
+  width: fit-content;
+  padding: 5px 12px;
+  border-radius: 16px;
+  font-size: 10px !important;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.status-pending,
+.payment-awaiting {
+  color: #f3c84b !important;
+  background: rgba(243, 200, 75, 0.12);
+  border: 1px solid rgba(243, 200, 75, 0.35);
+}
+
+.status-processing,
+.status-shipped {
+  color: #4b9cff !important;
+  background: rgba(75, 156, 255, 0.12);
+  border: 1px solid rgba(75, 156, 255, 0.35);
+}
+
+.status-delivered,
+.payment-paid {
+  color: #35d37c !important;
+  background: rgba(53, 211, 124, 0.12);
+  border: 1px solid rgba(53, 211, 124, 0.35);
+}
+
+.status-cancelled {
+  color: #ff8f86 !important;
+  background: rgba(255, 143, 134, 0.12);
+  border: 1px solid rgba(255, 143, 134, 0.35);
+}
+
+.neutral {
+  color: #d0ccc3 !important;
+  background: #3a3732;
+  border: 1px solid #575047;
+}
+
+.icon-action i {
+  color: #d8cfae;
+}
+
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  padding: 18px;
+  color: #aaa;
+}
+
+.page-controls a {
+  color: #d8cfae;
+  padding: 7px 11px;
+  border-radius: 4px;
+}
+
+.page-controls .active {
+  background: #c59a3a;
+  color: #000;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.4fr;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.detail-card,
+.status-card,
+.history-card {
+  padding: 24px;
+}
+
+.detail-card h3,
+.items-card h3,
+.status-card h3,
+.history-card h3 {
+  color: #f3c84b;
+  font-family: Georgia, serif;
+  font-weight: 400;
+  margin-top: 0;
+}
+
+.label,
+.status-card label {
+  color: #8e887d;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-top: 18px;
+}
+
+.address-box {
+  background: #292929;
+  border-radius: 6px;
+  padding: 18px;
+  color: #d7d2c8;
+}
+
+.section-title-row {
+  padding: 18px 24px;
+  margin: 0;
+}
+
+.section-title-row span {
+  color: #f3c84b;
+  background: rgba(243, 200, 75, 0.12);
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.order-total-box {
+  width: 320px;
+  margin-left: auto;
+  padding: 22px;
+}
+
+.order-total-box p {
+  display: flex;
+  justify-content: space-between;
+  color: #d7d2c8;
+}
+
+.order-total-box .final strong {
+  color: #f3c84b;
+}
+
+.bottom-grid {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  gap: 18px;
+  margin-top: 22px;
+}
+
+.status-card form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.status-card button {
+  height: 44px;
+  border-radius: 22px;
+  margin-top: 10px;
+}
+
+.timeline-item {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.timeline-item i {
+  color: #111;
+  background: #f3c84b;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+
+.timeline-item p,
+.timeline-item span {
+  color: #aaa;
+  font-size: 12px;
+}
+
+@media (max-width: 900px) {
+  .detail-grid,
+  .bottom-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .search-box {
+    width: 100%;
+  }
+
+  .orders-table-card,
+  .items-card {
+    overflow-x: auto;
+  }
+}

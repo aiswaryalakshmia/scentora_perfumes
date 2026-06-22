@@ -1,13 +1,14 @@
 """Views for checkout and order management."""
 import uuid
 from django.shortcuts import render,redirect, get_object_or_404
+from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import never_cache
 from django.contrib import messages
 from apps.userprofile.models import Address
 from apps.products.models import Cart
 from .models import Order, OrderItem, OrderAddress
-
+from django.db.models import Q
 
 SHIPPING_CHARGES = {
     'standard': 0,
@@ -153,6 +154,104 @@ def order_confirmation(request, order_id):
     }
     return render(request, 'user/order_confirmation.html', context)
 
+@login_required
+@never_cache
+def order_management(request):
+    if not request.user.is_superuser:
+        return redirect('admin_login')
 
+    search_query = request.GET.get('search', '').strip()
+    status_filter = request.GET.get('status', '').strip()
+    sort = request.GET.get('sort', '').strip()
 
+    orders = Order.objects.select_related('user', 'order_address').order_by('-created_at')
 
+    if search_query:
+        orders = orders.filter(
+            Q(order_number__icontains=search_query) |
+            Q(user__full_name__icontains=search_query) |
+            Q(user__email__icontains=search_query) |
+            Q(order_address__phone_number__icontains=search_query)
+        )
+
+    if status_filter:
+        orders = orders.filter(order_status=status_filter)
+
+    if sort == 'date_old':
+        orders = orders.order_by('created_at')
+    elif sort == 'amount_high':
+        orders = orders.order_by('-final_amount')
+    elif sort == 'amount_low':
+        orders = orders.order_by('final_amount')
+    else:
+        orders = orders.order_by('-created_at')
+
+    paginator = Paginator(orders, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'admin/order_management.html', {
+        'orders': page_obj,
+        'search_query': search_query,
+        'status_filter': status_filter,
+        'sort': sort,
+        'status_choices': Order.STATUS_CHOICES,
+    })
+
+@login_required
+@never_cache
+def admin_order_detail(request, order_id):
+    if not request.user.is_superuser:
+        return redirect('admin_login')
+
+    order = get_object_or_404(
+        Order.objects.select_related('user', 'order_address'),
+        id=order_id
+    )
+
+    order_items = order.items.select_related('product_variant__product').all()
+
+    allowed_values = get_allowed_next_statuses(order.order_status)
+
+    allowed_status_choices = [
+        choice for choice in Order.STATUS_CHOICES
+        if choice[0] in allowed_values
+    ]
+
+    return render(request, 'admin/order_detail.html', {
+        'order': order,
+        'order_items': order_items,
+        'status_choices': allowed_status_choices,
+    })
+
+def get_allowed_next_statuses(current_status):
+    status_flow = {
+        'pending': ['processing', 'cancelled'],
+        'processing': ['shipped', 'cancelled'],
+        'shipped': ['delivered', 'cancelled'],
+        'delivered': [],
+        'cancelled': [],
+    }
+
+    return status_flow.get(current_status, [])
+
+@login_required
+@never_cache
+def update_order_status(request, order_id):
+    if not request.user.is_superuser:
+        return redirect('admin_login')
+
+    order = get_object_or_404(Order, id=order_id)
+
+    if request.method == 'POST':
+        new_status = request.POST.get('order_status')
+        allowed_statuses = get_allowed_next_statuses(order.order_status)
+
+        if new_status in allowed_statuses:
+            order.order_status = new_status
+            order.save()
+            messages.success(request, 'Order status updated successfully.')
+        else:
+            messages.error(request, 'Invalid status change. Please update order step by step.')
+
+    return redirect('admin_order_detail', order_id=order.id)

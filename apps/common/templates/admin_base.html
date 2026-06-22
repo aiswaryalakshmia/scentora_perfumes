@@ -33,7 +33,9 @@
           <i class="fa-solid fa-layer-group"></i> Categories
           </a>
         </li>
-        <li><i class="fa-solid fa-receipt"></i> Orders</li>
+        <li class="{% if request.resolver_match.url_name == 'order_management' %}active{% endif %}">
+            <a href="{% url 'order_management' %}"><i class="fa-solid fa-receipt"></i> Orders</a>
+        </li>
         <li class="{% if request.resolver_match.url_name == 'user_management' %}active{% endif %}">
             <a href="{% url 'user_management' %}"><i class="fa-solid fa-users"></i> Customers</a>
         </li>

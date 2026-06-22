@@ -1,0 +1,158 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}Order Details{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'admin/order_management.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="order-detail-page">
+  <div class="detail-topbar">
+    <div>
+      <h1 class="page-title">Order Details</h1>
+      <span class="order-chip">#{{ order.order_number }}</span>
+    </div>
+    <a href="{% url 'order_management' %}" class="back-btn">
+      <i class="fa-solid fa-arrow-left"></i> Back to Orders
+    </a>
+  </div>
+
+  <section class="detail-grid">
+    <div class="detail-card">
+      <h3>Order Details</h3>
+      <p class="label">Order Identifier</p>
+      <p>#{{ order.order_number }}</p>
+
+      <p class="label">Order Date & Time</p>
+      <p>{{ order.created_at|date:"M d, Y - h:i A" }}</p>
+
+      <p class="label">Payment Method</p>
+      <p>{{ order.get_payment_method_display }}</p>
+    </div>
+
+    <div class="detail-card">
+      <h3>Customer Details</h3>
+      <p class="label">Full Name</p>
+      <p>{{ order.user.full_name|default:order.user.username }}</p>
+
+      <p class="label">Email Address</p>
+      <p>{{ order.user.email }}</p>
+
+      <p class="label">Phone Number</p>
+      <p>{{ order.order_address.phone_number }}</p>
+    </div>
+
+    <div class="detail-card wide">
+      <h3>Shipping Address</h3>
+      <div class="address-box">
+        <p>{{ order.order_address.full_name }}</p>
+        <p>{{ order.order_address.address_line1 }}</p>
+        {% if order.order_address.address_line2 %}
+          <p>{{ order.order_address.address_line2 }}</p>
+        {% endif %}
+        <p>{{ order.order_address.city }}, {{ order.order_address.state }}</p>
+        <p>{{ order.order_address.pincode }}, {{ order.order_address.country }}</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="items-card">
+    <div class="section-title-row">
+      <h3>Order Items</h3>
+      <span>{{ order_items|length }} items in package</span>
+    </div>
+
+    <table class="orders-table detail-items-table">
+      <thead>
+        <tr>
+          <th>PRODUCT</th>
+          <th>ORIGINAL PRICE</th>
+          <th>QTY</th>
+          <th>STATUS</th>
+          <th>TOTAL</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in order_items %}
+        <tr>
+          <td>
+            <strong>{{ item.product_variant.product.product_name }}</strong>
+            <span>{{ item.product_variant.size }} ml</span>
+          </td>
+          <td>₹{{ item.price }}</td>
+          <td>{{ item.quantity }}</td>
+          <td><span class="status-pill status-{{ order.order_status }}">{{ order.get_order_status_display }}</span></td>
+          <td class="amount">₹{{ item.total }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="order-total-box">
+      <p><span>Items Subtotal</span><strong>₹{{ order.total_amount }}</strong></p>
+      <p><span>Total Discount</span><strong>-₹{{ order.discount_amount }}</strong></p>
+      <p class="final"><span>Final Total</span><strong>₹{{ order.final_amount }}</strong></p>
+    </div>
+  </section>
+
+  <section class="bottom-grid">
+    <div class="status-card">
+      <h3>Status Management</h3>
+      <form method="POST" action="{% url 'update_order_status' order.id %}">
+        {% csrf_token %}
+        <label>Update Order Status</label>
+        {% if status_choices %}
+          <form method="POST" action="{% url 'update_order_status' order.id %}">
+              {% csrf_token %}
+              <select name="order_status">
+                  {% for value, label in status_choices %}
+                      <option value="{{ value }}">{{ label }}</option>
+                  {% endfor %}
+              </select>
+              <button type="submit">Update Status</button>
+          </form>
+        {% else %}
+            <p>This order is {{ order.get_order_status_display }}. No further status changes allowed.</p>
+        {% endif %}
+
+        <label>Payment Status</label>
+        <input type="text" value="{% if order.order_status == 'delivered' %}Paid{% else %}Pending{% endif %}" readonly>
+
+        <button type="submit">
+          <i class="fa-solid fa-floppy-disk"></i> Save Status Changes
+        </button>
+      </form>
+    </div>
+
+    <div class="history-card">
+      <h3>Order Activity History</h3>
+      <div class="timeline-item">
+        <i class="fa-solid fa-box"></i>
+        <div>
+          <strong>Order Submission</strong>
+          <p>{{ order.created_at|date:"M d, Y - h:i A" }}</p>
+          <span>Customer placed the order via Scentora.</span>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <i class="fa-solid fa-credit-card"></i>
+        <div>
+          <strong>Payment Method Selected</strong>
+          <p>{{ order.get_payment_method_display }}</p>
+          <span>Payment status follows order completion.</span>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <i class="fa-solid fa-truck"></i>
+        <div>
+          <strong>Current Status</strong>
+          <p>{{ order.get_order_status_display }}</p>
+          <span>Latest order state from admin management.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

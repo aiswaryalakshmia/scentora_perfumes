@@ -15,7 +15,13 @@ from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from apps.authentication.models import User, OTP
 from .models import Address
-from apps.orders.models import Order
+from apps.orders.models import Order,OrderItem
+from django.http import HttpResponse
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
 
 @login_required
 @never_cache
@@ -474,3 +480,185 @@ def order_detail(request, order_id):
         'order_items': order_items,
     }
     return render(request, 'order_detail.html', context)
+
+@login_required
+def download_invoice(request, order_id):
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    order_items = order.items.select_related('product_variant__product').all()
+
+    # create HTTP response with PDF content type
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="invoice_{order.order_number}.pdf"'
+
+    # create PDF
+    doc = SimpleDocTemplate(response, pagesize=A4)
+    styles = getSampleStyleSheet()
+    elements = []
+
+    # title
+    title_style = ParagraphStyle('title', fontSize=20, spaceAfter=10, textColor=colors.black, fontName='Helvetica-Bold')
+    elements.append(Paragraph("SCENTORA", title_style))
+    elements.append(Paragraph("Invoice", styles['Heading2']))
+    elements.append(Spacer(1, 0.2 * inch))
+
+    # order info
+    elements.append(Paragraph(f"Order Number: {order.order_number}", styles['Normal']))
+    elements.append(Paragraph(f"Order Date: {order.created_at.strftime('%d %B %Y')}", styles['Normal']))
+    elements.append(Paragraph(f"Payment Method: {order.get_payment_method_display()}", styles['Normal']))
+    elements.append(Paragraph(f"Order Status: {order.order_status.capitalize()}", styles['Normal']))
+    elements.append(Spacer(1, 0.3 * inch))
+
+    # shipping address
+    elements.append(Paragraph("Shipping Address", styles['Heading3']))
+    elements.append(Paragraph(f"{order.order_address.full_name}", styles['Normal']))
+    elements.append(Paragraph(f"{order.order_address.address_line1}", styles['Normal']))
+    if order.order_address.address_line2:
+        elements.append(Paragraph(f"{order.order_address.address_line2}", styles['Normal']))
+    elements.append(Paragraph(f"{order.order_address.city}, {order.order_address.state} - {order.order_address.pincode}", styles['Normal']))
+    elements.append(Paragraph(f"{order.order_address.country}", styles['Normal']))
+    elements.append(Paragraph(f"Phone: {order.order_address.phone_number}", styles['Normal']))
+    elements.append(Spacer(1, 0.3 * inch))
+
+    # order items table
+    elements.append(Paragraph("Items Ordered", styles['Heading3']))
+    table_data = [['Product', 'Size', 'Qty', 'Unit Price', 'Total']]
+
+    for item in order_items:
+        table_data.append([
+            item.product_variant.product.product_name,
+            f"{item.product_variant.size}ml",
+            str(item.quantity),
+            f"Rs.{item.price}",
+            f"Rs.{item.total}",
+        ])
+
+    table = Table(table_data, colWidths=[2.5*inch, 1*inch, 0.8*inch, 1.2*inch, 1.2*inch])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.black),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 11),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey]),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('PADDING', (0, 0), (-1, -1), 6),
+    ]))
+    elements.append(table)
+    elements.append(Spacer(1, 0.3 * inch))
+
+    # totals
+    totals_data = [
+        ['Subtotal', f"Rs.{order.total_amount}"],
+        ['Shipping', 'Free' if order.total_amount == order.final_amount else f"Rs.{order.final_amount - order.total_amount}"],
+        ['Discount', f"Rs.{order.discount_amount}"],
+        ['Total', f"Rs.{order.final_amount}"],
+    ]
+    totals_table = Table(totals_data, colWidths=[5*inch, 1.7*inch])
+    totals_table.setStyle(TableStyle([
+        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, -1), (-1, -1), 12),
+        ('LINEABOVE', (0, -1), (-1, -1), 1, colors.black),
+        ('PADDING', (0, 0), (-1, -1), 6),
+    ]))
+    elements.append(totals_table)
+    elements.append(Spacer(1, 0.3 * inch))
+
+    # footer
+    elements.append(Paragraph("Thank you for shopping with Scentora!", styles['Normal']))
+
+    doc.build(elements)
+    return response
+
+@login_required
+@never_cache
+def cancel_order(request, order_id):
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+
+    # only allow cancellation if order is pending or processing
+    if order.order_status not in ['pending', 'processing']:
+        messages.error(request, "This order cannot be cancelled.")
+        return redirect('order_detail', order_id=order.id)
+
+    if request.method == 'POST':
+        reason = request.POST.get('reason', '').strip()
+
+        # increment stock for each item
+        for item in order.items.select_related('product_variant').all():
+            item.product_variant.stock += item.quantity
+            item.product_variant.save()
+
+        # update order status
+        order.order_status = 'cancelled'
+        order.save()
+
+        messages.success(request, "Order cancelled successfully.")
+        return redirect('order_detail', order_id=order.id)
+
+    return redirect('order_detail', order_id=order.id)
+
+@login_required
+@never_cache
+def cancel_order_item(request, order_id, item_id):
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    item = get_object_or_404(OrderItem, id=item_id, order=order)
+
+    # only allow cancellation if order is pending or processing
+    if order.order_status not in ['pending', 'processing']:
+        messages.error(request, "Items cannot be cancelled at this stage.")
+        return redirect('order_detail', order_id=order.id)
+
+    # only allow if item is still active
+    if item.status == 'cancelled':
+        messages.error(request, "This item is already cancelled.")
+        return redirect('order_detail', order_id=order.id)
+
+    if request.method == 'POST':
+
+        # increment stock back
+        item.product_variant.stock += item.quantity
+        item.product_variant.save()
+
+        # cancel the item
+        item.status = 'cancelled'
+        item.save()
+
+        # check if all items are cancelled → cancel entire order
+        all_cancelled = not order.items.filter(status='active').exists()
+        if all_cancelled:
+            order.order_status = 'cancelled'
+            order.save()
+            messages.success(request, "All items cancelled. Order has been cancelled.")
+        else:
+            messages.success(request, "Item cancelled successfully.")
+
+        return redirect('order_detail', order_id=order.id)
+
+    return redirect('order_detail', order_id=order.id)
+
+@login_required
+@never_cache
+def return_order(request, order_id):
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+
+    # only allow return if order is delivered
+    if order.order_status != 'delivered':
+        messages.error(request, "Only delivered orders can be returned.")
+        return redirect('order_detail', order_id=order.id)
+
+    if request.method == 'POST':
+        reason = request.POST.get('reason', '').strip()
+
+        # reason is mandatory for return
+        if not reason:
+            messages.error(request, "Please provide a reason for return.")
+            return redirect('order_detail', order_id=order.id)
+
+        # update order status
+        order.order_status = 'returned'
+        order.save()
+
+        messages.success(request, "Return request submitted successfully.")
+        return redirect('order_detail', order_id=order.id)
+
+    return redirect('order_detail', order_id=order.id)

@@ -14,13 +14,31 @@
 <!-- Main Content -->
 <main class="orders-content">
   <h2>My Orders</h2>
+  <form method="GET" class="orders-search-form">
+    <input type="hidden" name="status" value="{{ status_filter }}">
 
+    <div class="orders-search-box">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input
+        type="text"
+        name="search"
+        value="{{ search_query }}"
+        placeholder="Search by order ID or product name..."
+      >
+    </div>
+
+    <button type="submit">Search</button>
+
+    {% if search_query %}
+      <a href="?status={{ status_filter }}" class="clear-search">Clear</a>
+    {% endif %}
+  </form>
   <!-- Filter Tabs -->
   <div class="order-tabs">
-    <a href="?status=all" class="tab {% if status_filter == 'all' %}active{% endif %}">All Orders</a>
-    <a href="?status=delivered" class="tab {% if status_filter == 'delivered' %}active{% endif %}">Delivered</a>
-    <a href="?status=pending" class="tab {% if status_filter == 'pending' %}active{% endif %}">Pending</a>
-    <a href="?status=cancelled" class="tab {% if status_filter == 'cancelled' %}active{% endif %}">Cancelled</a>
+    <a href="?status=all{% if search_query %}&search={{ search_query }}{% endif %}" class="tab {% if status_filter == 'all' %}active{% endif %}">All Orders</a>
+    <a href="?status=delivered{% if search_query %}&search={{ search_query }}{% endif %}" class="tab {% if status_filter == 'delivered' %}active{% endif %}">Delivered</a>
+    <a href="?status=pending{% if search_query %}&search={{ search_query }}{% endif %}" class="tab {% if status_filter == 'pending' %}active{% endif %}">Pending</a>
+    <a href="?status=cancelled{% if search_query %}&search={{ search_query }}{% endif %}" class="tab {% if status_filter == 'cancelled' %}active{% endif %}">Cancelled</a>
   </div>
 
   <!-- Orders List -->

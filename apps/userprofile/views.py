@@ -11,30 +11,33 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail
 from django.conf import settings
+from django.db.models import Q
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
-from apps.authentication.models import User, OTP
-from .models import Address
-from apps.orders.models import Order,OrderItem
 from django.http import HttpResponse
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
+from apps.authentication.models import User, OTP
+from apps.products.models import Wishlist
+from apps.orders.models import Order,OrderItem
+from .models import Address
 
 @login_required
 @never_cache
 def profile_dashboard(request):
-    user=request.user
+    user = request.user
+    orders = Order.objects.filter(user=user)
     context = {
-        'current_user':user,
-        'total_orders': 0,
-        'wishlist_count': 0,
-        'wallet_balance': 0,
-        'pending_orders': 0,
+        'current_user': user,
+        'total_orders': orders.count(),
+        'pending_orders': orders.filter(order_status='pending').count(),
+        'wishlist_count': Wishlist.objects.filter(user=user).count(),
+        'wallet_balance': 0,   # will update when wallet is ready
     }
-    return render(request,'userprofile.html',context)
+    return render(request, 'userprofile.html', context)
 
 @login_required
 @never_cache   
@@ -204,41 +207,128 @@ def delete_address(request,address_id):
 
 @login_required
 @never_cache
-def edit_address(request,address_id):
+def edit_address(request, address_id):
     try:
-        address=Address.objects.get(
+        address = Address.objects.get(
             id=address_id,
             user=request.user
-            )
+        )
     except Address.DoesNotExist:
-        return redirect('address_book')    
+        return redirect('address_book')
 
-    if request.method=='POST':
+    if request.method == 'POST':
+        full_name = request.POST.get('full_name', '').strip()
+        phone_number = request.POST.get('phone_number', '').strip()
+        address_line1 = request.POST.get('address_line1', '').strip()
+        address_line2 = request.POST.get('address_line2', '').strip()
+        city = request.POST.get('city', '').strip()
+        state = request.POST.get('state', '').strip()
+        country = request.POST.get('country', '').strip()
+        pincode = request.POST.get('pincode', '').strip()
+        address_type = request.POST.get('address_type', '').strip()
+        next_page = request.POST.get('next', '')
+
+        context = {
+            'address': address,
+            'next': next_page,
+        }
+
+        # FULL NAME
+        if not full_name:
+            context['error'] = 'Full name is required'
+            return render(request, 'add_address.html', context)
+
+        if not re.match(r'^[A-Za-z ]+$', full_name):
+            context['error'] = 'Full name can contain only letters'
+            return render(request, 'add_address.html', context)
+
+        if len(full_name) < 3:
+            context['error'] = 'Full name must be at least 3 characters'
+            return render(request, 'add_address.html', context)
+
+        # PHONE NUMBER
+        if not phone_number:
+            context['error'] = 'Phone number is required'
+            return render(request, 'add_address.html', context)
+
+        if not re.match(r'^\d{10}$', phone_number):
+            context['error'] = 'Enter a valid 10-digit phone number'
+            return render(request, 'add_address.html', context)
+
+        # ADDRESS LINE 1
+        if not address_line1:
+            context['error'] = 'Address Line 1 is required'
+            return render(request, 'add_address.html', context)
+
+        # ADDRESS LINE 2
+        if not address_line2:
+            context['error'] = 'Address Line 2 is required'
+            return render(request, 'add_address.html', context)
+
+        # CITY
+        if not city:
+            context['error'] = 'City is required'
+            return render(request, 'add_address.html', context)
+
+        if not re.match(r'^[A-Za-z ]+$', city):
+            context['error'] = 'City can contain only letters'
+            return render(request, 'add_address.html', context)
+
+        # STATE
+        if not state:
+            context['error'] = 'State is required'
+            return render(request, 'add_address.html', context)
+
+        if not re.match(r'^[A-Za-z ]+$', state):
+            context['error'] = 'State can contain only letters'
+            return render(request, 'add_address.html', context)
+
+        # COUNTRY
+        if not country:
+            context['error'] = 'Please select a country'
+            return render(request, 'add_address.html', context)
+
+        # PINCODE
+        if not pincode:
+            context['error'] = 'Pincode is required'
+            return render(request, 'add_address.html', context)
+
+        if not re.match(r'^\d{6}$', pincode):
+            context['error'] = 'Enter a valid 6-digit pincode'
+            return render(request, 'add_address.html', context)
+
+        # ADDRESS TYPE
+        if not address_type:
+            context['error'] = 'Please select an address type'
+            return render(request, 'add_address.html', context)
 
         if request.POST.get('is_default'):
             Address.objects.filter(user=request.user).update(is_default=False)
 
-        address.full_name = request.POST.get('full_name')
-        address.phone_number = request.POST.get('phone_number')
-        address.address_line1 = request.POST.get('address_line1')
-        address.address_line2 = request.POST.get('address_line2')
-        address.city = request.POST.get('city')
-        address.state = request.POST.get('state')
-        address.country = request.POST.get('country')
-        address.pincode = request.POST.get('pincode')
-        address.address_type = request.POST.get('address_type')
-        address.is_default=True if request.POST.get('is_default') else False
+        address.full_name = full_name
+        address.phone_number = phone_number
+        address.address_line1 = address_line1
+        address.address_line2 = address_line2
+        address.city = city
+        address.state = state
+        address.country = country
+        address.pincode = pincode
+        address.address_type = address_type
+        address.is_default = True if request.POST.get('is_default') else False
 
         address.save()
+
         messages.success(request, "Address updated successfully!")
-        next_page = request.POST.get('next', '')
+
         if next_page == 'checkout':
             return redirect('checkout')
+
         return redirect('address_book')
+
     return render(request, 'add_address.html', {
-    'address': address,
-    'next': request.GET.get('next', '')
-})
+        'address': address,
+        'next': request.GET.get('next', '')
+    })
 
 @login_required
 @never_cache
@@ -449,13 +539,17 @@ def edit_profile(request):
 def my_orders(request):
     user = request.user
 
-    # get filter from URL
     status_filter = request.GET.get('status', 'all')
+    search_query = request.GET.get('search', '').strip()
 
-    # fetch all orders of user, newest first
     orders = Order.objects.filter(user=user).order_by('-created_at')
 
-    # apply filter based on selected tab
+    if search_query:
+        orders = orders.filter(
+            Q(order_number__icontains=search_query) |
+            Q(items__product_variant__product__product_name__icontains=search_query)
+        ).distinct()
+
     if status_filter == 'delivered':
         orders = orders.filter(order_status='delivered')
     elif status_filter == 'pending':
@@ -466,7 +560,9 @@ def my_orders(request):
     context = {
         'orders': orders,
         'status_filter': status_filter,
+        'search_query': search_query,
     }
+
     return render(request, 'my_orders.html', context)
 
 @login_required
@@ -587,6 +683,8 @@ def cancel_order(request, order_id):
         for item in order.items.select_related('product_variant').all():
             item.product_variant.stock += item.quantity
             item.product_variant.save()
+            item.status = 'cancelled'  # marking each item as cancelled too
+            item.save()
 
         # update order status
         order.order_status = 'cancelled'
@@ -641,7 +739,6 @@ def cancel_order_item(request, order_id, item_id):
 def return_order(request, order_id):
     order = get_object_or_404(Order, id=order_id, user=request.user)
 
-    # only allow return if order is delivered
     if order.order_status != 'delivered':
         messages.error(request, "Only delivered orders can be returned.")
         return redirect('order_detail', order_id=order.id)
@@ -649,16 +746,17 @@ def return_order(request, order_id):
     if request.method == 'POST':
         reason = request.POST.get('reason', '').strip()
 
-        # reason is mandatory for return
         if not reason:
             messages.error(request, "Please provide a reason for return.")
             return redirect('order_detail', order_id=order.id)
 
-        # update order status
-        order.order_status = 'returned'
+        # just save the reason and set status to return_requested
+        # admin will verify and approve/reject
+        order.return_reason = reason
+        order.order_status = 'return_requested'
         order.save()
 
-        messages.success(request, "Return request submitted successfully.")
+        messages.success(request, "Return request submitted. We will review it shortly.")
         return redirect('order_detail', order_id=order.id)
 
     return redirect('order_detail', order_id=order.id)

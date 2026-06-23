@@ -685,7 +685,10 @@ def cart(request):
     # get all items in that cart
     items = CartItem.objects.filter(cart=cart).order_by('id')
 
-    total_discount = sum((item.product_variant.discount_price or 0) for item in items)
+    total_discount = sum(
+            (item.product_variant.discount_price or 0) * item.quantity
+            for item in items
+        )
     subtotal = sum(item.total_price - (item.product_variant.discount_price or 0) for item in items)
 
     return render(request, 'user/cart_page.html', {
@@ -746,7 +749,7 @@ def add_to_cart(request, variant_id):
 
             # if all good then increase quantity by 1
             item.quantity = item.quantity + 1
-            item.total_price = variant.price * item.quantity
+            item.total_price = variant.effective_price * item.quantity
             item.save()
 
         except CartItem.DoesNotExist:
@@ -756,7 +759,7 @@ def add_to_cart(request, variant_id):
                 cart=cart,
                 product_variant=variant,
                 quantity=1,
-                total_price=variant.price
+                total_price=variant.effective_price
             )
 
         # remove from wishlist if it exists
@@ -798,45 +801,41 @@ def remove_from_cart(request, item_id):
 @login_required
 def update_cart(request, item_id):
     if request.method == 'POST':        
-        # get the cart item
         try:
             item = CartItem.objects.get(id=item_id, cart__user=request.user)
         except CartItem.DoesNotExist:
             messages.error(request, "Item not found in cart!")
             return redirect('cart')
         
-        if item.product_variant.stock == 0 or item.product_variant.status == 'inactive' or item.product_variant.product.status == 'inactive' or item.product_variant.product.category.status == 'inactive':
-            
+        if (
+            item.product_variant.stock == 0 or
+            item.product_variant.status == 'inactive' or
+            item.product_variant.product.status == 'inactive' or
+            item.product_variant.product.category.status == 'inactive'
+        ):
             item.delete()
-
             messages.error(request, "Item unavailable!")
-
             return redirect('cart')
 
-        # get the quantity from the form
         quantity = int(request.POST.get('quantity'))
 
         if quantity > 5:
             messages.error(request, "Maximum 5 items allowed per product!")
             return redirect('cart')
 
-        # if quantity is 0 or less, remove the item
         if quantity < 1:
             item.delete()
             messages.success(request, "Item removed from cart!")
             return redirect('cart')
 
-        # check if requested quantity is available in stock
         if quantity > item.product_variant.stock:
             messages.error(request, "Not enough stock!")
             return redirect('cart')
 
-        # update quantity and total price
         item.quantity = quantity
-        item.total_price = item.product_variant.price * quantity
+        item.total_price = item.product_variant.effective_price * quantity
         item.save()
 
-        # redirect back to cart page
         return redirect('cart')
 
 @login_required

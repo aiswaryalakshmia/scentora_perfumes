@@ -224,3 +224,76 @@
 .btn-shop:hover {
   background-color: #b8962e;
 }
+
+.orders-search-form {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0 22px;
+}
+
+.orders-search-box {
+  width: 360px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 0 12px;
+}
+
+.orders-search-box i {
+  color: #8b6f3d;
+}
+
+.orders-search-box input {
+  width: 100%;
+  height: 42px;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #222;
+  font-size: 14px;
+}
+
+.orders-search-form button,
+.clear-search {
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 6px;
+  border: none;
+  background: #111;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.clear-search {
+  background: transparent;
+  color: #111;
+  border: 1px solid #111;
+}
+
+.orders-search-form button:hover {
+  background: #c59a3a;
+  color: #000;
+}
+
+.clear-search:hover {
+  background: #111;
+  color: #fff;
+}
+
+@media (max-width: 768px) {
+  .orders-search-form {
+    flex-wrap: wrap;
+  }
+
+  .orders-search-box {
+    width: 100%;
+  }
+}

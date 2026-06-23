@@ -321,3 +321,90 @@
     overflow-x: auto;
   }
 }
+
+.cancel-item-btn {
+    background-color: transparent;
+    border: 1px solid #e74c3c;
+    color: #e74c3c;
+    padding: 5px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s ease;
+}
+
+.cancel-item-btn:hover {
+    background-color: #e74c3c;
+    color: #fff;
+}
+
+.no-action {
+    color: #555;
+    font-size: 14px;
+}
+
+.return-request-card {
+    background-color: #1e1e1e;
+    border: 1px solid #f39c12;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+}
+
+.return-request-card h3 {
+    color: #f39c12;
+    margin-bottom: 16px;
+}
+
+.return-reason {
+    background-color: #2a2a2a;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    color: #ccc;
+}
+
+.return-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-approve {
+    background-color: #27ae60;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    transition: background-color 0.2s ease;
+}
+
+.btn-approve:hover {
+    background-color: #219a52;
+}
+
+.btn-reject {
+    background-color: transparent;
+    color: #e74c3c;
+    border: 1px solid #e74c3c;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.btn-reject:hover {
+    background-color: #e74c3c;
+    color: #fff;
+}

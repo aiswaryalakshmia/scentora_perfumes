@@ -23,7 +23,7 @@
       <a href="{% url 'download_invoice' order.id %}" class="btn-invoice">
         <i class="fa-solid fa-download"></i> Download Invoice
       </a>
-      <a href="#" class="btn-reorder">Reorder</a>
+      <a hidden href="#" class="btn-reorder">Reorder</a>
       <!-- show cancel button only if pending or processing -->
       {% if order.order_status == 'pending' or order.order_status == 'processing' %}
         <button type="button" class="btn-cancel-order" onclick="openCancelModal()">

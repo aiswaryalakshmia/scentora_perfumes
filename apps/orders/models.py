@@ -28,6 +28,7 @@ class Order(models.Model):
         ('shipped', 'Shipped'),
         ('delivered', 'Delivered'),
         ('cancelled', 'Cancelled'),
+        ('return_requested', 'Return Requested'),
         ('returned', 'Returned'),
     )
 
@@ -35,6 +36,11 @@ class Order(models.Model):
     ('cod', 'Cash on Delivery'),
     ('card', 'Credit Card'),
     ('upi', 'UPI Transfer'),
+    )
+
+    PAYMENT_STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('paid', 'Paid'),
     )
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
@@ -45,6 +51,8 @@ class Order(models.Model):
     discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     final_amount = models.DecimalField(max_digits=10, decimal_places=2)
     order_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending')
+    return_reason = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

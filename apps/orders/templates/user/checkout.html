@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+Checkout
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'user/checkout.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="checkout-page">
+  <div class="checkout-header">
+  <a href="{% url 'cart' %}" class="btn-back-cart">
+    ← Back to Cart
+  </a>
+  <h2 class="checkout-title">Checkout</h2>
+</div>  
+
+  <form id="checkout-form" method="POST" action="{% url 'place_order' %}">
+    {% csrf_token %}
+    <div class="checkout-container">
+      <div class="checkout-left">
+
+        <!-- Shipping Address -->
+        <section class="shipping-address">
+          <div class="section-header">
+            <h3>Shipping Address</h3>
+            <a href="{% url 'add_address' %}?next=checkout" class="add-address">+ Add New Address</a>
+          </div>
+
+          {% if addresses %}
+            <div class="address-list">
+              {% for address in addresses %}
+              <label class="address-card {% if address == default_address %}selected{% endif %}">
+
+                <input
+                  type="radio"
+                  name="selected_address"
+                  value="{{ address.id }}"
+                  {% if address == default_address %}checked{% endif %}
+                >
+
+                <div class="address-info">
+                  <div class="address-top">
+                    <strong>{{ address.full_name }}</strong>
+                    <span class="address-type-badge">{{ address.address_type|capfirst }}</span>
+                    {% if address.is_default %}
+                      <span class="default-badge">Default</span>
+                    {% endif %}
+                  </div>
+                  <p>{{ address.address_line1 }}{% if address.address_line2 %}, {{ address.address_line2 }}{% endif %}</p>
+                  <p>{{ address.city }}, {{ address.state }} - {{ address.pincode }}</p>
+                  <p>{{ address.country }}</p>
+                  <p>📞 {{ address.phone_number }}</p>
+                </div>
+
+                <div class="address-actions">
+                  <a href="{% url 'edit_address' address.id %}?next=checkout">Edit</a>
+                  <a href="{% url 'delete_address' address.id %}?next=checkout"
+                    class="delete-address-btn">Delete</a>
+                </div>
+
+              </label>
+              {% endfor %}
+            </div>
+
+          {% else %}
+            <p>No saved addresses.
+              <a href="{% url 'add_address' %}?next=checkout">Add one now</a>
+            </p>
+          {% endif %}
+        </section>
+
+        <!-- Delivery Options -->
+        <section class="delivery-options">
+          <h3>Delivery Options</h3>
+          <input type="hidden" name="delivery_option" value="{{ delivery_option }}">
+          <div class="delivery-choice {% if delivery_option == 'standard' %}active{% endif %}"
+              onclick="window.location.href='?delivery_option=standard'">
+            <div class="delivery-info">
+              <input type="radio" name="delivery_option" value="standard"
+                {% if delivery_option == 'standard' %}checked{% endif %}>
+              <div>
+                <h4>Standard Delivery</h4>
+                <p>5–8 business days</p>
+              </div>
+            </div>
+            <span class="price">Free</span>
+          </div>
+
+          <div class="delivery-choice {% if delivery_option == 'express' %}active{% endif %}"
+              onclick="window.location.href='?delivery_option=express'">
+            <div class="delivery-info">
+              <input type="radio" name="delivery_option" value="express"
+                {% if delivery_option == 'express' %}checked{% endif %}>
+              <div>
+                <h4>Express Shipping</h4>
+                <p>Next business day</p>
+              </div>
+            </div>
+            <span class="price">₹25.00</span>
+          </div>
+
+        </section>
+
+        <!-- Payment Method -->
+        <section class="payment-method">
+          <h3>Payment Method</h3>
+          <div class="payment-tabs">
+            <button type="button" class="active" onclick="showPayment('card')">Credit Card</button>
+            <button type="button" onclick="showPayment('upi')">UPI Transfer</button>
+            <button type="button" onclick="showPayment('cod')">COD</button>
+          </div>
+
+          <input type="hidden" name="payment_method" id="payment_method" value="card">
+
+          <div id="payment-card" class="payment-panel">
+            <input type="text" name="card_number" placeholder="Card Number">
+            <div class="form-row">
+              <input type="text" name="expiry_date" placeholder="Expiry Date (MM/YY)">
+              <input type="text" name="cvv" placeholder="CVV">
+            </div>
+          </div>
+
+          <div id="payment-upi" class="payment-panel" style="display:none;">
+            <input type="text" name="upi_id" placeholder="Enter UPI ID">
+          </div>
+
+          <div id="payment-cod" class="payment-panel" style="display:none;">
+            <p>Pay cash on delivery.</p>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- Order Summary -->
+      <aside class="order-summary">
+        <h3>Order Summary</h3>
+
+        {% for item in cart_items %}
+        <div class="summary-item">
+          {% with item.product_variant.images.first as img %}
+            {% if img %}
+              <img src="{{ img.image.url }}" alt="{{ item.product_variant.product.product_name }}">
+            {% endif %}
+          {% endwith %}
+          <div>
+            <h4>{{ item.product_variant.product.product_name }}</h4>
+            <p>{{ item.product_variant.size }}ml</p>
+            <p>Qty: {{ item.quantity }}</p>
+          </div>
+          <span>₹{{ item.total_price }}</span>
+        </div>
+        {% endfor %}
+
+        <div class="promo-code">
+          <input type="text" name="promo_code" placeholder="Promo Code">
+          <button type="button">Apply</button>
+        </div>
+
+        <div class="summary-totals">
+          <p>Subtotal <span>₹{{ subtotal }}</span></p>
+          <p>Shipping <span>{{ shipping_label }}</span></p>
+          <p>Discount: <span>-₹{{ discount_amount }}</span></p>
+          <hr>
+          <p class="total">Total <span>₹{{ total }}</span></p>
+        </div>
+
+        <button type="submit" class="btn-place-order">Place Order</button>
+        <p class="secure-text">🔒 Secure Encrypted Transaction</p>
+      </aside>
+    </div>
+  </form>
+</div>
+
+<script>
+  // Payment tabs
+  function showPayment(type) {
+    document.querySelectorAll('.payment-panel').forEach(p => p.style.display = 'none');
+    document.querySelectorAll('.payment-tabs button').forEach(b => b.classList.remove('active'));
+    document.getElementById('payment-' + type).style.display = 'block';
+    document.getElementById('payment_method').value = type;
+    event.target.classList.add('active');
+  }
+
+  // Delete address confirmation
+  document.querySelectorAll('.delete-address-btn').forEach(button => {
+    button.addEventListener('click', function(e) {
+      e.preventDefault();
+      const url = this.href;
+      Swal.fire({
+        title: 'Are you sure?',
+        text: 'This address will be deleted.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Delete It!',
+        cancelButtonText: 'Cancel'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          window.location.href = url;
+        }
+      });
+    });
+  });
+
+</script>
+{% endblock %}

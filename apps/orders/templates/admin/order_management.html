@@ -1,0 +1,122 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}Order Management{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'admin/order_management.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="order-management">
+  <div class="order-header">
+    <div>
+      <h1 class="page-title">Orders Management</h1>
+      <p class="page-subtitle">Track and manage customer perfume orders</p>
+    </div>
+  </div>
+
+  <form method="GET" class="order-filters">
+    <div class="search-box">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" name="search" value="{{ search_query }}" placeholder="Filter by ID or Name">
+    </div>
+
+    <select name="status">
+      <option value="">All Status</option>
+      {% for value, label in status_choices %}
+        <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+
+    <select name="sort">
+      <option value="">Newest First</option>
+      <option value="date_old" {% if sort == 'date_old' %}selected{% endif %}>Oldest First</option>
+      <option value="amount_high" {% if sort == 'amount_high' %}selected{% endif %}>Amount High to Low</option>
+      <option value="amount_low" {% if sort == 'amount_low' %}selected{% endif %}>Amount Low to High</option>
+    </select>
+
+    <button type="submit">Apply</button>
+    <a href="{% url 'order_management' %}" class="clear-btn">Clear</a>
+  </form>
+
+  <section class="orders-table-card">
+    <table class="orders-table">
+      <thead>
+        <tr>
+          <th>SL NO</th>
+          <th>ORDER ID</th>
+          <th>CUSTOMER</th>
+          <th>DATE</th>
+          <th>AMOUNT</th>
+          <th>ORDER STATUS</th>
+          <th>PAYMENT STATUS</th>
+          <th>RETURN STATUS</th>
+          <th>ACTIONS</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in orders %}
+        <tr>
+          <td>{{ orders.start_index|add:forloop.counter0 }}</td>
+          <td>#{{ order.order_number }}</td>
+          <td>
+            <strong>{{ order.user.full_name|default:order.user.username }}</strong>
+            <span>{{ order.user.email }}</span>
+          </td>
+          <td>{{ order.created_at|date:"M d, Y" }}</td>
+          <td class="amount">₹{{ order.final_amount }}</td>
+          <td>
+            <span class="status-pill status-{{ order.order_status }}">
+              {{ order.get_order_status_display }}
+            </span>
+          </td>
+          <td>
+            {% if order.order_status == 'delivered' %}
+              <span class="status-pill payment-paid">Paid</span>
+            {% else %}
+              <span class="status-pill payment-awaiting">Awaiting</span>
+            {% endif %}
+          </td>
+          <td><span class="status-pill neutral">N/A</span></td>
+          <td>
+            <a href="{% url 'admin_order_detail' order.id %}" class="icon-action">
+              <i class="fa-solid fa-eye"></i>
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="9" class="empty-row">No orders found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="pagination">
+      <p>
+        Showing {{ orders.start_index|default:0 }} to {{ orders.end_index|default:0 }}
+        of {{ orders.paginator.count }} orders
+      </p>
+
+      <div class="page-controls">
+        {% if orders.has_previous %}
+          <a href="?page={{ orders.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}">&lt;</a>
+        {% endif %}
+
+        {% for num in orders.paginator.page_range %}
+          {% if orders.number == num %}
+            <a class="active">{{ num }}</a>
+          {% else %}
+            <a href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}">{{ num }}</a>
+          {% endif %}
+        {% endfor %}
+
+        {% if orders.has_next %}
+          <a href="?page={{ orders.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}">&gt;</a>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

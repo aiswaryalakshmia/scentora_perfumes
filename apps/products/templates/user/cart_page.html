@@ -55,7 +55,9 @@ Cart
         <p class="total">Total <span>₹{{ subtotal }}</span></p>
         <p class="total_discount">Total discount <span>₹{{ total_discount }}</span></p>
       </div>
-      <button class="btn-checkout">Proceed to Checkout</button>
+      <a href="{% url 'checkout' %}" class="btn-checkout">
+          Proceed to Checkout
+      </a>
 
       <div class="promo-code">
         <label for="promo">Promo Code</label>

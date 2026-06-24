@@ -26,6 +26,7 @@ urlpatterns = [
     path('accounts/', include('allauth.urls')),
     path('admin-panel/',include('apps.adminpanel.urls')),
     path('', include('apps.products.urls')),
+    path('',include('apps.orders.urls')),
 ]
 
 urlpatterns += static(

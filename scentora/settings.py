@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'apps.home',
     'apps.adminpanel',
     'apps.products',
+    'apps.orders',
 ]
 
 MIDDLEWARE = [
@@ -120,7 +121,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Kolkata'
 
 USE_I18N = True
 
@@ -179,6 +180,7 @@ SOCIALACCOUNT_PROVIDERS = {
 
 SOCIALACCOUNT_ADAPTER = 'apps.authentication.adapter.CustomSocialAccountAdapter'
 
+LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'login'
 SOCIALACCOUNT_LOGIN_ON_GET = True

@@ -1,0 +1,520 @@
+.order-detail-content {
+  margin-left: 260px;
+  flex: 1;
+  padding: 2rem 3rem;
+  font-family: 'Poppins', sans-serif;
+  color: #f5f5f5;
+}
+
+/* Header */
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+}
+
+.detail-header h2 {
+  font-size: 1.8rem;
+  color: #f5f5f5;
+  margin-bottom: 4px;
+}
+
+.order-id-text {
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.btn-invoice {
+  text-decoration: none;
+  border: 1px solid #d4af37;
+  color: #d4af37;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.btn-invoice:hover {
+  background-color: #d4af37;
+  color: #000;
+}
+
+.btn-reorder {
+  text-decoration: none;
+  background-color: #d4af37;
+  color: #000;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: background-color 0.3s;
+}
+
+.btn-reorder:hover {
+  background-color: #b8962e;
+}
+
+/* Info Cards */
+.info-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.info-card {
+  background-color: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 1rem 1.2rem;
+}
+
+.info-label {
+  font-size: 0.7rem;
+  color: #888;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+.info-value {
+  color: #f5f5f5;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.status-badge {
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 20px;
+  display: inline-block;
+}
+
+.status-pending { color: #f0a500; background-color: #f0a50022; border: 1px solid #f0a500; }
+.status-processing { color: #2196f3; background-color: #2196f322; border: 1px solid #2196f3; }
+.status-shipped { color: #9c27b0; background-color: #9c27b022; border: 1px solid #9c27b0; }
+.status-delivered { color: #4caf50; background-color: #4caf5022; border: 1px solid #4caf50; }
+.status-cancelled { color: #e74c3c; background-color: #e74c3c22; border: 1px solid #e74c3c; }
+
+/* Delivery Progress */
+.delivery-progress {
+  background-color: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.delivery-progress h3 {
+  color: #f5f5f5;
+  font-size: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.progress-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.progress-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.step-circle {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  background-color: #2a2a2a;
+  border: 2px solid #444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #555;
+  font-size: 0.8rem;
+}
+
+.progress-step.completed .step-circle {
+  background-color: #d4af37;
+  border-color: #d4af37;
+  color: #000;
+}
+
+.step-label {
+  font-size: 0.75rem;
+  color: #888;
+  text-align: center;
+}
+
+.progress-step.completed .step-label {
+  color: #d4af37;
+}
+
+.step-date {
+  font-size: 0.7rem;
+  color: #666;
+  text-align: center;
+}
+
+.progress-line {
+  flex: 1;
+  height: 2px;
+  background-color: #333;
+  margin: 0 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.progress-line.active {
+  background-color: #d4af37;
+}
+
+/* Items Section */
+.items-section {
+  background-color: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.items-section h3 {
+  color: #f5f5f5;
+  font-size: 1rem;
+  margin-bottom: 1.2rem;
+}
+
+.order-item-card {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.order-item-card:last-child {
+  border-bottom: none;
+}
+
+.order-item-card img {
+  width: 65px;
+  height: 65px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.no-img {
+  width: 65px;
+  height: 65px;
+  background-color: #2a2a2a;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #555;
+}
+
+.item-details {
+  flex: 1;
+}
+
+.item-details h4 {
+  color: #f5f5f5;
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+}
+
+.item-details p {
+  color: #888;
+  font-size: 0.8rem;
+}
+
+.item-qty,
+.item-price,
+.item-total {
+  text-align: center;
+  min-width: 80px;
+}
+
+.qty-label {
+  font-size: 0.7rem;
+  color: #888;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.total-price {
+  color: #d4af37;
+  font-weight: 600;
+}
+
+/* Bottom Cards */
+.bottom-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.bottom-card {
+  background-color: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.bottom-card h3 {
+  color: #d4af37;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.bottom-card strong {
+  color: #f5f5f5;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.bottom-card p {
+  color: #aaa;
+  font-size: 0.85rem;
+  margin: 3px 0;
+}
+
+.payment-row {
+  display: flex;
+  justify-content: space-between;
+  margin: 0.6rem 0;
+  font-size: 0.85rem;
+}
+
+.pay-label {
+  color: #888;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+}
+
+.pay-status {
+  color: #4caf50;
+  font-weight: 600;
+}
+
+/* Review Link */
+.review-link {
+  margin-bottom: 1.5rem;
+}
+
+.review-link a {
+  color: #d4af37;
+  font-size: 0.85rem;
+  text-decoration: underline;
+}
+
+/* Bottom Actions */
+.bottom-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  padding: 1.5rem 0;
+  border-top: 1px solid #2a2a2a;
+}
+
+.btn-track-order,
+.btn-get-help {
+  text-decoration: none;
+  border: 1px solid #444;
+  color: #f5f5f5;
+  padding: 10px 24px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: border-color 0.3s, color 0.3s;
+}
+
+.btn-track-order:hover,
+.btn-get-help:hover {
+  border-color: #d4af37;
+  color: #d4af37;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .info-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .bottom-cards {
+    grid-template-columns: 1fr;
+  }
+  .progress-bar {
+    flex-direction: column;
+  }
+}
+
+/* Cancel Button */
+.btn-cancel-order {
+  background: none;
+  border: 1px solid #e74c3c;
+  color: #e74c3c;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.btn-cancel-order:hover {
+  background-color: #e74c3c;
+  color: #fff;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-box {
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 2rem;
+  width: 450px;
+}
+
+.modal-box h3 {
+  color: #f5f5f5;
+  margin-bottom: 0.5rem;
+}
+
+.modal-box p {
+  color: #aaa;
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.modal-field {
+  margin-bottom: 1.5rem;
+}
+
+.modal-field label {
+  display: block;
+  color: #aaa;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+.modal-field textarea {
+  width: 100%;
+  padding: 0.8rem;
+  background-color: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #f5f5f5;
+  font-size: 0.85rem;
+  resize: vertical;
+  min-height: 100px;
+  font-family: 'Poppins', sans-serif;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.btn-confirm-cancel {
+  background-color: #e74c3c;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: background-color 0.3s;
+}
+
+.btn-confirm-cancel:hover {
+  background-color: #c0392b;
+}
+
+.btn-close-modal {
+  background: none;
+  border: 1px solid #444;
+  color: #aaa;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: border-color 0.3s, color 0.3s;
+}
+
+.btn-close-modal:hover {
+  border-color: #d4af37;
+  color: #d4af37;
+}
+
+.item-cancelled-badge {
+  display: inline-block;
+  background-color: #e74c3c22;
+  border: 1px solid #e74c3c;
+  color: #e74c3c;
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-top: 4px;
+}
+
+.btn-cancel-item {
+  background: none;
+  border: 1px solid #e74c3c;
+  color: #e74c3c;
+  padding: 5px 12px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.btn-cancel-item:hover {
+  background-color: #e74c3c;
+  color: #fff;
+}
+
+.item-action {
+  flex-shrink: 0;
+}
+
+.btn-return-order {
+  background: none;
+  border: 1px solid #2196f3;
+  color: #2196f3;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.btn-return-order:hover {
+  background-color: #2196f3;
+  color: #fff;
+}

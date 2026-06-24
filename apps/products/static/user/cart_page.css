@@ -115,6 +115,9 @@
 }
 
 .btn-checkout {
+  display: block;          
+  text-align: center;      
+  text-decoration: none; 
   background-color: #d4af37;
   color: #000;
   border: none;
@@ -124,6 +127,8 @@
   cursor: pointer;
   font-weight: 600;
   transition: background-color 0.3s;
+  box-sizing: border-box;
+  border-radius: 8px; 
 }
 
 .btn-checkout:hover {

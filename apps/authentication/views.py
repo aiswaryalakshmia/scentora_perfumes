@@ -330,20 +330,13 @@ def verify_otp(request):
             
             elif otp_purpose=='change_email':
                 new_email=request.session.get('new_email')
-                new_fullname=request.session.get('new_fullname')
-                new_mobile_number=request.session.get('new_mobile_number')
                 user = request.user
-                user.full_name = new_fullname
                 user.email = new_email
-                user.mobile_number = new_mobile_number
-
                 user.save()
-                messages.success(request, "Profile updated successfully!")
+                messages.success(request, "Email updated successfully!")
 
                 request.session.pop('otp_purpose', None)
                 request.session.pop('new_email', None)
-                request.session.pop('new_fullname', None)
-                request.session.pop('new_mobile_number', None)
                 return redirect('edit_profile')
 
             elif otp_purpose=='forgotp':

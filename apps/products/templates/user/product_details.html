@@ -91,6 +91,15 @@
           <button class="btn-add" disabled>Out of Stock</button>
       {% endif %}
 
+      {% if is_wishlisted %}
+      <form method="POST" action="{% url 'remove_from_wishlist' variant.id %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="product_details">
+        <button type="submit" class="wishlist">
+            Remove from Wishlist <i class="far fa-heart"></i>
+        </button>
+    </form>
+    {% else %}
       <form method="POST" action="{% url 'add_to_wishlist' variant.id %}">
         {% csrf_token %}
         <input type="hidden" name="next" value="product_details">
@@ -98,6 +107,7 @@
             Add to Wishlist <i class="far fa-heart"></i>
         </button>
     </form>
+    {% endif %}
     </div>
 
   </section>

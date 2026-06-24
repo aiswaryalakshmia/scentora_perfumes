@@ -7,73 +7,11 @@ add address
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/add_address.css' %}">
+<link rel="stylesheet" href="{% static 'css/side_bar.css' %}">
 {% endblock %}
 
 {% block content %}
-
-
-  <!-- Sidebar -->
-  <aside class="sidebar">
-    <div class="profile-summary">
-      <div class="profile-icon">
-        <i class="fa-solid fa-user"></i>
-      </div>
-      <h3>Welcome back</h3>
-      <p class="member-tier">Luxury Member</p>
-    </div>
-
-    <ul class="sidebar-menu">
-      <li class="{% if request.path == '/profile/dashboard/' %}active{% endif %}">
-        <a href="{% url 'profile_dashboard' %}">
-            <i class="fa-solid fa-table-cells-large"></i>
-            Dashboard
-        </a>
-      </li>
-
-      <li>
-          <a href="#">
-              <i class="fa-regular fa-clipboard"></i>
-              My Orders
-          </a>
-      </li>
-
-      <li>
-          <a href="#">
-              <i class="fa-regular fa-heart"></i>
-              Wishlist
-          </a>
-      </li>
-
-      <li class="{% if request.path == '/profile/addressbook/' %}active{% endif %}">
-        <a href="{% url 'address_book' %}">
-            <i class="fa-solid fa-location-dot"></i>
-            Address Book
-        </a>
-      </li>
-
-      <li>
-          <a href="#">
-              <i class="fa-solid fa-wallet"></i>
-              Wallet
-          </a>
-      </li>
-
-      <li class="{% if request.path == '/profile/edit_profile/' %}active{% endif %}">
-        <a href="{% url 'edit_profile' %}">
-            <i class="fa-regular fa-pen-to-square"></i>
-            Edit Profile
-        </a>
-      </li>
-
-      <li>
-          <a href="{% url 'logout' %}">
-              <i class="fa-solid fa-right-from-bracket"></i>
-              Logout
-          </a>
-      </li>
-    </ul>
-</aside>
-
+  {% include 'side_bar.html' %}
   <!-- Main Content -->
   <main class="address-form-content">
     <h2>Add New Address</h2>
@@ -85,6 +23,7 @@ add address
     {% endif %}
     <form method="POST" class="address-form">
     {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
       <!-- Personal Details -->
       <div class="form-section">
         <h4 class="section-title">Personal Details</h4>
@@ -175,7 +114,7 @@ add address
       <!-- Buttons -->
       <div class="form-actions">
         <button type="submit" class="btn save">Save Address</button>
-        <a href="{% url 'address_book' %}" class="btn cancel">Cancel</a>
+        <a href="{% if next == 'checkout' %}{% url 'checkout' %}{% else %}{% url 'address_book' %}{% endif %}" class="btn cancel">Cancel</a>
       </div>
     </form>
   </main>

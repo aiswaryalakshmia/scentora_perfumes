@@ -1,0 +1,300 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Order Details{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/order_detail.css' %}">
+<link rel="stylesheet" href="{% static 'css/side_bar.css' %}">
+{% endblock %}
+
+{% block content %}
+  {% include 'side_bar.html' %}
+<!-- Main Content -->
+<main class="order-detail-content">
+
+  <!-- Header -->
+  <div class="detail-header">
+    <div>
+      <h2>Order Details</h2>
+      <p class="order-id-text">Order ID: #{{ order.order_number }}</p>
+    </div>
+    <div class="header-actions">
+      <a href="{% url 'download_invoice' order.id %}" class="btn-invoice">
+        <i class="fa-solid fa-download"></i> Download Invoice
+      </a>
+      <a hidden href="#" class="btn-reorder">Reorder</a>
+      <!-- show cancel button only if pending or processing -->
+      {% if order.order_status == 'pending' or order.order_status == 'processing' %}
+        <button type="button" class="btn-cancel-order" onclick="openCancelModal()">
+          Cancel Order
+        </button>
+      {% endif %}
+      {% if order.order_status == 'delivered' %}
+      <button type="button" class="btn-return-order" onclick="openReturnModal()">
+        Return Order
+      </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Info Cards -->
+  <div class="info-cards">
+    <div class="info-card">
+      <p class="info-label">ORDER DATE</p>
+      <p class="info-value">{{ order.created_at|date:"M d, Y" }}</p>
+    </div>
+    <div class="info-card">
+      <p class="info-label">PAYMENT METHOD</p>
+      <p class="info-value">
+        <i class="fa-solid fa-money-bill"></i>
+        {{ order.get_payment_method_display }}
+      </p>
+    </div>
+    <div class="info-card">
+      <p class="info-label">ORDER STATUS</p>
+      <span class="status-badge status-{{ order.order_status }}">
+        ● {{ order.order_status|capfirst }}
+      </span>
+    </div>
+    <div class="info-card">
+      <p class="info-label">TOTAL AMOUNT</p>
+      <p class="info-value">₹{{ order.final_amount }}</p>
+    </div>
+  </div>
+
+  <!-- Delivery Progress -->
+  <div class="delivery-progress">
+    <h3>Delivery Progress</h3>
+    <div class="progress-bar">
+
+      <div class="progress-step {% if order.order_status in 'pending,processing,shipped,delivered' %}completed{% endif %}">
+        <div class="step-circle"><i class="fa-solid fa-check"></i></div>
+        <p class="step-label">Order Placed</p>
+        <p class="step-date">{{ order.created_at|date:"M d, Y" }}</p>
+      </div>
+
+      <div class="progress-line {% if order.order_status in 'processing,shipped,delivered' %}active{% endif %}"></div>
+
+      <div class="progress-step {% if order.order_status in 'processing,shipped,delivered' %}completed{% endif %}">
+        <div class="step-circle"><i class="fa-solid fa-check"></i></div>
+        <p class="step-label">Processing</p>
+        <p class="step-date">—</p>
+      </div>
+
+      <div class="progress-line {% if order.order_status in 'shipped,delivered' %}active{% endif %}"></div>
+
+      <div class="progress-step {% if order.order_status in 'shipped,delivered' %}completed{% endif %}">
+        <div class="step-circle"><i class="fa-solid fa-check"></i></div>
+        <p class="step-label">Shipped</p>
+        <p class="step-date">—</p>
+      </div>
+
+      <div class="progress-line {% if order.order_status == 'delivered' %}active{% endif %}"></div>
+
+      <div class="progress-step {% if order.order_status == 'delivered' %}completed{% endif %}">
+        <div class="step-circle"><i class="fa-solid fa-check"></i></div>
+        <p class="step-label">Delivered</p>
+        <p class="step-date">—</p>
+      </div>
+
+    </div>
+  </div>
+
+  
+  <!-- Items Ordered -->
+<div class="items-section">
+  <h3>Items Ordered</h3>
+  {% for item in order_items %}
+  <div class="order-item-card">
+    {% with item.product_variant.images.first as img %}
+      {% if img %}
+        <img src="{{ img.image.url }}" alt="{{ item.product_variant.product.product_name }}">
+      {% else %}
+        <div class="no-img"><i class="fa-solid fa-image"></i></div>
+      {% endif %}
+    {% endwith %}
+    <div class="item-details">
+      <h4>{{ item.product_variant.product.product_name }}</h4>
+      <p>{{ item.product_variant.size }}ml</p>
+      {% if item.status == 'cancelled' %}
+        <span class="item-cancelled-badge">Cancelled</span>
+      {% endif %}
+    </div>
+    <div class="item-qty">
+      <p class="qty-label">QUANTITY</p>
+      <p>{{ item.quantity }}</p>
+    </div>
+    <div class="item-price">
+      <p class="qty-label">UNIT PRICE</p>
+      <p>₹{{ item.price }}</p>
+    </div>
+    <div class="item-total">
+      <p class="qty-label">TOTAL</p>
+      <p class="total-price">₹{{ item.total }}</p>
+    </div>
+
+    <!-- Cancel Item Button -->
+    {% if order.order_status in 'pending,processing' and item.status == 'active' %}
+    <div class="item-action">
+      <button type="button" class="btn-cancel-item"
+        onclick="openCancelItemModal('{{ item.id }}')">
+        Cancel
+      </button>
+    </div>
+    {% endif %}
+
+  </div>
+  {% endfor %}
+</div>
+
+  <!-- Bottom Cards -->
+  <div class="bottom-cards">
+
+    <!-- Shipping Address -->
+    <div class="bottom-card">
+      <h3><i class="fa-solid fa-location-dot"></i> Shipping Address</h3>
+      <strong>{{ order.order_address.full_name }}</strong>
+      <p>{{ order.order_address.address_line1 }}{% if order.order_address.address_line2 %}, {{ order.order_address.address_line2 }}{% endif %}</p>
+      <p>{{ order.order_address.city }}, {{ order.order_address.state }} - {{ order.order_address.pincode }}</p>
+      <p>{{ order.order_address.country }}</p>
+      <p>📞 {{ order.order_address.phone_number }}</p>
+    </div>
+
+    <!-- Payment Details -->
+    <div class="bottom-card">
+      <h3><i class="fa-solid fa-credit-card"></i> Payment Details</h3>
+      <div class="payment-row">
+        <span class="pay-label">METHOD</span>
+        <span>Cash on Delivery</span>
+      </div>
+      <div class="payment-row">
+        <span class="pay-label">STATUS</span>
+        <span class="pay-status">
+          {% if order.order_status == 'delivered' %}Paid{% else %}Pending{% endif %}
+        </span>
+      </div>
+      <div class="payment-row">
+        <span class="pay-label">SUBTOTAL</span>
+        <span>₹{{ order.total_amount }}</span>
+      </div>
+      <div class="payment-row">
+        <span class="pay-label">SHIPPING</span>
+        <span>{% if order.total_amount == order.final_amount %}Complementary{% else %}₹{{ order.final_amount|add:"-order.total_amount" }}{% endif %}</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Write a Review -->
+  <div class="review-link">
+    <a href="#">Write a Review</a>
+  </div>
+
+  <!-- Bottom Actions -->
+  <div class="bottom-actions">
+    <a href="#" class="btn-track-order">
+      <i class="fa-solid fa-truck"></i> Track Order
+    </a>
+    <a href="#" class="btn-get-help">
+      <i class="fa-solid fa-headset"></i> Get Help
+    </a>
+  </div>
+
+</main>
+
+<!-- Cancel Order Modal -->
+{% if order.order_status == 'pending' or order.order_status == 'processing' %}
+<div id="cancelModal" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3>Cancel Order</h3>
+    <p>Are you sure you want to cancel this order?</p>
+
+    <form method="POST" action="{% url 'cancel_order' order.id %}">
+      {% csrf_token %}
+      <div class="modal-field">
+        <label>Reason (optional)</label>
+        <textarea name="reason" placeholder="Tell us why you're cancelling..."></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="submit" class="btn-confirm-cancel">Yes, Cancel Order</button>
+        <button type="button" class="btn-close-modal" onclick="closeCancelModal()">Keep Order</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<script>
+  // Cancel Order Modal
+  function openCancelModal() {
+    document.getElementById('cancelModal').style.display = 'flex';
+  }
+  function closeCancelModal() {
+    document.getElementById('cancelModal').style.display = 'none';
+  }
+
+  // Cancel Item Modal
+  function openCancelItemModal(itemId) {
+    document.getElementById('cancelItemModal-' + itemId).style.display = 'flex';
+  }
+  function closeCancelItemModal(itemId) {
+    document.getElementById('cancelItemModal-' + itemId).style.display = 'none';
+  }
+
+  // Return Order Modal
+  function openReturnModal() {
+    document.getElementById('returnModal').style.display = 'flex';
+  }
+  function closeReturnModal() {
+    document.getElementById('returnModal').style.display = 'none';
+  }
+</script>
+
+{% for item in order_items %}
+{% if order.order_status == 'pending' or order.order_status == 'processing' %}
+{% if item.status == 'active' %}
+<div id="cancelItemModal-{{ item.id }}" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3>Cancel Item</h3>
+    <p>Are you sure you want to cancel <strong>{{ item.product_variant.product.product_name }}</strong>?</p>
+    <form method="POST" action="{% url 'cancel_order_item' order.id item.id %}">
+      {% csrf_token %}
+      <div class="modal-field">
+        <label>Reason (optional)</label>
+        <textarea name="reason" placeholder="Tell us why you're cancelling this item..."></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="submit" class="btn-confirm-cancel">Yes, Cancel Item</button>
+        <button type="button" class="btn-close-modal"
+          onclick="closeCancelItemModal('{{ item.id }}')">Keep Item</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endif %}
+{% endfor %}
+
+<!-- Return Order Modal -->
+{% if order.order_status == 'delivered' %}
+<div id="returnModal" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3>Return Order</h3>
+    <p>Please provide a reason for returning this order.</p>
+    <form method="POST" action="{% url 'return_order' order.id %}">
+      {% csrf_token %}
+      <div class="modal-field">
+        <label>Reason <span style="color:#e74c3c;">*</span></label>
+        <textarea name="reason" placeholder="Tell us why you're returning this order..." required></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="submit" class="btn-confirm-cancel">Submit Return</button>
+        <button type="button" class="btn-close-modal" onclick="closeReturnModal()">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

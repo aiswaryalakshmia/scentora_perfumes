@@ -13,7 +13,9 @@
 
     {% if request.user.is_authenticated %}
         <div class="icons">
-            <i class="fas fa-search"></i>
+            <a href="{% url 'shop' %}">
+                <i class="fas fa-search"></i>
+            </a>
             <a href="{% url 'wishlist' %}">
                 <i class="far fa-heart"></i>
             </a>

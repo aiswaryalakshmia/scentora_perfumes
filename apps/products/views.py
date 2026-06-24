@@ -203,9 +203,14 @@ def add_variant(request, product_id):
                     request,
                     "Please upload at least 3 images."
                 )
-                return redirect(
-                    "add_variant",
-                    product_id=product.id
+                return render(
+                    request,
+                    "admin/add_variant.html",
+                    {
+                        "product": product,
+                        "form": form,
+                        "variants": ProductVariant.objects.filter(product=product),
+                    }
                 )
 
             try:
@@ -216,9 +221,14 @@ def add_variant(request, product_id):
                         request,
                         "Please upload at least 3 images."
                     )
-                    return redirect(
-                        "add_variant",
-                        product_id=product.id
+                    return render(
+                        request,
+                        "admin/add_variant.html",
+                        {
+                            "product": product,
+                            "form": form,
+                            "variants": ProductVariant.objects.filter(product=product),
+                        }
                     )
 
             except Exception:
@@ -226,9 +236,14 @@ def add_variant(request, product_id):
                     request,
                     "Invalid image data."
                 )
-                return redirect(
-                    "add_variant",
-                    product_id=product.id
+                return render(
+                    request,
+                    "admin/add_variant.html",
+                    {
+                        "product": product,
+                        "form": form,
+                        "variants": ProductVariant.objects.filter(product=product),
+                    }
                 )
 
             variant = form.save(commit=False)

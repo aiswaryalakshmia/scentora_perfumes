@@ -52,125 +52,46 @@ def address_book(request):
 @never_cache
 def add_address(request):
     if request.method == 'POST':
-        full_name = request.POST.get('full_name', '').strip()
-        phone_number = request.POST.get('phone_number', '').strip()
-        address_line1 = request.POST.get('address_line1', '').strip()
-        address_line2 = request.POST.get('address_line2', '').strip()
-        city = request.POST.get('city', '').strip()
-        state = request.POST.get('state', '').strip()
-        country = request.POST.get('country', '').strip()
-        pincode = request.POST.get('pincode', '').strip()
-        address_type = request.POST.get('address_type', '').strip()
+        form_data = get_address_form_data(request)
+        error = validate_address_data(form_data)
 
-        # FULL NAME
-        if not full_name:
-            return render(request, 'add_address.html', {
-                'error': 'Full name is required'
-            })
+        if error:
+            return render(
+                request,
+                'add_address.html',
+                address_form_context(request, error)
+            )
 
-        if not re.match(r'^[A-Za-z ]+$', full_name):
-            return render(request, 'add_address.html', {
-                'error': 'Full name can contain only letters'
-            })
-
-        if len(full_name) < 3:
-            return render(request, 'add_address.html', {
-                'error': 'Full name must be at least 3 characters'
-            })
-
-        # PHONE NUMBER
-        if not phone_number:
-            return render(request, 'add_address.html', {
-                'error': 'Phone number is required'
-            })
-
-        if not re.match(r'^\d{10}$', phone_number):
-            return render(request, 'add_address.html', {
-                'error': 'Enter a valid 10-digit phone number'
-            })
-
-        # ADDRESS LINE 1
-        if not address_line1:
-            return render(request, 'add_address.html', {
-                'error': 'Address Line 1 is required'
-            })
-        
-        # ADDRESS LINE 2
-        if not address_line2:
-            return render(request, 'add_address.html', {
-                'error': 'Address Line 2 is required'
-            })
-
-        # CITY
-        if not city:
-            return render(request, 'add_address.html', {
-                'error': 'City is required'
-            })
-
-        if not re.match(r'^[A-Za-z ]+$', city):
-            return render(request, 'add_address.html', {
-                'error': 'City can contain only letters'
-            })
-
-        # STATE
-        if not state:
-            return render(request, 'add_address.html', {
-                'error': 'State is required'
-            })
-
-        if not re.match(r'^[A-Za-z ]+$', state):
-            return render(request, 'add_address.html', {
-                'error': 'State can contain only letters'
-            })
-
-        # COUNTRY
-        if not country:
-            return render(request, 'add_address.html', {
-                'error': 'Please select a country'
-            })
-
-        # PINCODE
-        if not pincode:
-            return render(request, 'add_address.html', {
-                'error': 'Pincode is required'
-            })
-
-        if not re.match(r'^\d{6}$', pincode):
-            return render(request, 'add_address.html', {
-                'error': 'Enter a valid 6-digit pincode'
-            })
-
-        # ADDRESS TYPE
-        if not address_type:
-            return render(request, 'add_address.html', {
-                'error': 'Please select an address type'
-            })
-
-        # DEFAULT ADDRESS
         if request.POST.get('is_default'):
             Address.objects.filter(user=request.user).update(is_default=False)
 
         Address.objects.create(
             user=request.user,
-            full_name=full_name,
-            phone_number=phone_number,
-            address_line1=address_line1,
-            address_line2=address_line2,
-            city=city,
-            state=state,
-            country=country,
-            pincode=pincode,
-            address_type=address_type,
+            full_name=form_data['full_name'],
+            phone_number=form_data['phone_number'],
+            address_line1=form_data['address_line1'],
+            address_line2=form_data['address_line2'],
+            city=form_data['city'],
+            state=form_data['state'],
+            country=form_data['country'],
+            pincode=form_data['pincode'],
+            address_type=form_data['address_type'],
             is_default=True if request.POST.get('is_default') else False
         )
+
         messages.success(request, "Address added successfully!")
+
         next_page = request.POST.get('next', '')
         if next_page == 'checkout':
             return redirect('checkout')
-        return redirect('address_book')    
-    return render(request, 'add_address.html', {
-    'next': request.GET.get('next', '')
-})
+
+        return redirect('address_book')
+
+    return render(
+        request,
+        'add_address.html',
+        address_form_context(request)
+    )
 
 @login_required
 @never_cache
@@ -205,130 +126,164 @@ def delete_address(request,address_id):
         return redirect('checkout')
     return redirect('address_book')
 
+def validate_address_data(form_data):
+    full_name = form_data['full_name']
+    phone_number = form_data['phone_number']
+    address_line1 = form_data['address_line1']
+    address_line2 = form_data['address_line2']
+    city = form_data['city']
+    state = form_data['state']
+    country = form_data['country']
+    pincode = form_data['pincode']
+    address_type = form_data['address_type']
+
+    if not full_name:
+        return 'Full name is required'
+
+    if not re.match(r'^[A-Za-z ]+$', full_name):
+        return 'Full name can contain only letters'
+
+    if len(full_name) < 3:
+        return 'Full name must be at least 3 characters'
+
+    if not phone_number:
+        return 'Phone number is required'
+
+    if not re.match(r'^\d{10}$', phone_number):
+        return 'Enter a valid 10-digit phone number'
+
+    if not address_line1:
+        return 'Address Line 1 is required'
+
+    if not address_line2:
+        return 'Address Line 2 is required'
+
+    if not city:
+        return 'City is required'
+
+    if not re.match(r'^[A-Za-z ]+$', city):
+        return 'City can contain only letters'
+
+    if not state:
+        return 'State is required'
+
+    if not re.match(r'^[A-Za-z ]+$', state):
+        return 'State can contain only letters'
+
+    if not country:
+        return 'Please select a country'
+
+    if not pincode:
+        return 'Pincode is required'
+
+    if not re.match(r'^\d{6}$', pincode):
+        return 'Enter a valid 6-digit pincode'
+
+    if not address_type:
+        return 'Please select an address type'
+
+    return None
+
+def get_address_form_data(request, address=None):
+    if request.method == 'POST':
+        return {
+            'full_name': request.POST.get('full_name', '').strip(),
+            'phone_number': request.POST.get('phone_number', '').strip(),
+            'address_line1': request.POST.get('address_line1', '').strip(),
+            'address_line2': request.POST.get('address_line2', '').strip(),
+            'city': request.POST.get('city', '').strip(),
+            'state': request.POST.get('state', '').strip(),
+            'country': request.POST.get('country', '').strip(),
+            'pincode': request.POST.get('pincode', '').strip(),
+            'address_type': request.POST.get('address_type', '').strip(),
+            'is_default': request.POST.get('is_default'),
+        }
+
+    if address:
+        return {
+            'full_name': address.full_name,
+            'phone_number': address.phone_number,
+            'address_line1': address.address_line1,
+            'address_line2': address.address_line2,
+            'city': address.city,
+            'state': address.state,
+            'country': address.country,
+            'pincode': address.pincode,
+            'address_type': address.address_type,
+            'is_default': address.is_default,
+        }
+
+    return {
+        'full_name': '',
+        'phone_number': '',
+        'address_line1': '',
+        'address_line2': '',
+        'city': '',
+        'state': '',
+        'country': '',
+        'pincode': '',
+        'address_type': 'home',
+        'is_default': False,
+    }
+
+
+def address_form_context(request, error=None, address=None):
+    return {
+        'error': error,
+        'address': address,
+        'next': request.POST.get('next', request.GET.get('next', '')),
+        'form_data': get_address_form_data(request, address),
+    }
+
 @login_required
 @never_cache
 def edit_address(request, address_id):
-    try:
-        address = Address.objects.get(
-            id=address_id,
-            user=request.user
-        )
-    except Address.DoesNotExist:
-        return redirect('address_book')
+    address = get_object_or_404(
+        Address,
+        id=address_id,
+        user=request.user
+    )
 
     if request.method == 'POST':
-        full_name = request.POST.get('full_name', '').strip()
-        phone_number = request.POST.get('phone_number', '').strip()
-        address_line1 = request.POST.get('address_line1', '').strip()
-        address_line2 = request.POST.get('address_line2', '').strip()
-        city = request.POST.get('city', '').strip()
-        state = request.POST.get('state', '').strip()
-        country = request.POST.get('country', '').strip()
-        pincode = request.POST.get('pincode', '').strip()
-        address_type = request.POST.get('address_type', '').strip()
-        next_page = request.POST.get('next', '')
+        form_data = get_address_form_data(request, address)
+        error = validate_address_data(form_data)
 
-        context = {
-            'address': address,
-            'next': next_page,
-        }
-
-        # FULL NAME
-        if not full_name:
-            context['error'] = 'Full name is required'
-            return render(request, 'add_address.html', context)
-
-        if not re.match(r'^[A-Za-z ]+$', full_name):
-            context['error'] = 'Full name can contain only letters'
-            return render(request, 'add_address.html', context)
-
-        if len(full_name) < 3:
-            context['error'] = 'Full name must be at least 3 characters'
-            return render(request, 'add_address.html', context)
-
-        # PHONE NUMBER
-        if not phone_number:
-            context['error'] = 'Phone number is required'
-            return render(request, 'add_address.html', context)
-
-        if not re.match(r'^\d{10}$', phone_number):
-            context['error'] = 'Enter a valid 10-digit phone number'
-            return render(request, 'add_address.html', context)
-
-        # ADDRESS LINE 1
-        if not address_line1:
-            context['error'] = 'Address Line 1 is required'
-            return render(request, 'add_address.html', context)
-
-        # ADDRESS LINE 2
-        if not address_line2:
-            context['error'] = 'Address Line 2 is required'
-            return render(request, 'add_address.html', context)
-
-        # CITY
-        if not city:
-            context['error'] = 'City is required'
-            return render(request, 'add_address.html', context)
-
-        if not re.match(r'^[A-Za-z ]+$', city):
-            context['error'] = 'City can contain only letters'
-            return render(request, 'add_address.html', context)
-
-        # STATE
-        if not state:
-            context['error'] = 'State is required'
-            return render(request, 'add_address.html', context)
-
-        if not re.match(r'^[A-Za-z ]+$', state):
-            context['error'] = 'State can contain only letters'
-            return render(request, 'add_address.html', context)
-
-        # COUNTRY
-        if not country:
-            context['error'] = 'Please select a country'
-            return render(request, 'add_address.html', context)
-
-        # PINCODE
-        if not pincode:
-            context['error'] = 'Pincode is required'
-            return render(request, 'add_address.html', context)
-
-        if not re.match(r'^\d{6}$', pincode):
-            context['error'] = 'Enter a valid 6-digit pincode'
-            return render(request, 'add_address.html', context)
-
-        # ADDRESS TYPE
-        if not address_type:
-            context['error'] = 'Please select an address type'
-            return render(request, 'add_address.html', context)
+        if error:
+            return render(
+                request,
+                'add_address.html',
+                address_form_context(request, error, address)
+            )
 
         if request.POST.get('is_default'):
             Address.objects.filter(user=request.user).update(is_default=False)
 
-        address.full_name = full_name
-        address.phone_number = phone_number
-        address.address_line1 = address_line1
-        address.address_line2 = address_line2
-        address.city = city
-        address.state = state
-        address.country = country
-        address.pincode = pincode
-        address.address_type = address_type
+        address.full_name = form_data['full_name']
+        address.phone_number = form_data['phone_number']
+        address.address_line1 = form_data['address_line1']
+        address.address_line2 = form_data['address_line2']
+        address.city = form_data['city']
+        address.state = form_data['state']
+        address.country = form_data['country']
+        address.pincode = form_data['pincode']
+        address.address_type = form_data['address_type']
         address.is_default = True if request.POST.get('is_default') else False
 
         address.save()
 
         messages.success(request, "Address updated successfully!")
 
+        next_page = request.POST.get('next', '')
         if next_page == 'checkout':
             return redirect('checkout')
 
         return redirect('address_book')
 
-    return render(request, 'add_address.html', {
-        'address': address,
-        'next': request.GET.get('next', '')
-    })
+    return render(
+        request,
+        'add_address.html',
+        address_form_context(request, address=address)
+    )
 
 @login_required
 @never_cache
@@ -679,6 +634,10 @@ def cancel_order(request, order_id):
     if request.method == 'POST':
         reason = request.POST.get('reason', '').strip()
 
+        if len(reason) < 10:
+            messages.error(request, "Cancellation reason must be at least 10 characters.")
+            return redirect('order_detail', order_id=order.id)
+
         # increment stock for each item
         for item in order.items.select_related('product_variant').all():
             item.product_variant.stock += item.quantity
@@ -721,7 +680,7 @@ def cancel_order_item(request, order_id, item_id):
         item.status = 'cancelled'
         item.save()
 
-        # check if all items are cancelled → cancel entire order
+        # check if all items are cancelled  then cancel entire order
         all_cancelled = not order.items.filter(status='active').exists()
         if all_cancelled:
             order.order_status = 'cancelled'
@@ -745,6 +704,10 @@ def return_order(request, order_id):
 
     if request.method == 'POST':
         reason = request.POST.get('reason', '').strip()
+
+        if len(reason) < 10:
+            messages.error(request, "Return reason must be at least 10 characters.")
+            return redirect('order_detail', order_id=order.id)
 
         if not reason:
             messages.error(request, "Please provide a reason for return.")

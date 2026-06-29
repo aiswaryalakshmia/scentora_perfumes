@@ -14,7 +14,7 @@ Home
 
   <!-- Hero Section -->
   <section class="hero">
-    <img src="{% static 'images/Home.svg' %}" alt="Perfume Bottle">
+    <img src="{% static 'images/Hero_image.png' %}" alt="Perfume Bottle">
     <h2>Discover Your Signature Scent</h2>
     <a href="{% url 'shop' %}"><button class="cta">Shop Now</button></a>
   </section>
@@ -41,30 +41,45 @@ Home
       <h3>
         New Arrivals
       </h3>
-      <a href="#" class="view-all">View All</a>
+      <a href="{% url 'shop' %}" class="view-all">View All</a>
     </div>
     <div class="product-grid">
-      <div class="product">
-        <img src="{% static 'images/Arrival1.svg' %}" alt="Sunset Nomad">
-        <h4>Sunset Nomad</h4>
-        <p>₹1,099.00</p>
-      </div>
-      <div class="product">
-        <img src="{% static 'images/Arrival2.svg' %}" alt="Charcoal Essence">
-        <h4>Charcoal Essence</h4>
-        <p>₹999.00</p>
-      </div>
-      <div class="product">
-        <img src="{% static 'images/Arrival3.svg' %}" alt="Crystal Glow">
-        <h4>Crystal Glow</h4>
-        <p>₹1,249.00</p>
-      </div>
-      <div class="product">
-        <img src="{% static 'images/Arrival4.svg' %}" alt="Liquid Gold">
-        <h4>Liquid Gold</h4>
-        <p>₹1,349.00</p>
-      </div>
-    </div>
+  {% for variant in new_arrivals %}
+    <a href="{% url 'product_details' variant.id %}" class="product">
+      {% with variant.images.first as img %}
+        {% if img %}
+          <img src="{{ img.image.url }}" alt="{{ variant.product.product_name }}">
+        {% else %}
+          <div class="no-product-image">
+            <i class="fa-solid fa-image"></i>
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <h4>{{ variant.product.product_name }}</h4>
+
+      {% if variant.discount_price %}
+        <p class="product-price">
+          <span class="original-price">
+            <s>₹{{ variant.price }}</s>
+          </span>
+
+          <span class="discount-price">
+            ₹{{ variant.effective_price }}
+          </span>
+        </p>
+      {% else %}
+        <p class="product-price">
+          <span class="price">
+            ₹{{ variant.price }}
+          </span>
+        </p>
+      {% endif %}
+    </a>
+  {% empty %}
+    <p class="empty-arrivals">No new arrivals available.</p>
+  {% endfor %}
+</div>
   </section>
 
 {% endblock %}

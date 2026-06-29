@@ -700,17 +700,23 @@ def cart(request):
     # get all items in that cart
     items = CartItem.objects.filter(cart=cart).order_by('id')
 
-    total_discount = sum(
-            (item.product_variant.discount_price or 0) * item.quantity
-            for item in items
-        )
-    subtotal = sum(item.total_price - (item.product_variant.discount_price or 0) for item in items)
+    subtotal = sum(
+        item.product_variant.price * item.quantity
+        for item in items
+    )
 
+    total_discount = sum(
+        (item.product_variant.discount_price or 0) * item.quantity
+        for item in items
+    )
+
+    total = subtotal - total_discount
     return render(request, 'user/cart_page.html', {
         'cart': cart,
         'items': items,
         'subtotal': subtotal,
-        'total_discount': total_discount
+        'total_discount': total_discount,
+        'total' : total
     })
 
 @login_required

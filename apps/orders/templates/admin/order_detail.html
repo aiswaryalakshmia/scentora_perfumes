@@ -124,12 +124,16 @@
       {% elif status_choices %}
         <form method="POST" action="{% url 'update_order_status' order.id %}">
           {% csrf_token %}
-          <label>Update Order Status</label>
-          <select name="order_status">
-            {% for value, label in status_choices %}
-              <option value="{{ value }}">{{ label }}</option>
-            {% endfor %}
-          </select>
+        <label>Update Order Status</label>
+        <select name="order_status" required>
+          <option value="" selected disabled>
+            {{ order.get_order_status_display }}
+          </option>
+
+          {% for value, label in status_choices %}
+            <option value="{{ value }}">Move to {{ label }}</option>
+          {% endfor %}
+        </select>
 
           <hr style="border-color: #444; margin: 16px 0;">
 

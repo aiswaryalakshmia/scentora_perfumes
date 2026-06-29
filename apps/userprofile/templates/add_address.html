@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block title %}
-add address 
+{% if address %}Edit Address{% else %}Add Address{% endif %}
 {% endblock %}
 
 {% block extra_css %}
@@ -12,111 +12,182 @@ add address
 
 {% block content %}
   {% include 'side_bar.html' %}
-  <!-- Main Content -->
+
   <main class="address-form-content">
-    <h2>Add New Address</h2>
+    <h2>{% if address %}Edit Address{% else %}Add New Address{% endif %}</h2>
     <p class="subtitle">Save a delivery address for faster checkout.</p>
+
     {% if error %}
       <p style="color:red; margin-bottom:15px;">
-          {{ error }}
+        {{ error }}
       </p>
     {% endif %}
+
     <form method="POST" class="address-form">
-    {% csrf_token %}
-    <input type="hidden" name="next" value="{{ next }}">
-      <!-- Personal Details -->
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+
       <div class="form-section">
         <h4 class="section-title">Personal Details</h4>
+
         <div class="form-row">
           <div class="form-group">
             <label>Full Name</label>
-            <input type="text" placeholder="Enter your full name" 
-                name="full_name" value="{{ address.full_name|default:'' }}">
+            <input
+              type="text"
+              name="full_name"
+              placeholder="Enter your full name"
+              value="{{ form_data.full_name }}"
+            >
           </div>
+
           <div class="form-group">
             <label>Phone Number</label>
-            <input type="text" placeholder="Enter phone number" 
-                name="phone_number" value="{{ address.phone_number|default:'' }}">
+            <input
+              type="text"
+              name="phone_number"
+              placeholder="Enter phone number"
+              value="{{ form_data.phone_number }}"
+            >
           </div>
         </div>
       </div>
 
-      <!-- Address Details -->
       <div class="form-section">
         <h4 class="section-title">Address Details</h4>
+
         <div class="form-group">
           <label>Address Line 1</label>
-          <input type="text" placeholder="Street address, P.O. box, company name" 
-            name="address_line1" value="{{ address.address_line1|default:'' }}">
+          <input
+            type="text"
+            name="address_line1"
+            placeholder="Street address, P.O. box, company name"
+            value="{{ form_data.address_line1 }}"
+          >
         </div>
+
         <div class="form-group">
           <label>Address Line 2</label>
-          <input type="text" placeholder="Apartment, suite, unit, building, floor, etc." 
-            name="address_line2" value="{{ address.address_line2|default:'' }}">
+          <input
+            type="text"
+            name="address_line2"
+            placeholder="Apartment, suite, unit, building, floor, etc."
+            value="{{ form_data.address_line2 }}"
+          >
         </div>
+
         <div class="form-row">
           <div class="form-group">
             <label>City</label>
-            <input type="text" placeholder="City" name="city" value="{{ address.city|default:'' }}">
+            <input
+              type="text"
+              name="city"
+              placeholder="City"
+              value="{{ form_data.city }}"
+            >
           </div>
+
           <div class="form-group">
             <label>State / Province</label>
-            <input type="text" placeholder="State or Province" name="state" value="{{ address.state|default:'' }}">
+            <input
+              type="text"
+              name="state"
+              placeholder="State or Province"
+              value="{{ form_data.state }}"
+            >
           </div>
         </div>
+
         <div class="form-row">
           <div class="form-group">
             <label>ZIP / Postal Code</label>
-            <input type="text" placeholder="Postal code" name="pincode" value="{{ address.pincode|default:'' }}">
+            <input
+              type="text"
+              name="pincode"
+              placeholder="Postal code"
+              value="{{ form_data.pincode }}"
+            >
           </div>
+
           <div class="form-group">
             <label>Country</label>
             <select name="country">
               <option value="">Select Country</option>
-              <option value="United States"
-               {% if address.country == 'United States' %}
-                    selected
-                {% endif %}>United States</option>
-              <option value="India"
-              {% if address.country == 'India' %}
-                    selected
-                {% endif %}>India</option>
-              <option value="United Kingdom"
-               {% if address.country == 'United Kingdom' %}
-                    selected
-                {% endif %}>United Kingdom</option>
+
+              <option value="United States" {% if form_data.country == 'United States' %}selected{% endif %}>
+                United States
+              </option>
+
+              <option value="India" {% if form_data.country == 'India' %}selected{% endif %}>
+                India
+              </option>
+
+              <option value="United Kingdom" {% if form_data.country == 'United Kingdom' %}selected{% endif %}>
+                United Kingdom
+              </option>
             </select>
           </div>
         </div>
       </div>
 
-      <!-- Address Type -->
       <div class="form-section">
         <h4 class="section-title">Address Type</h4>
+
         <div class="address-type">
+          <input
+            type="radio"
+            id="home"
+            name="address_type"
+            value="home"
+            {% if form_data.address_type == 'home' %}checked{% endif %}
+            hidden
+          >
+          <label for="home" class="type-btn">Home</label>
 
-            <input type="radio" id="home" name="address_type" value="home" checked hidden>
-            <label for="home" class="type-btn">Home</label>
+          <input
+            type="radio"
+            id="work"
+            name="address_type"
+            value="work"
+            {% if form_data.address_type == 'work' %}checked{% endif %}
+            hidden
+          >
+          <label for="work" class="type-btn">Work</label>
 
-            <input type="radio" id="work" name="address_type" value="work" hidden>
-            <label for="work" class="type-btn">Work</label>
-
-            <input type="radio" id="other" name="address_type" value="other" hidden>
-            <label for="other" class="type-btn">Other</label>
-
+          <input
+            type="radio"
+            id="other"
+            name="address_type"
+            value="other"
+            {% if form_data.address_type == 'other' %}checked{% endif %}
+            hidden
+          >
+          <label for="other" class="type-btn">Other</label>
         </div>
+
         <div class="checkbox-row">
-          <input type="checkbox" id="default" name="is_default">
+          <input
+            type="checkbox"
+            id="default"
+            name="is_default"
+            {% if form_data.is_default %}checked{% endif %}
+          >
           <label for="default">Set as default delivery address</label>
         </div>
       </div>
 
-      <!-- Buttons -->
       <div class="form-actions">
-        <button type="submit" class="btn save">Save Address</button>
-        <a href="{% if next == 'checkout' %}{% url 'checkout' %}{% else %}{% url 'address_book' %}{% endif %}" class="btn cancel">Cancel</a>
+        <button type="submit" class="btn save">
+          {% if address %}Update Address{% else %}Save Address{% endif %}
+        </button>
+
+        <a
+          href="{% if next == 'checkout' %}{% url 'checkout' %}{% else %}{% url 'address_book' %}{% endif %}"
+          class="btn cancel"
+        >
+          Cancel
+        </a>
       </div>
     </form>
   </main>
-
 {% endblock %}

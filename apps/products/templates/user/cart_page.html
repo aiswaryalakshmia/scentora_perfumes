@@ -50,11 +50,15 @@ Cart
       <h3>Order Summary</h3>
       <div class="summary-details">
         <p>Subtotal <span>₹{{ subtotal }}</span></p>
+        <p>Discount <span>-₹{{ total_discount }}</span></p>
         <p>Standard Shipping <span>₹0.00</span></p>
+
         <hr>
-        <p class="total">Total <span>₹{{ subtotal }}</span></p>
-        <p class="total_discount">Total discount <span>₹{{ total_discount }}</span></p>
-      </div>
+
+        <p class="total">
+            Total <span>₹{{ total }}</span>
+        </p>
+    </div>
       <a href="{% url 'checkout' %}" class="btn-checkout">
           Proceed to Checkout
       </a>

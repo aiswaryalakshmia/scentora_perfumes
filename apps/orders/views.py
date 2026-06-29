@@ -285,7 +285,6 @@ def order_confirmation(request, order_id):
     }
     return render(request, 'user/order_confirmation.html', context)
 
-@login_required
 @admin_required
 @never_cache
 def order_management(request):
@@ -330,7 +329,6 @@ def order_management(request):
         'status_choices': Order.STATUS_CHOICES,
     })
 
-@login_required
 @admin_required
 @never_cache
 def admin_order_detail(request, order_id):
@@ -371,7 +369,6 @@ def get_allowed_next_statuses(current_status):
 
     return status_flow.get(current_status, [])
 
-@login_required
 @admin_required
 @never_cache
 def update_order_status(request, order_id):
@@ -403,7 +400,6 @@ def update_order_status(request, order_id):
     return redirect('admin_order_detail', order_id=order.id)
 
 
-@login_required
 @admin_required
 @never_cache
 def update_item_status(request, order_id, item_id):
@@ -423,7 +419,6 @@ def update_item_status(request, order_id, item_id):
 
     return redirect('admin_order_detail', order_id=order_id)
 
-@login_required
 @admin_required
 @never_cache
 def handle_return_request(request, order_id):

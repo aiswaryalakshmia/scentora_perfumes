@@ -84,9 +84,9 @@
       <div class="order-actions">
         <a href="{% url 'order_detail' order.id %}" class="btn-view">View Details</a>
         {% if order.order_status == 'delivered' %}
-          <a href="#" class="btn-track">Track Order</a>
+          <a hidden href="#" class="btn-track">Track Order</a>
         {% elif order.order_status == 'cancelled' %}
-          <a href="#" class="btn-reorder">Reorder</a>
+          <a hidden href="#" class="btn-reorder">Reorder</a>
         {% endif %}
       </div>
 

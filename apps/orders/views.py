@@ -1,6 +1,10 @@
 """Views for checkout and order management."""
 import uuid
+import razorpay
+from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
 from django.shortcuts import render,redirect, get_object_or_404
+from django.urls import reverse
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import never_cache
@@ -10,7 +14,7 @@ from django.contrib import messages
 from apps.userprofile.models import Address
 from apps.products.models import Cart
 from apps.common.decorators import admin_required
-from .models import Order, OrderItem, OrderAddress
+from .models import Order, OrderItem, OrderAddress,Payment
 
 SHIPPING_CHARGES = {
     'standard': 0,
@@ -25,10 +29,12 @@ def handle_payment(payment_method, order):
         order.order_status = 'pending'
         order.save()
         return True, "Order Placed Successfully"
-    elif payment_method == 'card':
-        return False, "Card payment not yet available."
-    elif payment_method == 'upi':
-        return False, "UPI payment not yet available."
+    elif payment_method == 'razorpay':
+        # Razorpay payment is confirmed later via verify_payment view,
+        # not here. Order stays in 'pending' until payment succeeds.
+        order.order_status = 'pending'
+        order.save()
+        return True, "Redirecting to payment gateway..."
     else:
         return False, "Invalid payment method."
 
@@ -127,7 +133,6 @@ def place_order(request):
     if request.method == 'POST':
         user = request.user
 
-        # get selected address
         address_id = request.POST.get('selected_address')
         if not address_id:
             messages.error(request, "Please select a delivery address")
@@ -135,12 +140,10 @@ def place_order(request):
 
         address = get_object_or_404(Address, id=address_id, user=user)
 
-        # get delivery and payment details
         delivery_option = request.POST.get('delivery_option', 'standard')
         shipping_charge = SHIPPING_CHARGES.get(delivery_option, 0)
         payment_method = request.POST.get('payment_method', 'cod')
 
-        # get cart items
         cart = get_object_or_404(Cart, user=user)
         cart_items = cart.items.select_related(
             'product_variant',
@@ -153,32 +156,20 @@ def place_order(request):
             return redirect('cart')
 
         removed_items = []
-
         for item in cart_items:
             variant = item.product_variant
             product = variant.product
             category = product.category
-
-            if (
-                variant.status == 'inactive' or
-                product.status == 'inactive' or
-                category.status == 'inactive'
-            ):
+            if (variant.status == 'inactive' or product.status == 'inactive' or category.status == 'inactive'):
                 removed_items.append(product.product_name)
                 item.delete()
 
         if removed_items:
-            messages.error(
-                request,
-                f"{', '.join(removed_items)} removed from cart because it is currently unavailable."
-            )
+            messages.error(request, f"{', '.join(removed_items)} removed from cart because it is currently unavailable.")
             return redirect('cart')
 
-        # refresh cart items after possible deletions
         cart_items = cart.items.select_related(
-            'product_variant',
-            'product_variant__product',
-            'product_variant__product__category'
+            'product_variant', 'product_variant__product', 'product_variant__product__category'
         ).all()
 
         if not cart_items.exists():
@@ -188,37 +179,19 @@ def place_order(request):
         for item in cart_items:
             variant = item.product_variant
             product = variant.product
-
             if variant.stock == 0:
-                messages.error(
-                    request,
-                    f"{product.product_name} is out of stock."
-                )
+                messages.error(request, f"{product.product_name} is out of stock.")
                 return redirect('cart')
-
             if item.quantity > variant.stock:
-                messages.error(
-                    request,
-                    f"Only {variant.stock} item(s) available for {product.product_name}."
-                )
+                messages.error(request, f"Only {variant.stock} item(s) available for {product.product_name}.")
                 return redirect('cart')
 
-        # calculate totals
-        total_amount = sum(
-            item.product_variant.price * item.quantity
-            for item in cart_items
-        )
-
-        discount_amount = sum(
-            (item.product_variant.discount_price or 0) * item.quantity
-            for item in cart_items
-        )
-
+        total_amount = sum(item.product_variant.price * item.quantity for item in cart_items)
+        discount_amount = sum((item.product_variant.discount_price or 0) * item.quantity for item in cart_items)
         final_amount = total_amount + shipping_charge - discount_amount
 
         try:
             with transaction.atomic():
-                # save address into OrderAddress
                 order_address = OrderAddress.objects.create(
                     user=user,
                     full_name=address.full_name,
@@ -232,7 +205,6 @@ def place_order(request):
                     address_type=address.address_type,
                 )
 
-                # create order
                 order = Order.objects.create(
                     user=user,
                     order_address=order_address,
@@ -243,7 +215,6 @@ def place_order(request):
                     payment_method=payment_method
                 )
 
-                # create order items
                 for item in cart_items:
                     OrderItem.objects.create(
                         order=order,
@@ -252,12 +223,17 @@ def place_order(request):
                         price=item.product_variant.effective_price,
                         total=item.total_price,
                     )
-
-                    # deduct stock
                     item.product_variant.stock -= item.quantity
                     item.product_variant.save()
 
-                # handle payment
+                # Create Payment record for both COD and Razorpay
+                Payment.objects.create(
+                    order=order,
+                    amount=order.final_amount,
+                    payment_method=payment_method,
+                    payment_status='pending',
+                )
+
                 success, message = handle_payment(payment_method, order)
                 if not success:
                     raise Exception(message)
@@ -268,8 +244,12 @@ def place_order(request):
             messages.error(request, str(e))
             return redirect('checkout')
 
-        messages.success(request, message)
-        return redirect('order_confirmation', order_id=order.id)
+        # Branch AFTER transaction commits
+        if payment_method == 'razorpay':
+            return redirect('initiate_payment', order_id=order.id)
+        else:
+            messages.success(request, message)
+            return redirect('order_confirmation', order_id=order.id)
 
     return redirect('checkout')
 
@@ -452,3 +432,120 @@ def handle_return_request(request, order_id):
             messages.error(request, "Invalid action.")
 
     return redirect('admin_order_detail', order_id=order.id)
+
+
+razorpay_client = razorpay.Client(
+    auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
+)
+
+# Initiate Payment
+@login_required
+def initiate_payment(request, order_id):
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+
+    # Amount in paise (₹1 = 100 paise)
+    amount_paise = int(order.final_amount * 100)
+
+    # Create order on Razorpay's server
+    rzp_order = razorpay_client.order.create({
+        "amount":          amount_paise,
+        "currency":        "INR",
+        "payment_capture": 1,
+        "notes":           {"order_number": order.order_number},
+    })
+
+    # Save/update Payment record
+    payment, _ = Payment.objects.get_or_create(
+        order=order,
+        defaults={'amount': order.final_amount}
+    )
+    payment.razorpay_order_id = rzp_order['id']
+    payment.save()
+
+    return render(request, "user/razorpay_checkout.html", {
+        "order":             order,
+        "razorpay_order_id": rzp_order['id'],
+        "razorpay_key_id":   settings.RAZORPAY_KEY_ID,
+        "amount_paise":      amount_paise,
+        "user_name":         request.user.full_name,   # your User model field
+        "user_email":        request.user.email,
+    })
+
+
+# Verify Payment (called after Razorpay popup)
+@csrf_exempt
+def verify_payment(request):
+    if request.method != "POST":
+        return redirect('home')
+
+    rzp_order_id   = request.POST.get('razorpay_order_id')
+    rzp_payment_id = request.POST.get('razorpay_payment_id')
+    rzp_signature  = request.POST.get('razorpay_signature')
+    order_id       = request.POST.get('order_id')
+
+    order   = get_object_or_404(Order, id=order_id)
+    payment = get_object_or_404(Payment, order=order)
+
+    try:
+        # Verify signature — prevents fake/tampered payments
+        razorpay_client.utility.verify_payment_signature({
+            'razorpay_order_id':   rzp_order_id,
+            'razorpay_payment_id': rzp_payment_id,
+            'razorpay_signature':  rzp_signature,
+        })
+
+        # Mark payment and order as paid
+        payment.mark_paid(rzp_payment_id)
+        order.payment_status = 'paid'
+        order.order_status   = 'processing'
+        order.save()
+
+        return redirect('payment_success', order_id=order.id)
+
+    # In verify_payment, update the except block:
+    except razorpay.errors.SignatureVerificationError:
+        payment.mark_failed()
+        order.order_status = 'cancelled'
+        order.save()
+
+        # Restore stock
+        for item in order.items.select_related('product_variant').all():
+            item.product_variant.stock += item.quantity
+            item.product_variant.save()
+
+        return redirect(f"{reverse('payment_failure', args=[order.id])}?reason=verification_failed")
+
+
+# Success Page
+@login_required
+def payment_success(request, order_id):
+    order   = get_object_or_404(Order, id=order_id, user=request.user)
+    payment = get_object_or_404(Payment, order=order)
+    return render(request, "user/payment_success.html", {
+        "order":   order,
+        "payment": payment,
+    })
+
+
+# Failure Page 
+@login_required
+def payment_failure(request, order_id):
+    order   = get_object_or_404(Order, id=order_id, user=request.user)
+    payment = get_object_or_404(Payment, order=order)
+    reason  = request.GET.get('reason', 'unknown')
+
+    # If user cancelled (dismissed popup) and stock not yet restored
+    if reason == 'cancelled' and order.order_status == 'pending':
+        order.order_status = 'cancelled'
+        order.save()
+        payment.mark_failed()
+
+        # Restore stock
+        for item in order.items.select_related('product_variant').all():
+            item.product_variant.stock += item.quantity
+            item.product_variant.save()
+
+    return render(request, "user/payment_failure.html", {
+        "order":  order,
+        "reason": reason,
+    })

@@ -1,0 +1,294 @@
+/* ─────────────────────────────────────
+   payment.css — Scentora Payment Pages
+   Shared by: razorpay_checkout.html
+              payment_success.html
+              payment_failure.html
+───────────────────────────────────── */
+
+:root {
+  --gold:         #c9a84c;
+  --gold-light:   #e2c47a;
+  --gold-dark:    #a07830;
+  --black:        #000000;
+  --black-soft:   #0d0d0d;
+  --black-card:   #111111;
+  --black-border: #1e1e1e;
+  --white:        #ffffff;
+  --white-dim:    #aaaaaa;
+  --red:          #e05252;
+  --green:        #4caf78;
+}
+
+.payment-page {
+  min-height: 80vh;
+  background-color: var(--black);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  font-family: 'Playfair Display', serif;
+}
+
+.payment-card {
+  background: var(--black-card);
+  border: 1px solid var(--black-border);
+  border-radius: 4px;
+  padding: 52px 48px;
+  width: 100%;
+  max-width: 520px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.payment-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+
+.payment-brand { margin-bottom: 8px; }
+
+.payment-brand-name {
+  font-size: 1.1rem;
+  letter-spacing: 0.3em;
+  color: var(--gold);
+  text-transform: uppercase;
+  font-weight: 400;
+}
+
+.payment-brand-divider {
+  width: 40px;
+  height: 1px;
+  background: var(--gold-dark);
+  margin: 12px auto 32px;
+}
+
+.payment-icon-wrap {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+}
+
+.payment-icon-wrap.success {
+  background: rgba(76, 175, 120, 0.12);
+  border: 1px solid rgba(76, 175, 120, 0.3);
+}
+
+.payment-icon-wrap.failure {
+  background: rgba(224, 82, 82, 0.12);
+  border: 1px solid rgba(224, 82, 82, 0.3);
+}
+
+.payment-icon-wrap.pending {
+  background: rgba(201, 168, 76, 0.12);
+  border: 1px solid rgba(201, 168, 76, 0.3);
+}
+
+.payment-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--white);
+  margin: 0 0 10px;
+  letter-spacing: 0.02em;
+}
+
+.payment-subtitle {
+  font-size: 0.9rem;
+  color: var(--white-dim);
+  margin: 0 0 32px;
+  line-height: 1.7;
+  font-family: 'Georgia', serif;
+}
+
+.payment-summary {
+  background: var(--black-soft);
+  border: 1px solid var(--black-border);
+  border-radius: 4px;
+  padding: 20px 24px;
+  margin-bottom: 28px;
+  text-align: left;
+}
+
+.payment-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--black-border);
+  font-size: 0.85rem;
+  font-family: 'Georgia', serif;
+}
+
+.payment-summary-row:last-child {
+  border-bottom: none;
+  padding-top: 14px;
+  margin-top: 4px;
+}
+
+.payment-summary-row .label { color: var(--white-dim); }
+.payment-summary-row .value { color: var(--white); font-weight: 500; }
+
+.payment-summary-row.total .label,
+.payment-summary-row.total .value {
+  color: var(--gold);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.payment-status-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-family: 'Georgia', serif;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.payment-status-badge.paid {
+  background: rgba(76, 175, 120, 0.15);
+  color: var(--green);
+  border: 1px solid rgba(76, 175, 120, 0.3);
+}
+
+.payment-status-badge.failed {
+  background: rgba(224, 82, 82, 0.15);
+  color: var(--red);
+  border: 1px solid rgba(224, 82, 82, 0.3);
+}
+
+.rzp-pay-btn {
+  width: 100%;
+  padding: 15px 24px;
+  background: linear-gradient(135deg, var(--gold-dark), var(--gold), var(--gold-light));
+  color: var(--black);
+  border: none;
+  border-radius: 2px;
+  font-family: 'Playfair Display', serif;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s;
+  margin-bottom: 14px;
+}
+
+.rzp-pay-btn:hover  { opacity: 0.88; transform: translateY(-1px); }
+.rzp-pay-btn:active { transform: translateY(0); }
+
+.rzp-security-note {
+  font-size: 0.78rem;
+  color: var(--white-dim);
+  font-family: 'Georgia', serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.rzp-security-note i { color: var(--gold); font-size: 0.72rem; }
+
+.rzp-powered {
+  margin-top: 6px;
+  font-size: 0.75rem;
+  color: #444;
+  font-family: 'Georgia', serif;
+  letter-spacing: 0.04em;
+}
+
+.payment-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.btn-gold {
+  display: block;
+  width: 100%;
+  padding: 14px 24px;
+  background: linear-gradient(135deg, var(--gold-dark), var(--gold), var(--gold-light));
+  color: var(--black);
+  border: none;
+  border-radius: 2px;
+  font-family: 'Playfair Display', serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: center;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: opacity 0.2s, transform 0.15s;
+}
+
+.btn-gold:hover { opacity: 0.88; transform: translateY(-1px); color: var(--black); }
+
+.btn-outline {
+  display: block;
+  width: 100%;
+  padding: 13px 24px;
+  background: transparent;
+  color: var(--gold);
+  border: 1px solid var(--gold-dark);
+  border-radius: 2px;
+  font-family: 'Playfair Display', serif;
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: center;
+  box-sizing: border-box;
+  transition: background 0.2s, color 0.2s;
+}
+
+.btn-outline:hover { background: rgba(201,168,76,0.08); color: var(--gold-light); }
+
+.failure-reason-box {
+  background: rgba(224, 82, 82, 0.06);
+  border: 1px solid rgba(224, 82, 82, 0.2);
+  border-radius: 4px;
+  padding: 14px 18px;
+  margin-bottom: 28px;
+  font-size: 0.85rem;
+  color: #d48080;
+  font-family: 'Georgia', serif;
+  line-height: 1.6;
+  text-align: left;
+}
+
+.failure-reason-box strong {
+  display: block;
+  color: var(--red);
+  margin-bottom: 4px;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.gold-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 28px 0 20px;
+}
+
+.gold-divider span {
+  flex: 1;
+  height: 1px;
+  background: var(--black-border);
+}
+
+.gold-divider i { color: var(--gold-dark); font-size: 0.55rem; }
+
+@media (max-width: 560px) {
+  .payment-card  { padding: 36px 20px; }
+  .payment-title { font-size: 1.4rem; }
+}

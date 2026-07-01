@@ -33,9 +33,8 @@ class Order(models.Model):
     )
 
     PAYMENT_CHOICES = (
-    ('cod', 'Cash on Delivery'),
-    ('card', 'Credit Card'),
-    ('upi', 'UPI Transfer'),
+        ('cod', 'Cash on Delivery'),    
+        ('razorpay', 'Razorpay'),
     )
 
     PAYMENT_STATUS_CHOICES = (
@@ -76,3 +75,40 @@ class OrderItem(models.Model):
     def __str__(self):
         return f"{self.quantity}x {self.product_variant} in Order #{self.order.order_number}"
     
+class Payment(models.Model):
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('paid',    'Paid'),
+        ('failed',  'Failed'),
+    )
+    PAYMENT_METHOD_CHOICES = (
+        ('cod',      'Cash on Delivery'),
+        ('razorpay', 'Razorpay'),
+    )
+
+    order               = models.OneToOneField(
+                              Order,
+                              on_delete=models.CASCADE,
+                              related_name='payment_detail'
+                          )
+    razorpay_order_id   = models.CharField(max_length=100, blank=True, null=True)
+    razorpay_payment_id = models.CharField(max_length=100, blank=True, null=True)
+    payment_method      = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='cod')
+    amount              = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_status      = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    transaction_date    = models.DateTimeField(null=True, blank=True)
+    created_at          = models.DateTimeField(auto_now_add=True)
+
+    def mark_paid(self, razorpay_payment_id):
+        from django.utils import timezone
+        self.razorpay_payment_id = razorpay_payment_id
+        self.payment_status      = 'paid'
+        self.transaction_date    = timezone.now()
+        self.save()
+
+    def mark_failed(self):
+        self.payment_status = 'failed'
+        self.save()
+
+    def __str__(self):
+        return f"Payment for Order #{self.order.order_number} — {self.payment_status}"

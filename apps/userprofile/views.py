@@ -649,6 +649,10 @@ def cancel_order(request, order_id):
         order.order_status = 'cancelled'
         order.save()
 
+        # Also mark payment as failed if it's still pending (Razorpay abandoned orders)
+        if hasattr(order, 'payment_detail') and order.payment_detail.payment_status == 'pending':
+            order.payment_detail.mark_failed()
+            
         messages.success(request, "Order cancelled successfully.")
         return redirect('order_detail', order_id=order.id)
 

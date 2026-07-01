@@ -107,26 +107,18 @@ Checkout
         </section>
 
         <!-- Payment Method -->
+        <!-- Payment Method -->
         <section class="payment-method">
           <h3>Payment Method</h3>
           <div class="payment-tabs">
-            <button type="button" class="active" onclick="showPayment('card')">Credit Card</button>
-            <button type="button" onclick="showPayment('upi')">UPI Transfer</button>
+            <button type="button" class="active" onclick="showPayment('razorpay')">Razorpay</button>            
             <button type="button" onclick="showPayment('cod')">COD</button>
           </div>
 
-          <input type="hidden" name="payment_method" id="payment_method" value="card">
+          <input type="hidden" name="payment_method" id="payment_method" value="razorpay">
 
-          <div id="payment-card" class="payment-panel">
-            <input type="text" name="card_number" placeholder="Card Number">
-            <div class="form-row">
-              <input type="text" name="expiry_date" placeholder="Expiry Date (MM/YY)">
-              <input type="text" name="cvv" placeholder="CVV">
-            </div>
-          </div>
-
-          <div id="payment-upi" class="payment-panel" style="display:none;">
-            <input type="text" name="upi_id" placeholder="Enter UPI ID">
+          <div id="payment-razorpay" class="payment-panel">
+            <p>You'll be redirected to Razorpay's secure payment page after placing the order.</p>
           </div>
 
           <div id="payment-cod" class="payment-panel" style="display:none;">

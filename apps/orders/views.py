@@ -186,8 +186,12 @@ def place_order(request):
                 messages.error(request, f"Only {variant.stock} item(s) available for {product.product_name}.")
                 return redirect('cart')
 
-        total_amount = sum(item.product_variant.price * item.quantity for item in cart_items)
-        discount_amount = sum((item.product_variant.discount_price or 0) * item.quantity for item in cart_items)
+        # Use cart's stored prices (already have offer applied from add_to_cart)
+        total_amount    = sum(item.product_variant.price * item.quantity for item in cart_items)
+        discount_amount = sum(
+            (item.product_variant.price * item.quantity) - item.total_price
+            for item in cart_items
+        )
         final_amount = total_amount + shipping_charge - discount_amount
 
         try:

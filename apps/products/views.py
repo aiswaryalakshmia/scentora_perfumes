@@ -9,6 +9,8 @@ from django.core.files.base import ContentFile
 from apps.common.decorators import admin_required
 from .models import Category,Product,ProductVariant,VariantImage,Cart,CartItem,Wishlist
 from .forms import CategoryForm,ProductForm, ProductVariantForm
+from .utils import get_offer_price
+from .models import Offer
 
 @admin_required
 def category_management(request):
@@ -576,6 +578,16 @@ def shop(request):
     else:
         wishlisted_ids = []
 
+    offer_price_map = {}
+    for variant in page_obj:
+        final_price, discount_amount, offer = get_offer_price(variant)
+        offer_price_map[variant.id] = {
+            'final_price':     final_price,
+            'discount_amount': discount_amount,
+            'offer':           offer,
+            'has_offer':       offer is not None,
+        }
+
     return render(request,'user/shop_page.html',
                   {
                       'variants':page_obj,
@@ -586,6 +598,7 @@ def shop(request):
                       'sort':sort,
                       'page_obj': page_obj,
                       'wishlisted_ids': wishlisted_ids,
+                      'offer_price_map': offer_price_map,
                   })
 
 @login_required
@@ -616,11 +629,27 @@ def product_details(request, variant_id):
     ).exclude(product=variant.product)[:4]
 
     is_wishlisted = Wishlist.objects.filter(user=request.user, product_variant=variant).exists()
+
+    final_price, discount_amount, offer = get_offer_price(variant)
+
+    # Offer prices for other size variants (size selector dropdown)
+    other_variant_prices = {}
+    for v in other_variants:
+        fp, da, o = get_offer_price(v)
+        other_variant_prices[v.id] = {
+            'final_price':     fp,
+            'discount_amount': da,
+            'offer':           o,
+        }
     return render(request, 'user/product_details.html', {
         'variant': variant,
         'other_variants': other_variants,
         'related_variants': related_variants,
-        'is_wishlisted':is_wishlisted
+        'is_wishlisted':is_wishlisted,
+        'final_price': final_price,           
+        'discount_amount': discount_amount,       
+        'offer': offer,                 
+        'other_variant_prices': other_variant_prices,  
     })
 
 @login_required
@@ -698,15 +727,32 @@ def cart(request):
         cart = Cart.objects.create(user=request.user)
 
     # get all items in that cart
-    items = CartItem.objects.filter(cart=cart).order_by('id')
+    items = CartItem.objects.filter(cart=cart).select_related(
+        'product_variant__product__category'
+    ).order_by('id')
+
+    # the stored total_price in DB is stale — this keeps it always current
+    for item in items:
+        final_price, _, _ = get_offer_price(item.product_variant)
+        new_total = final_price * item.quantity
+        if new_total != item.total_price:
+            item.total_price = new_total
+            item.save()
+
+    # re-fetching ensures the calculations below use the updated values
+    items = CartItem.objects.filter(cart=cart).select_related(
+        'product_variant__product__category'
+    ).order_by('id')
 
     subtotal = sum(
         item.product_variant.price * item.quantity
         for item in items
     )
 
+    # total_discount = difference between original price and offer/discounted price
+    # total_price in CartItem is already stored as offer price (from add_to_cart)
     total_discount = sum(
-        (item.product_variant.discount_price or 0) * item.quantity
+        (item.product_variant.price * item.quantity) - item.total_price
         for item in items
     )
 
@@ -746,7 +792,10 @@ def add_to_cart(request, variant_id):
             
             else:
                 return redirect('shop')
-              
+            
+        #get offer price at time of adding to cart
+        final_price, discount_amount, offer = get_offer_price(variant)
+
         # get the cart for this user
         try:
             cart = Cart.objects.get(user=request.user)
@@ -770,7 +819,7 @@ def add_to_cart(request, variant_id):
 
             # if all good then increase quantity by 1
             item.quantity = item.quantity + 1
-            item.total_price = variant.effective_price * item.quantity
+            item.total_price = final_price  * item.quantity
             item.save()
 
         except CartItem.DoesNotExist:
@@ -780,7 +829,7 @@ def add_to_cart(request, variant_id):
                 cart=cart,
                 product_variant=variant,
                 quantity=1,
-                total_price=variant.effective_price
+                total_price=final_price 
             )
 
         # remove from wishlist if it exists
@@ -821,7 +870,7 @@ def remove_from_cart(request, item_id):
 
 @login_required
 def update_cart(request, item_id):
-    if request.method == 'POST':        
+    if request.method == 'POST':
         try:
             item = CartItem.objects.get(id=item_id, cart__user=request.user)
         except CartItem.DoesNotExist:
@@ -852,9 +901,10 @@ def update_cart(request, item_id):
         if quantity > item.product_variant.stock:
             messages.error(request, "Not enough stock!")
             return redirect('cart')
-
+        
+        final_price, _, _ = get_offer_price(item.product_variant)
         item.quantity = quantity
-        item.total_price = item.product_variant.effective_price * quantity
+        item.total_price = final_price  * quantity
         item.save()
 
         return redirect('cart')
@@ -928,3 +978,104 @@ def remove_from_wishlist(request, variant_id):
             return redirect('product_details',variant.id)
         else:
             return redirect('wishlist')
+
+
+@admin_required
+def offer_management(request):
+    offers = Offer.objects.select_related('product', 'category').order_by('-created_at')
+    return render(request, 'admin/offer_management.html', {'offers': offers})
+
+
+@admin_required
+def add_offer(request):
+    if request.method == 'POST':
+        offer_type          = request.POST.get('offer_type')
+        offer_name          = request.POST.get('offer_name', '').strip()
+        discount_percentage = request.POST.get('discount_percentage')
+        start_date          = request.POST.get('start_date')
+        end_date            = request.POST.get('end_date')
+        product_id          = request.POST.get('product_id')
+        category_id         = request.POST.get('category_id')
+
+        # Basic validation
+        if not offer_name:
+            messages.error(request, "Offer name is required.")
+            return redirect('add_offer')
+
+        if not discount_percentage or float(discount_percentage) <= 0 or float(discount_percentage) > 100:
+            messages.error(request, "Discount must be between 1 and 100.")
+            return redirect('add_offer')
+
+        if start_date >= end_date:
+            messages.error(request, "End date must be after start date.")
+            return redirect('add_offer')
+
+        offer = Offer(
+            offer_type          = offer_type,
+            offer_name          = offer_name,
+            discount_percentage = discount_percentage,
+            start_date          = start_date,
+            end_date            = end_date,
+        )
+
+        if offer_type == 'product':
+            if not product_id:
+                messages.error(request, "Please select a product.")
+                return redirect('add_offer')
+            offer.product = get_object_or_404(Product, id=product_id)
+
+        elif offer_type == 'category':
+            if not category_id:
+                messages.error(request, "Please select a category.")
+                return redirect('add_offer')
+            offer.category = get_object_or_404(Category, id=category_id)
+
+        offer.save()
+        messages.success(request, "Offer created successfully!")
+        return redirect('offer_management')
+
+    products   = Product.objects.filter(status='active')
+    categories = Category.objects.filter(status='active')
+    return render(request, 'admin/add_offer.html', {
+        'products':   products,
+        'categories': categories,
+    })
+
+
+@admin_required
+def edit_offer(request, offer_id):
+    offer = get_object_or_404(Offer, id=offer_id)
+
+    if request.method == 'POST':
+        offer.offer_name          = request.POST.get('offer_name', '').strip()
+        offer.discount_percentage = request.POST.get('discount_percentage')
+        offer.start_date          = request.POST.get('start_date')
+        offer.end_date            = request.POST.get('end_date')
+        offer.save()
+        messages.success(request, "Offer updated successfully!")
+        return redirect('offer_management')
+
+    products   = Product.objects.filter(status='active')
+    categories = Category.objects.filter(status='active')
+    return render(request, 'admin/edit_offer.html', {
+        'offer':      offer,
+        'products':   products,
+        'categories': categories,
+    })
+
+
+@admin_required
+def toggle_offer_status(request, offer_id):
+    offer = get_object_or_404(Offer, id=offer_id)
+    offer.status = 'inactive' if offer.status == 'active' else 'active'
+    offer.save()
+    messages.success(request, f"Offer {'activated' if offer.status == 'active' else 'deactivated'} successfully.")
+    return redirect('offer_management')
+
+
+@admin_required
+def delete_offer(request, offer_id):
+    offer = get_object_or_404(Offer, id=offer_id)
+    offer.delete()
+    messages.success(request, "Offer deleted successfully.")
+    return redirect('offer_management')

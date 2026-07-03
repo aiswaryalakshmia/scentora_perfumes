@@ -41,7 +41,11 @@
         </li>
         <li><i class="fa-solid fa-ticket"></i> Coupons</li>
         <li><i class="fa-solid fa-file-lines"></i> Sales Report</li>
-        <li><i class="fa-solid fa-gift"></i> Offers</li>
+        <li class="{% if request.resolver_match.url_name == 'offer_management' or request.resolver_match.url_name == 'add_offer' or request.resolver_match.url_name == 'edit_offer' %}active{% endif %}">
+          <a href="{% url 'offer_management' %}">
+              <i class="fa-solid fa-gift"></i> Offers
+          </a>
+      </li>
         <li class="logout {% if request.resolver_match.url_name == 'admin_logout' %}active{% endif %}">
             <a href="{% url 'admin_logout' %}"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
         </li>

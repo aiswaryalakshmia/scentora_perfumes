@@ -15,4 +15,11 @@ urlpatterns = [
     path('payment/verify/', views.verify_payment,   name='verify_payment'),
     path('payment/success/<int:order_id>/', views.payment_success,  name='payment_success'),
     path('payment/failure/<int:order_id>/', views.payment_failure,  name='payment_failure'),
+    path('coupon/apply/', views.apply_coupon,  name='apply_coupon'),
+    path('coupon/remove/', views.remove_coupon, name='remove_coupon'),
+    path('admin-panel/coupons/', views.coupon_management, name='coupon_management'),
+    path('admin-panel/coupons/add/', views.add_coupon, name='add_coupon'),
+    path('admin-panel/coupons/<int:coupon_id>/edit/', views.edit_coupon, name='edit_coupon'),
+    path('admin-panel/coupons/<int:coupon_id>/toggle/', views.toggle_coupon_status,name='toggle_coupon_status'),
+    path('admin-panel/coupons/<int:coupon_id>/delete/', views.delete_coupon, name='delete_coupon'),
 ]

@@ -12,9 +12,15 @@ from django.db.models import Q
 from django.db import transaction
 from django.contrib import messages
 from apps.userprofile.models import Address
-from apps.products.models import Cart
+from apps.products.models import Cart,CartItem
 from apps.common.decorators import admin_required
 from .models import Order, OrderItem, OrderAddress,Payment
+from decimal import Decimal
+from django.utils import timezone
+from django.db import models as db_models
+from .models import Coupon, CouponUsage
+from .utils import validate_coupon
+from apps.products.utils import get_offer_price
 
 SHIPPING_CHARGES = {
     'standard': 0,
@@ -112,6 +118,34 @@ def checkout(request):
     shipping_charge = SHIPPING_CHARGES.get(delivery_option, 0)
     total = subtotal + shipping_charge - discount_amount
 
+    coupon_code     = request.session.get('coupon_code')
+    coupon_discount = Decimal(request.session.get('coupon_discount', '0'))
+    coupon          = None
+
+    if coupon_code:
+        try:
+            coupon = Coupon.objects.get(coupon_code=coupon_code)
+        except Coupon.DoesNotExist:
+            request.session.pop('coupon_code', None)
+            request.session.pop('coupon_discount', None)
+            coupon_discount = Decimal('0')
+
+    final_total = total - coupon_discount
+
+    today = timezone.now().date()
+    already_used_ids = CouponUsage.objects.filter(
+        user=request.user
+    ).values_list('coupon_id', flat=True)
+
+    available_coupons = Coupon.objects.filter(
+        status='active',
+        expiry_date__gte=today,
+    ).exclude(
+        id__in=already_used_ids
+    ).exclude(
+        used_count__gte=db_models.F('usage_limit')
+    )
+
     context = {
         'addresses': addresses,
         'default_address': default_address,
@@ -123,6 +157,10 @@ def checkout(request):
         'shipping_label': 'Free' if shipping_charge == 0 else f'₹{shipping_charge}',
         'total': total,
         'delivery_option': delivery_option,
+        'coupon': coupon,
+        'coupon_discount': coupon_discount,
+        'final_total': final_total,
+        'available_coupons': available_coupons,
     }
 
     return render(request, 'user/checkout.html', context)
@@ -219,6 +257,39 @@ def place_order(request):
                     payment_method=payment_method
                 )
 
+                # After order is created, handle coupon
+                coupon_code     = request.session.get('coupon_code')
+                coupon_discount = Decimal(request.session.get('coupon_discount', '0'))
+
+                if coupon_code and coupon_discount > 0:
+                    try:
+                        coupon = Coupon.objects.get(coupon_code=coupon_code)
+
+                        # Attach coupon to order
+                        order.coupon          = coupon
+                        order.coupon_discount = coupon_discount
+                        order.final_amount    = order.final_amount - coupon_discount
+                        order.save()
+
+                        # Record usage — prevents user from using again
+                        CouponUsage.objects.create(
+                            coupon=coupon,
+                            user=user,
+                            order=order,
+                        )
+
+                        # Increment global used count
+                        coupon.used_count += 1
+                        coupon.save()
+
+                        # Clear from session
+                        if payment_method == 'cod':
+                            request.session.pop('coupon_code', None)
+                            request.session.pop('coupon_discount', None)
+
+                    except Coupon.DoesNotExist:
+                        pass
+
                 for item in cart_items:
                     OrderItem.objects.create(
                         order=order,
@@ -242,7 +313,9 @@ def place_order(request):
                 if not success:
                     raise Exception(message)
 
-                cart_items.delete()
+                # Only clear cart for COD — Razorpay clears after payment confirmed
+                if payment_method == 'cod':
+                    cart_items.delete()
 
         except Exception as e:
             messages.error(request, str(e))
@@ -504,6 +577,16 @@ def verify_payment(request):
         order.order_status   = 'processing'
         order.save()
 
+        # Clear coupon from session now that payment is confirmed
+        request.session.pop('coupon_code', None)
+        request.session.pop('coupon_discount', None)
+        
+        try:
+            cart = Cart.objects.get(user=order.user)
+            CartItem.objects.filter(cart=cart).delete()
+        except Cart.DoesNotExist:
+            pass
+
         return redirect('payment_success', order_id=order.id)
 
     # In verify_payment, update the except block:
@@ -516,6 +599,16 @@ def verify_payment(request):
         for item in order.items.select_related('product_variant').all():
             item.product_variant.stock += item.quantity
             item.product_variant.save()
+
+        # rollback coupon usage ──
+        if order.coupon:
+            CouponUsage.objects.filter(
+                coupon=order.coupon,
+                user=order.user
+            ).delete()
+            order.coupon.used_count = max(0, order.coupon.used_count - 1)
+            order.coupon.save()
+            # Keep coupon in session so user sees it on checkout
 
         return redirect(f"{reverse('payment_failure', args=[order.id])}?reason=verification_failed")
 
@@ -549,7 +642,162 @@ def payment_failure(request, order_id):
             item.product_variant.stock += item.quantity
             item.product_variant.save()
 
+        # ── ADD THIS — rollback coupon usage so user can use it again ──
+        if order.coupon:
+            # Remove usage record
+            CouponUsage.objects.filter(
+                coupon=order.coupon,
+                user=request.user
+            ).delete()
+
+            # Decrement used count
+            order.coupon.used_count = max(0, order.coupon.used_count - 1)
+            order.coupon.save()
+
+            # Coupon stays in session so it shows on checkout again 
+
     return render(request, "user/payment_failure.html", {
         "order":  order,
         "reason": reason,
     })
+
+
+@login_required
+def apply_coupon(request):
+    if request.method != 'POST':
+        return redirect('checkout')
+
+    code = request.POST.get('coupon_code', '').strip().upper()
+
+    # Prevent applying if coupon already applied
+    if request.session.get('coupon_code'):
+        messages.error(request, "A coupon is already applied. Remove it first.")
+        return redirect('checkout')
+
+    # Get current cart total (after offer discounts)
+    try:
+        cart  = Cart.objects.get(user=request.user)
+        items = CartItem.objects.filter(cart=cart).select_related(
+            'product_variant__product__category'
+        )
+        cart_total = sum(
+            get_offer_price(item.product_variant)[0] * item.quantity
+            for item in items
+        )
+    except Cart.DoesNotExist:
+        messages.error(request, "Your cart is empty.")
+        return redirect('checkout')
+
+    coupon, discount, error = validate_coupon(code, request.user, cart_total)
+
+    if error:
+        messages.error(request, error)
+        return redirect('checkout')
+
+    # Store in session
+    request.session['coupon_code']     = coupon.coupon_code
+    request.session['coupon_discount'] = str(discount)
+
+    messages.success(request, f"Coupon '{coupon.coupon_code}' applied! You save ₹{discount}.")
+    return redirect('checkout')
+
+
+@login_required
+def remove_coupon(request):
+    if request.method != 'POST':
+        return redirect('checkout')
+
+    request.session.pop('coupon_code',     None)
+    request.session.pop('coupon_discount', None)
+
+    messages.success(request, "Coupon removed successfully.")
+    return redirect('checkout')
+
+# ── Coupon Management (Admin) ─────────────────────────────────────
+
+@admin_required
+@never_cache
+def coupon_management(request):
+    coupons = Coupon.objects.order_by('-created_at')
+    return render(request, 'admin/coupon_management.html', {'coupons': coupons})
+
+
+@admin_required
+@never_cache
+def add_coupon(request):
+    if request.method == 'POST':
+        code                = request.POST.get('coupon_code', '').strip().upper()
+        discount_type       = request.POST.get('discount_type')
+        discount_value      = request.POST.get('discount_value')
+        minimum_price       = request.POST.get('minimum_price', 0)
+        maximum_redeem      = request.POST.get('maximum_redeem') or None
+        expiry_date         = request.POST.get('expiry_date')
+        usage_limit         = request.POST.get('usage_limit', 1)
+
+        # Validation
+        if not code:
+            messages.error(request, "Coupon code is required.")
+            return redirect('add_coupon')
+
+        if Coupon.objects.filter(coupon_code=code).exists():
+            messages.error(request, "Coupon code already exists.")
+            return redirect('add_coupon')
+
+        if not discount_value or float(discount_value) <= 0:
+            messages.error(request, "Discount value must be greater than 0.")
+            return redirect('add_coupon')
+
+        if discount_type == 'percentage' and float(discount_value) > 100:
+            messages.error(request, "Percentage discount cannot exceed 100.")
+            return redirect('add_coupon')
+
+        Coupon.objects.create(
+            coupon_code    = code,
+            discount_type  = discount_type,
+            discount_value = discount_value,
+            minimum_price  = minimum_price,
+            maximum_redeem = maximum_redeem,
+            expiry_date    = expiry_date,
+            usage_limit    = usage_limit,
+        )
+        messages.success(request, "Coupon created successfully!")
+        return redirect('coupon_management')
+
+    return render(request, 'admin/add_coupon.html')
+
+
+@admin_required
+@never_cache
+def edit_coupon(request, coupon_id):
+    coupon = get_object_or_404(Coupon, id=coupon_id)
+
+    if request.method == 'POST':
+        coupon.discount_value  = request.POST.get('discount_value')
+        coupon.minimum_price   = request.POST.get('minimum_price', 0)
+        coupon.maximum_redeem  = request.POST.get('maximum_redeem') or None
+        coupon.expiry_date     = request.POST.get('expiry_date')
+        coupon.usage_limit     = request.POST.get('usage_limit', 1)
+        coupon.save()
+        messages.success(request, "Coupon updated successfully!")
+        return redirect('coupon_management')
+
+    return render(request, 'admin/edit_coupon.html', {'coupon': coupon})
+
+
+@admin_required
+@never_cache
+def toggle_coupon_status(request, coupon_id):
+    coupon = get_object_or_404(Coupon, id=coupon_id)
+    coupon.status = 'inactive' if coupon.status == 'active' else 'active'
+    coupon.save()
+    messages.success(request, f"Coupon {'activated' if coupon.status == 'active' else 'deactivated'} successfully.")
+    return redirect('coupon_management')
+
+
+@admin_required
+@never_cache
+def delete_coupon(request, coupon_id):
+    coupon = get_object_or_404(Coupon, id=coupon_id)
+    coupon.delete()
+    messages.success(request, "Coupon deleted successfully.")
+    return redirect('coupon_management')

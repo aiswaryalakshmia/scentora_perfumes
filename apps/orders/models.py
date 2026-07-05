@@ -1,7 +1,7 @@
 from django.db import models
+from django.utils import timezone
 from apps.authentication.models import User
 from apps.products.models import ProductVariant
-
 
 class OrderAddress(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='order_addresses')
@@ -18,7 +18,6 @@ class OrderAddress(models.Model):
 
     def __str__(self):
         return f"{self.full_name} - {self.city}"
-
 
 class Order(models.Model):
 
@@ -52,6 +51,8 @@ class Order(models.Model):
     order_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending')
     return_reason = models.TextField(blank=True, null=True)
+    coupon = models.ForeignKey('Coupon',on_delete=models.SET_NULL,null=True,blank=True,related_name='orders')
+    coupon_discount = models.DecimalField(max_digits=10,decimal_places=2,default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -112,3 +113,58 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"Payment for Order #{self.order.order_number} — {self.payment_status}"
+class Coupon(models.Model):
+
+    DISCOUNT_TYPE_CHOICES = (
+        ('percentage', 'Percentage'),
+        ('flat',       'Flat Amount'),
+    )
+    STATUS_CHOICES = (
+        ('active',   'Active'),
+        ('inactive', 'Inactive'),
+    )
+
+    coupon_code    = models.CharField(max_length=20, unique=True)
+    discount_type  = models.CharField(max_length=20, choices=DISCOUNT_TYPE_CHOICES)
+    discount_value = models.DecimalField(max_digits=10, decimal_places=2)
+    minimum_price  = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    maximum_redeem = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    expiry_date    = models.DateField()
+    usage_limit    = models.PositiveIntegerField(default=1)
+    used_count     = models.PositiveIntegerField(default=0)
+    status         = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
+    created_at     = models.DateTimeField(auto_now_add=True)
+    updated_at     = models.DateTimeField(auto_now=True)
+
+    def is_valid(self):
+        today = timezone.now().date()
+        return (
+            self.status == 'active' and
+            today <= self.expiry_date and
+            self.used_count < self.usage_limit
+        )
+
+    def calculate_discount(self, cart_total):
+        from decimal import Decimal
+        if self.discount_type == 'percentage':
+            discount = cart_total * self.discount_value / Decimal('100')
+            if self.maximum_redeem:
+                discount = min(discount, self.maximum_redeem)
+        else:
+            discount = self.discount_value
+        return min(discount, cart_total)
+
+    def __str__(self):
+        return f"{self.coupon_code} — {self.discount_type} — {self.discount_value}"
+
+class CouponUsage(models.Model):
+    coupon  = models.ForeignKey(Coupon, on_delete=models.CASCADE, related_name='usages')
+    user    = models.ForeignKey(User,   on_delete=models.CASCADE, related_name='coupon_usages')
+    order   = models.ForeignKey(Order,  on_delete=models.CASCADE, related_name='coupon_usage', null=True, blank=True)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('coupon', 'user')
+
+    def __str__(self):
+        return f"{self.user.full_name} used {self.coupon.coupon_code}"

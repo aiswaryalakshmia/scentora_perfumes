@@ -39,7 +39,11 @@
         <li class="{% if request.resolver_match.url_name == 'user_management' %}active{% endif %}">
             <a href="{% url 'user_management' %}"><i class="fa-solid fa-users"></i> Customers</a>
         </li>
-        <li><i class="fa-solid fa-ticket"></i> Coupons</li>
+        <li class="{% if request.resolver_match.url_name == 'coupon_management' or request.resolver_match.url_name == 'add_coupon' or request.resolver_match.url_name == 'edit_coupon' %}active{% endif %}">
+          <a href="{% url 'coupon_management' %}">
+              <i class="fa-solid fa-ticket"></i> Coupons
+          </a>
+        </li>
         <li><i class="fa-solid fa-file-lines"></i> Sales Report</li>
         <li class="{% if request.resolver_match.url_name == 'offer_management' or request.resolver_match.url_name == 'add_offer' or request.resolver_match.url_name == 'edit_offer' %}active{% endif %}">
           <a href="{% url 'offer_management' %}">

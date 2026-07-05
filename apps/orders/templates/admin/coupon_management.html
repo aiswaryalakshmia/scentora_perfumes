@@ -1,0 +1,152 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}Coupon Management{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'admin/offer_management.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="offer-management">
+
+  <header class="header">
+    <h1 class="page-title">Coupon Management</h1>
+    <a href="{% url 'add_coupon' %}" class="add-btn">
+      <i class="fa-solid fa-plus"></i> Add Coupon
+    </a>
+  </header>
+
+  <section class="table-section">
+    <table class="offer-table">
+      <thead>
+        <tr>
+          <th>SL NO</th>
+          <th>Coupon Code</th>
+          <th>Type</th>
+          <th>Discount</th>
+          <th>Min Order</th>
+          <th>Max Redeem</th>
+          <th>Expiry</th>
+          <th>Usage</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for coupon in coupons %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+
+          <td>
+            <span class="offer-name">{{ coupon.coupon_code }}</span>
+          </td>
+
+          <td>
+            <span class="type-badge {% if coupon.discount_type == 'percentage' %}product{% else %}category{% endif %}">
+              {{ coupon.get_discount_type_display }}
+            </span>
+          </td>
+
+          <td>
+            <span class="discount-value">
+              {% if coupon.discount_type == 'percentage' %}
+                {{ coupon.discount_value }}% OFF
+              {% else %}
+                ₹{{ coupon.discount_value }} OFF
+              {% endif %}
+            </span>
+          </td>
+
+          <td class="date-text">₹{{ coupon.minimum_price }}</td>
+
+          <td class="date-text">
+            {% if coupon.maximum_redeem %}₹{{ coupon.maximum_redeem }}{% else %}—{% endif %}
+          </td>
+
+          <td class="date-text">{{ coupon.expiry_date|date:"d M Y" }}</td>
+
+          <td class="date-text">{{ coupon.used_count }} / {{ coupon.usage_limit }}</td>
+
+          <td>
+            <span class="status {% if coupon.status == 'active' %}active{% else %}blocked{% endif %}">
+              {{ coupon.get_status_display }}
+            </span>
+          </td>
+
+          <td>
+            <div class="actions-container">
+              <a href="{% url 'edit_coupon' coupon.id %}" title="Edit">
+                <i class="fa-solid fa-pen"></i>
+              </a>
+              <a href="{% url 'toggle_coupon_status' coupon.id %}"
+                 class="toggle-btn block-btn"
+                 data-status="{{ coupon.status }}"
+                 title="{% if coupon.status == 'active' %}Block{% else %}Activate{% endif %}">
+                {% if coupon.status == 'active' %}
+                  <i class="fa-solid fa-ban"></i>
+                {% else %}
+                  <i class="fa-solid fa-check"></i>
+                {% endif %}
+              </a>
+              <a href="{% url 'delete_coupon' coupon.id %}"
+                 class="delete-btn"
+                 title="Delete">
+                <i class="fa-solid fa-trash"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="10">
+            <div class="empty-state">
+              <i class="fa-solid fa-ticket"></i>
+              <p>No coupons found. <a href="{% url 'add_coupon' %}" style="color:#c9a84c;">Create your first coupon</a>.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="pagination">
+      <p>Showing {{ coupons.count }} coupon{{ coupons.count|pluralize }}</p>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  document.querySelectorAll('.toggle-btn').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      const url    = this.href;
+      const status = this.dataset.status;
+      Swal.fire({
+        title: 'Are you sure?',
+        text: status === 'active' ? 'This coupon will be blocked.' : 'This coupon will be activated.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: status === 'active' ? 'Yes, Block It!' : 'Yes, Activate It!',
+        cancelButtonText: 'Cancel'
+      }).then(result => { if (result.isConfirmed) window.location.href = url; });
+    });
+  });
+
+  document.querySelectorAll('.delete-btn').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      const url = this.href;
+      Swal.fire({
+        title: 'Delete Coupon?',
+        text: 'This action cannot be undone.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Delete It!',
+        cancelButtonText: 'Cancel'
+      }).then(result => { if (result.isConfirmed) window.location.href = url; });
+    });
+  });
+</script>
+{% endblock %}

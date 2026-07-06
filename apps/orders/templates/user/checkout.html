@@ -99,6 +99,7 @@
           <div class="payment-tabs">
             <button type="button" class="active" onclick="showPayment('razorpay')">Razorpay</button>
             <button type="button" onclick="showPayment('cod')">COD</button>
+            <button type="button" onclick="showPayment('wallet')">Wallet</button>
           </div>
           <input type="hidden" name="payment_method" id="payment_method" value="razorpay">
           <div id="payment-razorpay" class="payment-panel">
@@ -106,6 +107,14 @@
           </div>
           <div id="payment-cod" class="payment-panel" style="display:none;">
             <p>Pay cash on delivery.</p>
+          </div>
+           <div id="payment-wallet" class="payment-panel" style="display:none;">
+            <p>Wallet Balance: <strong>₹{{ wallet_balance }}</strong></p>
+            {% if wallet_balance < final_total %}
+              <p style="color:#d9534f;">Insufficient balance to pay for this order.</p>
+            {% else %}
+              <p>₹{{ final_total }} will be deducted from your wallet.</p>
+            {% endif %}
           </div>
         </section>
 

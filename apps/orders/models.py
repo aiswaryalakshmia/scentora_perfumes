@@ -34,6 +34,7 @@ class Order(models.Model):
     PAYMENT_CHOICES = (
         ('cod', 'Cash on Delivery'),    
         ('razorpay', 'Razorpay'),
+        ('wallet', 'Wallet'),
     )
 
     PAYMENT_STATUS_CHOICES = (
@@ -51,6 +52,7 @@ class Order(models.Model):
     order_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending')
     return_reason = models.TextField(blank=True, null=True)
+    cancel_reason = models.TextField(blank=True, null=True)
     coupon = models.ForeignKey('Coupon',on_delete=models.SET_NULL,null=True,blank=True,related_name='orders')
     coupon_discount = models.DecimalField(max_digits=10,decimal_places=2,default=0)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -85,6 +87,8 @@ class Payment(models.Model):
     PAYMENT_METHOD_CHOICES = (
         ('cod',      'Cash on Delivery'),
         ('razorpay', 'Razorpay'),
+        ('wallet', 'Wallet'),
+        
     )
 
     order               = models.OneToOneField(

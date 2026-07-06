@@ -1,0 +1,148 @@
+.wallet-page {
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+
+.wallet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.wallet-header h2 {
+  font-family: Georgia, serif;
+  color: #fff;
+}
+
+.wallet-balance-card {
+  background: #0d0d0d;
+  border: 1px solid #1e1e1e;
+  border-radius: 8px;
+  padding: 16px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  min-width: 220px;
+}
+
+.balance-label {
+  font-size: 0.8rem;
+  color: #888;
+  margin-bottom: 4px;
+}
+
+.balance-amount {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #c9a84c;
+}
+
+.wallet-transactions h3 {
+  color: #fff;
+  font-family: Georgia, serif;
+  margin-bottom: 16px;
+}
+
+.wallet-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #0d0d0d;
+  border: 1px solid #1e1e1e;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.wallet-table th,
+.wallet-table td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid #1e1e1e;
+  color: #ddd;
+  font-size: 0.9rem;
+}
+
+.wallet-table th {
+  background: #161616;
+  color: #c9a84c;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+}
+
+.wallet-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.wallet-table a {
+  color: #c9a84c;
+  text-decoration: none;
+}
+
+.wallet-table a:hover {
+  text-decoration: underline;
+}
+
+.txn-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.txn-badge.credit {
+  background: rgba(76, 175, 120, 0.15);
+  color: #4caf78;
+}
+
+.txn-badge.debit {
+  background: rgba(217, 83, 79, 0.15);
+  color: #d9534f;
+}
+
+.amount-credit {
+  color: #4caf78;
+  font-weight: 700;
+}
+
+.amount-debit {
+  color: #d9534f;
+  font-weight: 700;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #666;
+}
+
+.empty-state i {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+  display: block;
+  color: #333;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 20px;
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.pagination a {
+  color: #c9a84c;
+  text-decoration: none;
+}
+
+.pagination a:hover {
+  text-decoration: underline;
+}

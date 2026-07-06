@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Wallet{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/wallet_history.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="wallet-page">
+
+  <div class="wallet-header">
+    <h2>My Wallet</h2>
+    <div class="wallet-balance-card">
+      <span class="balance-label">Available Balance</span>
+      <span class="balance-amount">₹{{ balance }}</span>
+    </div>
+  </div>
+
+  <section class="wallet-transactions">
+    <h3>Transaction History</h3>
+
+    {% if transactions %}
+    <table class="wallet-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Description</th>
+          <th>Order</th>
+          <th>Type</th>
+          <th>Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for txn in transactions %}
+        <tr>
+          <td>{{ txn.created_at|date:"d M Y, h:i A" }}</td>
+          <td>{{ txn.description }}</td>
+          <td>
+            {% if txn.order %}
+              <a href="{% url 'order_detail' txn.order.id %}">#{{ txn.order.order_number }}</a>
+            {% else %}
+              —
+            {% endif %}
+          </td>
+          <td>
+            <span class="txn-badge {% if txn.transaction_type == 'credit' %}credit{% else %}debit{% endif %}">
+              {{ txn.get_transaction_type_display }}
+            </span>
+          </td>
+          <td class="{% if txn.transaction_type == 'credit' %}amount-credit{% else %}amount-debit{% endif %}">
+            {% if txn.transaction_type == 'credit' %}+{% else %}−{% endif %}₹{{ txn.amount }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if transactions.has_other_pages %}
+    <div class="pagination">
+      {% if transactions.has_previous %}
+        <a href="?page={{ transactions.previous_page_number }}">&laquo; Prev</a>
+      {% endif %}
+      <span>Page {{ transactions.number }} of {{ transactions.paginator.num_pages }}</span>
+      {% if transactions.has_next %}
+        <a href="?page={{ transactions.next_page_number }}">Next &raquo;</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state">
+      <i class="fa-solid fa-wallet"></i>
+      <p>No wallet transactions yet.</p>
+    </div>
+    {% endif %}
+  </section>
+
+</div>
+{% endblock %}

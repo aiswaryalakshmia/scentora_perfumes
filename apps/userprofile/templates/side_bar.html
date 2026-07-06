@@ -38,10 +38,9 @@
         </li>
 
         <li>
-            <a href="#">
-                <i class="fa-solid fa-wallet"></i>
-                Wallet
-            </a>
+        <a href="{% url 'wallet_history' %}">
+            <i class="fa-solid fa-wallet"></i> My Wallet
+        </a>
         </li>
 
         <li class="{% if request.path == '/profile/edit_profile/' %}active{% endif %}">

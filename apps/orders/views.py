@@ -21,6 +21,10 @@ from django.db import models as db_models
 from .models import Coupon, CouponUsage
 from .utils import validate_coupon
 from apps.products.utils import get_offer_price
+from apps.userprofile.wallet_utils import credit_wallet, has_been_refunded
+from apps.userprofile.wallet_utils import get_wallet_balance,debit_wallet
+
+
 
 SHIPPING_CHARGES = {
     'standard': 0,
@@ -41,6 +45,12 @@ def handle_payment(payment_method, order):
         order.order_status = 'pending'
         order.save()
         return True, "Redirecting to payment gateway..."
+    
+    elif payment_method == 'wallet':
+        order.order_status = 'processing'   # paid upfront, skip pending
+        order.payment_status = 'paid'
+        order.save()
+        return True, "Order Placed Successfully — paid via Wallet"
     else:
         return False, "Invalid payment method."
 
@@ -146,6 +156,8 @@ def checkout(request):
         used_count__gte=db_models.F('usage_limit')
     )
 
+    wallet_balance = get_wallet_balance(request.user)
+
     context = {
         'addresses': addresses,
         'default_address': default_address,
@@ -161,6 +173,7 @@ def checkout(request):
         'coupon_discount': coupon_discount,
         'final_total': final_total,
         'available_coupons': available_coupons,
+        'wallet_balance': wallet_balance,
     }
 
     return render(request, 'user/checkout.html', context)
@@ -181,6 +194,9 @@ def place_order(request):
         delivery_option = request.POST.get('delivery_option', 'standard')
         shipping_charge = SHIPPING_CHARGES.get(delivery_option, 0)
         payment_method = request.POST.get('payment_method', 'cod')
+
+        if payment_method == 'wallet':
+            pass
 
         cart = get_object_or_404(Cart, user=user)
         cart_items = cart.items.select_related(
@@ -231,6 +247,12 @@ def place_order(request):
             for item in cart_items
         )
         final_amount = total_amount + shipping_charge - discount_amount
+
+        if payment_method == 'wallet':
+            current_balance = get_wallet_balance(user)
+            if current_balance < final_amount:
+                messages.error(request, f"Insufficient wallet balance. Available: ₹{current_balance}, Required: ₹{final_amount}.")
+                return redirect('checkout')
 
         try:
             with transaction.atomic():
@@ -308,6 +330,15 @@ def place_order(request):
                     payment_method=payment_method,
                     payment_status='pending',
                 )
+
+                if payment_method == 'wallet':
+                    debit_wallet(
+                        user=user,
+                        amount=order.final_amount,
+                        description=f"Payment for Order #{order.order_number}",
+                        order=order,
+                    )
+                    order.payment_detail.mark_paid('WALLET-' + order.order_number)
 
                 success, message = handle_payment(payment_method, order)
                 if not success:
@@ -496,7 +527,18 @@ def handle_return_request(request, order_id):
 
             order.order_status = 'returned'
             order.save()
-            messages.success(request, "Return approved. Stock has been restored.")
+             # ── Wallet refund — only now, after admin approval ──
+            if order.payment_status == 'paid' and not has_been_refunded(order):
+                credit_wallet(
+                    user=order.user,
+                    amount=order.final_amount,
+                    description=f"Refund for returned Order #{order.order_number}",
+                    order=order,
+                )
+                messages.success(request, f"Return approved. Stock restored and ₹{order.final_amount} refunded to customer's wallet.")
+            else:
+                messages.success(request, "Return approved. Stock has been restored.")
+
 
         elif action == 'reject':
             # put order back to delivered

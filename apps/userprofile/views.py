@@ -24,6 +24,11 @@ from apps.authentication.models import User, OTP
 from apps.products.models import Wishlist
 from apps.orders.models import Order,OrderItem
 from .models import Address
+from apps.userprofile.wallet_utils import credit_wallet, has_been_refunded
+from apps.userprofile.wallet_utils import get_wallet_balance
+from apps.userprofile.models import WalletTransaction
+from django.core.paginator import Paginator
+
 
 @login_required
 @never_cache
@@ -35,7 +40,7 @@ def profile_dashboard(request):
         'total_orders': orders.count(),
         'pending_orders': orders.filter(order_status='pending').count(),
         'wishlist_count': Wishlist.objects.filter(user=user).count(),
-        'wallet_balance': 0,   # will update when wallet is ready
+        'wallet_balance': get_wallet_balance(user),  
     }
     return render(request, 'userprofile.html', context)
 
@@ -647,7 +652,20 @@ def cancel_order(request, order_id):
 
         # update order status
         order.order_status = 'cancelled'
+        order.cancel_reason = reason
         order.save()
+
+        # ── Wallet refund for cancellation — direct, no admin approval needed ──
+        if order.payment_status == 'paid' and not has_been_refunded(order):
+            credit_wallet(
+                user=order.user,
+                amount=order.final_amount,
+                description=f"Refund for cancelled Order #{order.order_number}",
+                order=order,
+            )
+            messages.success(request, f"Order cancelled. ₹{order.final_amount} refunded to your wallet.")
+        else:
+            messages.success(request, "Order cancelled successfully.")
 
         # Also mark payment as failed if it's still pending (Razorpay abandoned orders)
         if hasattr(order, 'payment_detail') and order.payment_detail.payment_status == 'pending':
@@ -683,6 +701,15 @@ def cancel_order_item(request, order_id, item_id):
         # cancel the item
         item.status = 'cancelled'
         item.save()
+
+        # ── Refund just this item's amount if order was paid ──
+        if order.payment_status == 'paid':
+            credit_wallet(
+                user=order.user,
+                amount=item.total,
+                description=f"Refund for cancelled item ({item.product_variant}) in Order #{order.order_number}",
+                order=order,
+            )
 
         # check if all items are cancelled  then cancel entire order
         all_cancelled = not order.items.filter(status='active').exists()
@@ -727,3 +754,20 @@ def return_order(request, order_id):
         return redirect('order_detail', order_id=order.id)
 
     return redirect('order_detail', order_id=order.id)
+
+
+
+@login_required
+@never_cache
+def wallet_history(request):
+    transactions = WalletTransaction.objects.filter(user=request.user).order_by('-created_at')
+
+    paginator = Paginator(transactions, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'transactions': page_obj,
+        'balance': get_wallet_balance(request.user),
+    }
+    return render(request, 'wallet_history.html', context)

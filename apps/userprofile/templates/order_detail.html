@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load dict_extras %}
 
 {% block title %}Order Details{% endblock %}
 
@@ -144,6 +145,24 @@
     </div>
     {% endif %}
 
+    <!-- Write a Review Button -->
+    {% with info=review_map|get_item:item.id %}
+      {% if info.can_review %}
+        <div class="item-action">
+          <button type="button" class="btn-write-review"
+            onclick="openReviewModal('{{ item.id }}')">
+            Write a Review
+          </button>
+        </div>
+      {% elif info.existing_review %}
+        <div class="item-action">
+          <span class="review-submitted-badge">
+            <i class="fa-solid fa-star"></i> Reviewed ({{ info.existing_review.rating }}★)
+          </span>
+        </div>
+      {% endif %}
+    {% endwith %}
+
   </div>
   {% endfor %}
 </div>
@@ -184,12 +203,7 @@
       </div>
     </div>
 
-  </div>
-
-  <!-- Write a Review -->
-  <div class="review-link">
-    <a href="#">Write a Review</a>
-  </div>
+  </div>  
 
   <!-- Bottom Actions -->
   <div class="bottom-actions">
@@ -249,6 +263,14 @@
   function closeReturnModal() {
     document.getElementById('returnModal').style.display = 'none';
   }
+
+  // Write Review Modal
+  function openReviewModal(itemId) {
+    document.getElementById('reviewModal-' + itemId).style.display = 'flex';
+  }
+  function closeReviewModal(itemId) {
+    document.getElementById('reviewModal-' + itemId).style.display = 'none';
+  }
 </script>
 
 {% for item in order_items %}
@@ -296,5 +318,45 @@
   </div>
 </div>
 {% endif %}
+
+<!-- Write Review Modal (one per item) -->
+{% for item in order_items %}
+{% with info=review_map|get_item:item.id %}
+{% if info.can_review %}
+<div id="reviewModal-{{ item.id }}" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3>Write a Review</h3>
+    <p>Share your experience with <strong>{{ item.product_variant.product.product_name }}</strong></p>
+
+    <form method="POST" action="{% url 'add_review' info.product_id %}">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="order_detail">
+      <input type="hidden" name="order_id" value="{{ order.id }}">
+
+      <div class="modal-field">
+        <label>Rating <span style="color:#e74c3c;">*</span></label>
+        <div class="star-rating">
+          {% for i in "54321" %}
+            <input type="radio" name="rating" id="star{{ i }}-{{ item.id }}" value="{{ i }}" required>
+            <label for="star{{ i }}-{{ item.id }}">★</label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="modal-field">
+        <label>Your Review <span style="color:#e74c3c;">*</span></label>
+        <textarea name="review" placeholder="Tell us what you liked or didn't like..." required minlength="10"></textarea>
+      </div>
+
+      <div class="modal-actions">
+        <button type="submit" class="btn-confirm-cancel">Submit Review</button>
+        <button type="button" class="btn-close-modal" onclick="closeReviewModal('{{ item.id }}')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endwith %}
+{% endfor %}
 
 {% endblock %}

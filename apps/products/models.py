@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from apps.authentication.models import User
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 class Category(models.Model):
     STATUS_CHOICES = (
@@ -180,26 +181,16 @@ class Offer(models.Model):
         ('inactive', 'Inactive'),
     )
 
-    product             = models.ForeignKey(
-                              Product,
-                              on_delete=models.CASCADE,
-                              null=True, blank=True,
-                              related_name='offers'
-                          )
-    category            = models.ForeignKey(
-                              Category,
-                              on_delete=models.CASCADE,
-                              null=True, blank=True,
-                              related_name='offers'
-                          )
-    offer_name          = models.CharField(max_length=100)
-    offer_type          = models.CharField(max_length=20, choices=OFFER_TYPE_CHOICES)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, null=True, blank=True, related_name='offers')
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True, blank=True, related_name='offers')
+    offer_name = models.CharField(max_length=100)
+    offer_type = models.CharField(max_length=20, choices=OFFER_TYPE_CHOICES)
     discount_percentage = models.DecimalField(max_digits=5, decimal_places=2)
-    start_date          = models.DateField()
-    end_date            = models.DateField()
-    status              = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
-    created_at          = models.DateTimeField(auto_now_add=True)
-    updated_at          = models.DateTimeField(auto_now=True)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def is_valid(self):
         today = timezone.now().date()
@@ -209,4 +200,18 @@ class Offer(models.Model):
         )
 
     def __str__(self):
-        return f"{self.offer_name} ({self.discount_percentage}%)"
+        return f"{self.offer_name} ({self.discount_percentage}%)"  
+
+class Review(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
+    rating = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    review = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'product')   # one review per user per product
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.full_name} — {self.product.product_name} ({self.rating}★)"

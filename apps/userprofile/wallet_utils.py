@@ -40,7 +40,7 @@ def debit_wallet(user, amount, description, order=None):
 
 
 def has_been_refunded(order):
-    """Idempotency guard — prevents double-crediting the same order on repeated clicks."""
+    # prevents double-crediting the same order on repeated clicks
     return WalletTransaction.objects.filter(
         order=order, transaction_type='credit'
     ).exists()

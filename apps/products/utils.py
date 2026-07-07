@@ -1,13 +1,14 @@
 from decimal import Decimal
 from django.utils import timezone
+from apps.orders.models import OrderItem
+from apps.products.models import Review
 
 def get_best_offer_for_variant(variant):
     """
     Checks product-level and category-level active offers.
-    Returns the best (highest %) offer and its percentage.
+    Returns the best offer and its percentage.
     """
     today = timezone.now().date()
-
     best_pct   = Decimal('0')
     best_offer = None
 
@@ -38,15 +39,7 @@ def get_offer_price(variant):
     """
     Returns final price after applying best available discount.
     Compares offer-based % discount vs existing manual discount_price.
-    Applies whichever gives the customer a lower price (larger discount).
-
-    Option A: effective_price kept for backward compatibility.
-    This function is used everywhere going forward.
-
-    Returns:
-        final_price     — price customer actually pays
-        discount_amount — total rupee discount applied
-        offer_applied   — Offer object if offer won, else None
+    Applies whichever gives the customer a lower price (larger discount)    
     """
     base_price = variant.price
 
@@ -57,7 +50,7 @@ def get_offer_price(variant):
     # Manual discount (existing discount_price field on variant)
     manual_discount = variant.discount_price or Decimal('0')    
 
-    # Apply whichever is larger — better deal for customer
+    # Apply whichever is larger
     if offer_discount >= manual_discount:
         final_price     = base_price - offer_discount
         discount_amount = offer_discount
@@ -68,3 +61,23 @@ def get_offer_price(variant):
         offer_applied   = None   # manual discount won, no offer badge shown
 
     return final_price, discount_amount, offer_applied
+
+def can_review_product(user, product):
+    """
+    Returns True if user has a delivered order containing this product
+    and hasn't already reviewed it.
+    """
+    if not user.is_authenticated:
+        return False
+
+    has_delivered = OrderItem.objects.filter(
+        order__user=user,
+        order__order_status='delivered',
+        product_variant__product=product,
+    ).exists()
+
+    if not has_delivered:
+        return False
+
+    already_reviewed = Review.objects.filter(user=user, product=product).exists()
+    return not already_reviewed

@@ -25,7 +25,6 @@ from apps.userprofile.wallet_utils import credit_wallet, has_been_refunded
 from apps.userprofile.wallet_utils import get_wallet_balance,debit_wallet
 
 
-
 SHIPPING_CHARGES = {
     'standard': 0,
     'express': 25,
@@ -40,17 +39,14 @@ def handle_payment(payment_method, order):
         order.save()
         return True, "Order Placed Successfully"
     elif payment_method == 'razorpay':
-        # Razorpay payment is confirmed later via verify_payment view,
-        # not here. Order stays in 'pending' until payment succeeds.
         order.order_status = 'pending'
         order.save()
         return True, "Redirecting to payment gateway..."
-    
     elif payment_method == 'wallet':
-        order.order_status = 'processing'   # paid upfront, skip pending
+        order.order_status = 'processing'
         order.payment_status = 'paid'
         order.save()
-        return True, "Order Placed Successfully — paid via Wallet"
+        return True, "Order Placed Successfully"
     else:
         return False, "Invalid payment method."
 
@@ -239,8 +235,7 @@ def place_order(request):
             if item.quantity > variant.stock:
                 messages.error(request, f"Only {variant.stock} item(s) available for {product.product_name}.")
                 return redirect('cart')
-
-        # Use cart's stored prices (already have offer applied from add_to_cart)
+        
         total_amount    = sum(item.product_variant.price * item.quantity for item in cart_items)
         discount_amount = sum(
             (item.product_variant.price * item.quantity) - item.total_price
@@ -288,9 +283,9 @@ def place_order(request):
                         coupon = Coupon.objects.get(coupon_code=coupon_code)
 
                         # Attach coupon to order
-                        order.coupon          = coupon
+                        order.coupon = coupon
                         order.coupon_discount = coupon_discount
-                        order.final_amount    = order.final_amount - coupon_discount
+                        order.final_amount = order.final_amount - coupon_discount
                         order.save()
 
                         # Record usage — prevents user from using again
@@ -351,8 +346,7 @@ def place_order(request):
         except Exception as e:
             messages.error(request, str(e))
             return redirect('checkout')
-
-        # Branch AFTER transaction commits
+        
         if payment_method == 'razorpay':
             return redirect('initiate_payment', order_id=order.id)
         else:
@@ -527,7 +521,7 @@ def handle_return_request(request, order_id):
 
             order.order_status = 'returned'
             order.save()
-             # ── Wallet refund — only now, after admin approval ──
+             # Wallet refund after admin approval
             if order.payment_status == 'paid' and not has_been_refunded(order):
                 credit_wallet(
                     user=order.user,
@@ -606,7 +600,7 @@ def verify_payment(request):
     payment = get_object_or_404(Payment, order=order)
 
     try:
-        # Verify signature — prevents fake/tampered payments
+        # Verify signature — prevents fake payments
         razorpay_client.utility.verify_payment_signature({
             'razorpay_order_id':   rzp_order_id,
             'razorpay_payment_id': rzp_payment_id,
@@ -630,8 +624,7 @@ def verify_payment(request):
             pass
 
         return redirect('payment_success', order_id=order.id)
-
-    # In verify_payment, update the except block:
+    
     except razorpay.errors.SignatureVerificationError:
         payment.mark_failed()
         order.order_status = 'cancelled'
@@ -642,7 +635,7 @@ def verify_payment(request):
             item.product_variant.stock += item.quantity
             item.product_variant.save()
 
-        # rollback coupon usage ──
+        # rollback coupon usage
         if order.coupon:
             CouponUsage.objects.filter(
                 coupon=order.coupon,
@@ -684,7 +677,7 @@ def payment_failure(request, order_id):
             item.product_variant.stock += item.quantity
             item.product_variant.save()
 
-        # ── ADD THIS — rollback coupon usage so user can use it again ──
+        # rollback coupon usage so user can use it again
         if order.coupon:
             # Remove usage record
             CouponUsage.objects.filter(
@@ -696,7 +689,7 @@ def payment_failure(request, order_id):
             order.coupon.used_count = max(0, order.coupon.used_count - 1)
             order.coupon.save()
 
-            # Coupon stays in session so it shows on checkout again 
+            # Coupon stays in session so it shows on checkout again
 
     return render(request, "user/payment_failure.html", {
         "order":  order,
@@ -755,7 +748,7 @@ def remove_coupon(request):
     messages.success(request, "Coupon removed successfully.")
     return redirect('checkout')
 
-# ── Coupon Management (Admin) ─────────────────────────────────────
+#Coupon Management (Admin)
 
 @admin_required
 @never_cache

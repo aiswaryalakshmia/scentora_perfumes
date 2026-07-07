@@ -77,7 +77,6 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity}x {self.product_variant} in Order #{self.order.order_number}"
-    
 class Payment(models.Model):
     STATUS_CHOICES = (
         ('pending', 'Pending'),
@@ -91,11 +90,7 @@ class Payment(models.Model):
         
     )
 
-    order               = models.OneToOneField(
-                              Order,
-                              on_delete=models.CASCADE,
-                              related_name='payment_detail'
-                          )
+    order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name='payment_detail')
     razorpay_order_id   = models.CharField(max_length=100, blank=True, null=True)
     razorpay_payment_id = models.CharField(max_length=100, blank=True, null=True)
     payment_method      = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='cod')

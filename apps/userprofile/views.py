@@ -28,19 +28,27 @@ from apps.userprofile.wallet_utils import credit_wallet, has_been_refunded
 from apps.userprofile.wallet_utils import get_wallet_balance
 from apps.userprofile.models import WalletTransaction
 from django.core.paginator import Paginator
-
+from apps.products.utils import can_review_product
+from apps.products.models import Review
 
 @login_required
 @never_cache
 def profile_dashboard(request):
     user = request.user
     orders = Order.objects.filter(user=user)
+
+    recent_orders = orders.select_related('order_address').prefetch_related(
+        'items__product_variant__product',
+        'items__product_variant__images'
+    ).order_by('-created_at')[:5]
+
     context = {
         'current_user': user,
         'total_orders': orders.count(),
         'pending_orders': orders.filter(order_status='pending').count(),
         'wishlist_count': Wishlist.objects.filter(user=user).count(),
-        'wallet_balance': get_wallet_balance(user),  
+        'wallet_balance': get_wallet_balance(user),
+        'recent_orders': recent_orders,
     }
     return render(request, 'userprofile.html', context)
 
@@ -531,9 +539,22 @@ def order_detail(request, order_id):
     order = get_object_or_404(Order, id=order_id, user=request.user)
     order_items = order.items.select_related('product_variant__product').all()
 
+    # for each item, check reviewability + fetch existing review if any
+    review_map = {}
+    for item in order_items:
+        product = item.product_variant.product
+        existing = Review.objects.filter(user=request.user, product=product).first()
+        review_map[item.id] = {
+            'product_id': product.id,
+            'variant_id': item.product_variant.id,
+            'can_review': order.order_status == 'delivered' and existing is None,
+            'existing_review': existing,
+        }
+
     context = {
         'order': order,
         'order_items': order_items,
+        'review_map': review_map,
     }
     return render(request, 'order_detail.html', context)
 
@@ -655,7 +676,7 @@ def cancel_order(request, order_id):
         order.cancel_reason = reason
         order.save()
 
-        # ── Wallet refund for cancellation — direct, no admin approval needed ──
+        # Wallet refund for cancellation — direct, no admin approval needed
         if order.payment_status == 'paid' and not has_been_refunded(order):
             credit_wallet(
                 user=order.user,
@@ -702,7 +723,7 @@ def cancel_order_item(request, order_id, item_id):
         item.status = 'cancelled'
         item.save()
 
-        # ── Refund just this item's amount if order was paid ──
+        # Refund just this item's amount if order was paid
         if order.payment_status == 'paid':
             credit_wallet(
                 user=order.user,

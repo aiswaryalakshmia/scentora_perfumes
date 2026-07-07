@@ -11,6 +11,10 @@ from .models import Category,Product,ProductVariant,VariantImage,Cart,CartItem,W
 from .forms import CategoryForm,ProductForm, ProductVariantForm
 from .utils import get_offer_price
 from .models import Offer
+from .models import Review
+from django.db.models import Avg
+from .utils import can_review_product
+
 
 @admin_required
 def category_management(request):
@@ -641,6 +645,12 @@ def product_details(request, variant_id):
             'discount_amount': da,
             'offer':           o,
         }
+
+    # ── Reviews for this product ──
+    reviews = Review.objects.filter(product=variant.product).select_related('user').order_by('-created_at')
+    avg_rating = reviews.aggregate(avg=Avg('rating'))['avg']
+    review_count = reviews.count()
+
     return render(request, 'user/product_details.html', {
         'variant': variant,
         'other_variants': other_variants,
@@ -649,7 +659,10 @@ def product_details(request, variant_id):
         'final_price': final_price,           
         'discount_amount': discount_amount,       
         'offer': offer,                 
-        'other_variant_prices': other_variant_prices,  
+        'other_variant_prices': other_variant_prices,
+        'reviews': reviews,
+        'avg_rating': avg_rating,
+        'review_count': review_count, 
     })
 
 @login_required
@@ -730,16 +743,14 @@ def cart(request):
     items = CartItem.objects.filter(cart=cart).select_related(
         'product_variant__product__category'
     ).order_by('id')
-
-    # the stored total_price in DB is stale — this keeps it always current
+    
     for item in items:
         final_price, _, _ = get_offer_price(item.product_variant)
         new_total = final_price * item.quantity
         if new_total != item.total_price:
             item.total_price = new_total
             item.save()
-
-    # re-fetching ensures the calculations below use the updated values
+    
     items = CartItem.objects.filter(cart=cart).select_related(
         'product_variant__product__category'
     ).order_by('id')
@@ -749,8 +760,7 @@ def cart(request):
         for item in items
     )
 
-    # total_discount = difference between original price and offer/discounted price
-    # total_price in CartItem is already stored as offer price (from add_to_cart)
+    # total_discount = difference between original price and offer/discounted price    
     total_discount = sum(
         (item.product_variant.price * item.quantity) - item.total_price
         for item in items
@@ -769,7 +779,7 @@ def cart(request):
 def add_to_cart(request, variant_id):
     if request.method == 'POST':
 
-        # get the variant from DB        
+        # get the variant from DB
         variant = get_object_or_404(ProductVariant, id=variant_id)
 
         # if not in stock or inactive redirect to product detail page
@@ -1079,3 +1089,40 @@ def delete_offer(request, offer_id):
     offer.delete()
     messages.success(request, "Offer deleted successfully.")
     return redirect('offer_management')
+
+@login_required
+def add_review(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+
+    if not can_review_product(request.user, product):
+        messages.error(request, "You can only review products you've received in a delivered order.")
+        return redirect('my_orders')
+
+    if request.method == 'POST':
+        rating = request.POST.get('rating')
+        review_text = request.POST.get('review', '').strip()
+
+        if not rating or not rating.isdigit() or not (1 <= int(rating) <= 5):
+            messages.error(request, "Please select a rating between 1 and 5.")
+            return redirect(request.META.get('HTTP_REFERER', 'my_orders'))
+
+        if len(review_text) < 10:
+            messages.error(request, "Review must be at least 10 characters.")
+            return redirect(request.META.get('HTTP_REFERER', 'my_orders'))
+
+        Review.objects.create(
+            user=request.user,
+            product=product,
+            rating=int(rating),
+            review=review_text,
+        )
+        messages.success(request, "Thank you for your review!")
+
+        next_page = request.POST.get('next', '')
+        if next_page == 'order_detail':
+            order_id = request.POST.get('order_id')
+            return redirect('order_detail', order_id=order_id)
+
+        return redirect('product_details', variant_id=request.POST.get('variant_id'))
+
+    return redirect('my_orders')

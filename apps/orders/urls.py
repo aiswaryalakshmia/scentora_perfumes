@@ -22,4 +22,7 @@ urlpatterns = [
     path('admin-panel/coupons/<int:coupon_id>/edit/', views.edit_coupon, name='edit_coupon'),
     path('admin-panel/coupons/<int:coupon_id>/toggle/', views.toggle_coupon_status,name='toggle_coupon_status'),
     path('admin-panel/coupons/<int:coupon_id>/delete/', views.delete_coupon, name='delete_coupon'),
+    path('admin-panel/sales-report/', views.sales_report, name='sales_report'),
+    path('admin-panel/sales-report/pdf/', views.sales_report_pdf, name='sales_report_pdf'),
+    path('admin-panel/sales-report/excel/', views.sales_report_excel, name='sales_report_excel'),
 ]

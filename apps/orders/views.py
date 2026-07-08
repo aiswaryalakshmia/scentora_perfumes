@@ -23,6 +23,18 @@ from .utils import validate_coupon
 from apps.products.utils import get_offer_price
 from apps.userprofile.wallet_utils import credit_wallet, has_been_refunded
 from apps.userprofile.wallet_utils import get_wallet_balance,debit_wallet
+from django.db.models import Sum, Count
+from django.db.models.functions import TruncDate
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment
+from reportlab.lib.pagesizes import landscape
+from datetime import datetime, timedelta
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from django.http import HttpResponse
 
 
 SHIPPING_CHARGES = {
@@ -110,15 +122,13 @@ def checkout(request):
     addresses = Address.objects.filter(user=user)
     default_address = addresses.filter(is_default=True).first() or addresses.first()
 
-    subtotal = sum(
-        item.product_variant.price * item.quantity
-        for item in cart_items
-    )
+    subtotal = Decimal('0')
+    discount_amount = Decimal('0')
 
-    discount_amount = sum(
-        (item.product_variant.discount_price or 0) * item.quantity
-        for item in cart_items
-    )
+    for item in cart_items:
+        final_price, item_discount, offer = get_offer_price(item.product_variant)
+        subtotal += item.product_variant.price * item.quantity
+        discount_amount += item_discount * item.quantity
 
     delivery_option = request.GET.get('delivery_option', 'standard')
     shipping_charge = SHIPPING_CHARGES.get(delivery_option, 0)
@@ -836,3 +846,236 @@ def delete_coupon(request, coupon_id):
     coupon.delete()
     messages.success(request, "Coupon deleted successfully.")
     return redirect('coupon_management')
+
+
+def get_date_range(request):
+    range_type = request.GET.get('range', 'monthly')
+    today = timezone.now().date()
+
+    if range_type == 'daily':
+        start = today
+        end = today
+        label = 'Today'
+    elif range_type == 'weekly':
+        start = today - timedelta(days=today.weekday())
+        end = today
+        label = 'This Week'
+    elif range_type == 'yearly':
+        start = today.replace(month=1, day=1)
+        end = today
+        label = 'This Year'
+    elif range_type == 'custom':
+        start_str = request.GET.get('start_date')
+        end_str = request.GET.get('end_date')
+        try:
+            start = datetime.strptime(start_str, '%Y-%m-%d').date()
+            end = datetime.strptime(end_str, '%Y-%m-%d').date()
+        except (ValueError, TypeError):
+            start = today.replace(day=1)
+            end = today
+        label = f'{start.strftime("%b %d, %Y")} - {end.strftime("%b %d, %Y")}'
+    else:
+        range_type = 'monthly'
+        start = today.replace(day=1)
+        end = today
+        label = 'This Month'
+
+    return start, end, range_type, label
+
+
+def get_sales_queryset(start, end):
+    return Order.objects.filter(
+        created_at__date__gte=start,
+        created_at__date__lte=end,
+    ).exclude(order_status='cancelled')
+
+
+@admin_required
+@never_cache
+def sales_report(request):
+    start, end, range_type, label = get_date_range(request)
+    orders = get_sales_queryset(start, end)
+
+    summary = orders.aggregate(
+        total_orders=Count('id'),
+        total_revenue=Sum('final_amount'),
+        total_discount=Sum('discount_amount'),
+        total_coupon_discount=Sum('coupon_discount'),
+    )
+
+    total_orders = summary['total_orders'] or 0
+    total_revenue = summary['total_revenue'] or Decimal('0')
+    total_discount = (summary['total_discount'] or Decimal('0')) + (summary['total_coupon_discount'] or Decimal('0'))
+
+    daily_breakdown = (
+        orders
+        .annotate(day=TruncDate('created_at'))
+        .values('day')
+        .annotate(
+            order_count=Count('id'),
+            revenue=Sum('final_amount'),
+            discount=Sum('discount_amount'),
+            coupon_discount=Sum('coupon_discount'),
+        )
+        .order_by('-day')
+    )
+
+    paginator = Paginator(list(daily_breakdown), 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'range_type': range_type,
+        'range_label': label,
+        'start_date': start,
+        'end_date': end,
+        'total_orders': total_orders,
+        'total_revenue': total_revenue,
+        'total_discount': total_discount,
+        'daily_breakdown': page_obj,
+    }
+    return render(request, 'admin/sales_report.html', context)
+
+
+@admin_required
+@never_cache
+def sales_report_pdf(request):
+    start, end, range_type, label = get_date_range(request)
+    orders = get_sales_queryset(start, end)
+
+    summary = orders.aggregate(
+        total_orders=Count('id'),
+        total_revenue=Sum('final_amount'),
+        total_discount=Sum('discount_amount'),
+        total_coupon_discount=Sum('coupon_discount'),
+    )
+    total_orders = summary['total_orders'] or 0
+    total_revenue = summary['total_revenue'] or Decimal('0')
+    total_discount = (summary['total_discount'] or Decimal('0')) + (summary['total_coupon_discount'] or Decimal('0'))
+
+    daily_breakdown = (
+        orders
+        .annotate(day=TruncDate('created_at'))
+        .values('day')
+        .annotate(
+            order_count=Count('id'),
+            revenue=Sum('final_amount'),
+            discount=Sum('discount_amount'),
+            coupon_discount=Sum('coupon_discount'),
+        )
+        .order_by('-day')
+    )
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="sales_report_{start}_{end}.pdf"'
+
+    doc = SimpleDocTemplate(response, pagesize=landscape(A4))
+    styles = getSampleStyleSheet()
+    elements = []
+
+    title_style = ParagraphStyle('title', fontSize=20, spaceAfter=6, fontName='Helvetica-Bold')
+    elements.append(Paragraph("SCENTORA - Sales Report", title_style))
+    elements.append(Paragraph(f"Period: {label} ({start} to {end})", styles['Normal']))
+    elements.append(Spacer(1, 0.2 * inch))
+
+    summary_data = [
+        ['Total Orders', 'Total Revenue', 'Total Discount'],
+        [str(total_orders), f"Rs.{total_revenue}", f"Rs.{total_discount}"],
+    ]
+    summary_table = Table(summary_data, colWidths=[3*inch, 3*inch, 3*inch])
+    summary_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.black),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTNAME', (0, 1), (-1, 1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 1), (-1, 1), 14),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('PADDING', (0, 0), (-1, -1), 8),
+    ]))
+    elements.append(summary_table)
+    elements.append(Spacer(1, 0.3 * inch))
+
+    elements.append(Paragraph("Daily Breakdown", styles['Heading3']))
+    table_data = [['Date', 'Orders', 'Revenue', 'Discount', 'Coupon Discount']]
+    for row in daily_breakdown:
+        table_data.append([
+            row['day'].strftime('%b %d, %Y') if row['day'] else '-',
+            str(row['order_count']),
+            f"Rs.{row['revenue'] or 0}",
+            f"Rs.{row['discount'] or 0}",
+            f"Rs.{row['coupon_discount'] or 0}",
+        ])
+
+    detail_table = Table(table_data, colWidths=[2*inch, 1.5*inch, 2*inch, 2*inch, 2*inch])
+    detail_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.black),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey]),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('PADDING', (0, 0), (-1, -1), 6),
+    ]))
+    elements.append(detail_table)
+
+    doc.build(elements)
+    return response
+
+
+@admin_required
+@never_cache
+def sales_report_excel(request):
+    start, end, range_type, label = get_date_range(request)
+    orders = get_sales_queryset(start, end)
+
+    daily_breakdown = (
+        orders
+        .annotate(day=TruncDate('created_at'))
+        .values('day')
+        .annotate(
+            order_count=Count('id'),
+            revenue=Sum('final_amount'),
+            discount=Sum('discount_amount'),
+            coupon_discount=Sum('coupon_discount'),
+        )
+        .order_by('-day')
+    )
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Sales Report"
+
+    ws.merge_cells('A1:E1')
+    ws['A1'] = f"SCENTORA Sales Report - {label} ({start} to {end})"
+    ws['A1'].font = Font(size=14, bold=True)
+    ws['A1'].alignment = Alignment(horizontal='center')
+
+    headers = ['Date', 'Orders', 'Revenue (Rs)', 'Discount (Rs)', 'Coupon Discount (Rs)']
+    ws.append([])
+    ws.append(headers)
+    header_row = ws.max_row
+    for col in range(1, len(headers) + 1):
+        cell = ws.cell(row=header_row, column=col)
+        cell.font = Font(bold=True, color='FFFFFF')
+        cell.fill = PatternFill(start_color='000000', end_color='000000', fill_type='solid')
+        cell.alignment = Alignment(horizontal='center')
+
+    for row in daily_breakdown:
+        ws.append([
+            row['day'].strftime('%Y-%m-%d') if row['day'] else '-',
+            row['order_count'],
+            float(row['revenue'] or 0),
+            float(row['discount'] or 0),
+            float(row['coupon_discount'] or 0),
+        ])
+
+    for col_letter, width in zip('ABCDE', [15, 10, 15, 15, 18]):
+        ws.column_dimensions[col_letter].width = width
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename="sales_report_{start}_{end}.xlsx"'
+    wb.save(response)
+    return response

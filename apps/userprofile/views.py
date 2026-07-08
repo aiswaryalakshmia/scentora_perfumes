@@ -134,7 +134,7 @@ def delete_address(request,address_id):
     )
 
     address.delete()
-    next_page = request.GET.get('next', '')  # ← reads from URL param
+    next_page = request.GET.get('next', '')
     if next_page == 'checkout':
         return redirect('checkout')
     return redirect('address_book')

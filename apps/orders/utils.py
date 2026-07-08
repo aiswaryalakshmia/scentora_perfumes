@@ -3,11 +3,7 @@ from django.utils import timezone
 from .models import Coupon, CouponUsage
 
 
-def validate_coupon(code, user, cart_total):
-    """
-    Validates a coupon code for a given user and cart total.
-    Returns (coupon, discount_amount, error_message)
-    """
+def validate_coupon(code, user, cart_total):    
     # Checks if coupon exist
     try:
         coupon = Coupon.objects.get(coupon_code=code.strip().upper())

@@ -649,7 +649,7 @@ def product_details(request, variant_id):
             'offer':           o,
         }
     variant.final_price = final_price;
-    # ── Reviews for this product ──
+    # Reviews for this product
     reviews = Review.objects.filter(product=variant.product).select_related('user').order_by('-created_at')
     avg_rating = reviews.aggregate(avg=Avg('rating'))['avg']
     review_count = reviews.count()
@@ -807,7 +807,7 @@ def add_to_cart(request, variant_id):
                 return redirect('shop')
             
         #get offer price at time of adding to cart
-        final_price, discount_amount, offer = get_offer_price(variant)
+        final_price, _,_ = get_offer_price(variant)
 
         # get the cart for this user
         try:

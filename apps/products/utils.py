@@ -36,11 +36,7 @@ def get_best_offer_for_variant(variant):
 
 
 def get_offer_price(variant):
-    """
-    Returns final price after applying best available discount.
-    Compares offer-based % discount vs existing manual discount_price.
-    Applies whichever gives the customer a lower price (larger discount)    
-    """
+    # Returns final price after applying best available discount.    
     base_price = variant.price
 
     # Offer-based discount (percentage)
@@ -63,10 +59,8 @@ def get_offer_price(variant):
     return final_price, discount_amount, offer_applied
 
 def can_review_product(user, product):
-    """
-    Returns True if user has a delivered order containing this product
-    and hasn't already reviewed it.
-    """
+    # True if user has a delivered order with this product and hasn't reviewed it.
+    
     if not user.is_authenticated:
         return False
 

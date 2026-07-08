@@ -126,7 +126,7 @@ def checkout(request):
     discount_amount = Decimal('0')
 
     for item in cart_items:
-        final_price, item_discount, offer = get_offer_price(item.product_variant)
+        _, item_discount, _ = get_offer_price(item.product_variant)
         subtotal += item.product_variant.price * item.quantity
         discount_amount += item_discount * item.quantity
 
@@ -752,7 +752,7 @@ def remove_coupon(request):
     if request.method != 'POST':
         return redirect('checkout')
 
-    request.session.pop('coupon_code',     None)
+    request.session.pop('coupon_code', None)
     request.session.pop('coupon_discount', None)
 
     messages.success(request, "Coupon removed successfully.")
@@ -785,15 +785,15 @@ def coupon_management(request):
 @never_cache
 def add_coupon(request):
     if request.method == 'POST':
-        code                = request.POST.get('coupon_code', '').strip().upper()
-        discount_type       = request.POST.get('discount_type', '').strip()
-        discount_value      = request.POST.get('discount_value', '').strip()
-        minimum_price       = request.POST.get('minimum_price', '0').strip()
-        maximum_redeem      = request.POST.get('maximum_redeem', '').strip()
-        expiry_date         = request.POST.get('expiry_date', '').strip()
-        usage_limit         = request.POST.get('usage_limit', '1').strip()
+        code  = request.POST.get('coupon_code', '').strip().upper()
+        discount_type  = request.POST.get('discount_type', '').strip()
+        discount_value = request.POST.get('discount_value', '').strip()
+        minimum_price  = request.POST.get('minimum_price', '0').strip()
+        maximum_redeem  = request.POST.get('maximum_redeem', '').strip()
+        expiry_date  = request.POST.get('expiry_date', '').strip()
+        usage_limit  = request.POST.get('usage_limit', '1').strip()
 
-        # ── Coupon code ──
+        # Coupon code
         if not code:
             messages.error(request, "Coupon code is required.")
             return redirect('add_coupon')
@@ -814,12 +814,12 @@ def add_coupon(request):
             messages.error(request, "Coupon code already exists.")
             return redirect('add_coupon')
 
-        # ── Discount type ──
+        # Discount type
         if discount_type not in ['percentage', 'flat']:
             messages.error(request, "Please select a valid discount type.")
             return redirect('add_coupon')
 
-        # ── Discount value ──
+        # Discount value
         if not discount_value:
             messages.error(request, "Discount value is required.")
             return redirect('add_coupon')
@@ -842,7 +842,7 @@ def add_coupon(request):
             messages.error(request, "Flat discount amount seems unreasonably high.")
             return redirect('add_coupon')
 
-        # ── Minimum order amount ──
+        # Minimum order amount
         try:
             minimum_price_num = float(minimum_price) if minimum_price else 0
         except ValueError:
@@ -853,7 +853,7 @@ def add_coupon(request):
             messages.error(request, "Minimum order amount cannot be negative.")
             return redirect('add_coupon')
 
-        # ── Maximum redeem (optional, only relevant for percentage) ──
+        # Maximum redeem
         maximum_redeem_num = None
         if maximum_redeem:
             try:
@@ -866,7 +866,7 @@ def add_coupon(request):
                 messages.error(request, "Maximum redeem amount must be greater than 0.")
                 return redirect('add_coupon')
 
-        # ── Expiry date ──
+        # Expiry date
         if not expiry_date:
             messages.error(request, "Expiry date is required.")
             return redirect('add_coupon')
@@ -882,7 +882,7 @@ def add_coupon(request):
             messages.error(request, "Expiry date must be in the future.")
             return redirect('add_coupon')
 
-        # ── Usage limit ──
+        # Usage limit
         if not usage_limit:
             messages.error(request, "Usage limit is required.")
             return redirect('add_coupon')
@@ -917,11 +917,11 @@ def edit_coupon(request, coupon_id):
     coupon = get_object_or_404(Coupon, id=coupon_id)
 
     if request.method == 'POST':
-        discount_value  = request.POST.get('discount_value', '').strip()
-        minimum_price   = request.POST.get('minimum_price', '0').strip()
-        maximum_redeem  = request.POST.get('maximum_redeem', '').strip()
-        expiry_date     = request.POST.get('expiry_date', '').strip()
-        usage_limit     = request.POST.get('usage_limit', '1').strip()
+        discount_value = request.POST.get('discount_value', '').strip()
+        minimum_price = request.POST.get('minimum_price', '0').strip()
+        maximum_redeem = request.POST.get('maximum_redeem', '').strip()
+        expiry_date  = request.POST.get('expiry_date', '').strip()
+        usage_limit  = request.POST.get('usage_limit', '1').strip()
 
         if not discount_value:
             messages.error(request, "Discount value is required.")
@@ -1113,7 +1113,7 @@ def sales_report(request):
 @admin_required
 @never_cache
 def sales_report_pdf(request):
-    start, end, range_type, label = get_date_range(request)
+    start, end, _, label = get_date_range(request)
     orders = get_sales_queryset(start, end)
 
     summary = orders.aggregate(

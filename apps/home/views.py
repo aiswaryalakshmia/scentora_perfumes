@@ -1,6 +1,7 @@
 from django.shortcuts import redirect, render
 from django.views.decorators.cache import never_cache
 from apps.products.models import Category,ProductVariant
+from apps.products.utils import get_offer_price
 
 
 @never_cache
@@ -21,6 +22,10 @@ def home(request):
     ).prefetch_related(
         'images'
     ).order_by('-created_at')[:4]
+
+    for v in new_arrivals:
+        fp, _, _ = get_offer_price(v)
+        v.final_price = fp
 
     return render(request, 'home.html', {
         'categories': categories,

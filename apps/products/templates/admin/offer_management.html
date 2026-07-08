@@ -124,8 +124,27 @@
     </table>
 
     <div class="pagination">
-      <p>Showing {{ offers.count }} offer{{ offers.count|pluralize }}</p>
-      <div class="page-controls"></div>
+      <p>
+        Showing {{ offers.start_index }} to {{ offers.end_index }}
+        of {{ offers.paginator.count }} offer{{ offers.paginator.count|pluralize }}
+      </p>
+      <div class="page-controls">
+        {% if offers.has_previous %}
+        <a href="?page={{ offers.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">&lt;</a>
+        {% endif %}
+
+        {% for num in offers.paginator.page_range %}
+          {% if offers.number == num %}
+            <a class="active">{{ num }}</a>
+          {% else %}
+            <a href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}">{{ num }}</a>
+          {% endif %}
+        {% endfor %}
+
+        {% if offers.has_next %}
+        <a href="?page={{ offers.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">&gt;</a>
+        {% endif %}
+      </div>
     </div>
 
   </section>

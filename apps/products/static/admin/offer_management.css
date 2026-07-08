@@ -5,7 +5,6 @@
 
 .offer-management {
   padding: 32px;
-  font-family: 'Playfair Display', serif;
   color: #fff;
 }
 
@@ -70,7 +69,6 @@
   border-radius: 4px;
   color: #fff;
   font-size: 0.85rem;
-  font-family: 'Georgia', serif;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: 12px center;
@@ -146,7 +144,6 @@
   border-bottom: 1px solid #1a1a1a;
   color: #ddd;
   vertical-align: middle;
-  font-family: 'Georgia', serif;
 }
 
 .offer-table tbody tr:hover { background: #161616; }
@@ -167,7 +164,6 @@
   font-size: 0.72rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  font-family: 'Georgia', serif;
 }
 
 .type-badge.product  { background: rgba(99,102,241,0.15); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.3); }
@@ -226,7 +222,6 @@
   border-top: 1px solid #1e1e1e;
   font-size: 0.8rem;
   color: #666;
-  font-family: 'Georgia', serif;
 }
 
 .page-controls { display: flex; gap: 6px; align-items: center; }
@@ -255,7 +250,7 @@
 }
 
 .empty-state i   { font-size: 2.5rem; margin-bottom: 16px; display: block; }
-.empty-state p   { font-size: 0.9rem; font-family: 'Georgia', serif; }
+.empty-state p   { font-size: 0.9rem; }
 
 /* ── Add Offer / Edit Offer Form Pages ── */
 .offer-form-page        { padding: 32px; font-family: 'Playfair Display', serif; color: #fff; }
@@ -271,7 +266,7 @@
 .form-group label       { font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: #aaa; }
 
 .form-group input,
-.form-group select      { padding: 11px 14px; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 3px; color: #fff; font-size: 0.85rem; font-family: 'Georgia', serif; transition: border-color 0.2s; width: 100%; box-sizing: border-box; }
+.form-group select      { padding: 11px 14px; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 3px; color: #fff; font-size: 0.85rem; transition: border-color 0.2s; width: 100%; box-sizing: border-box; }
 
 .form-group input:focus,
 .form-group select:focus { outline: none; border-color: #c9a84c; }

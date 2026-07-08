@@ -52,7 +52,7 @@
         </span>
 
         <span class="discount-price">
-            ₹{{ variant.effective_price }}
+            ₹{{ variant.final_price }}
         </span>
       {% else %}
         <span class="price">
@@ -152,6 +152,7 @@
     </section>
 
   <section class="related-products">
+    <hr />
     <h3>You May Also Like</h3>
     <div class="related-grid">
         {% for related in related_variants %}

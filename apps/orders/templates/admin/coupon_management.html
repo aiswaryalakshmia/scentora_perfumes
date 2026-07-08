@@ -17,7 +17,23 @@
     </a>
   </header>
 
-  <section class="table-section">
+<section class="table-section">
+    <form method="GET" style="padding: 20px 20px 0;">
+      <span class="search-label">Search Coupons</span>
+      <div class="search-bar">
+        <input
+          type="text"
+          name="search"
+          value="{{ search_query }}"
+          placeholder="Search by code or type..."
+        >
+        <button type="submit">Search</button>
+        {% if search_query %}
+        <a class="clear-btn" href="{% url 'coupon_management' %}">Clear</a>
+        {% endif %}
+      </div>
+    </form>
+
     <table class="offer-table">
       <thead>
         <tr>
@@ -111,7 +127,27 @@
     </table>
 
     <div class="pagination">
-      <p>Showing {{ coupons.count }} coupon{{ coupons.count|pluralize }}</p>
+      <p>
+        Showing {{ coupons.start_index }} to {{ coupons.end_index }}
+        of {{ coupons.paginator.count }} coupon{{ coupons.paginator.count|pluralize }}
+      </p>
+      <div class="page-controls">
+        {% if coupons.has_previous %}
+        <a href="?page={{ coupons.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">&lt;</a>
+        {% endif %}
+
+        {% for num in coupons.paginator.page_range %}
+          {% if coupons.number == num %}
+            <a class="active">{{ num }}</a>
+          {% else %}
+            <a href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}">{{ num }}</a>
+          {% endif %}
+        {% endfor %}
+
+        {% if coupons.has_next %}
+        <a href="?page={{ coupons.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">&gt;</a>
+        {% endif %}
+      </div>
     </div>
   </section>
 

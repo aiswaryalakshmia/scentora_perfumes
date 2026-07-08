@@ -278,3 +278,51 @@
 .zoom-container:hover img {
   transform: scale(1.5);
 }
+
+/* ===== Wide screen layout: reviews move to the right column ===== */
+@media (min-width: 1400px) {
+  .product-page {
+    display: grid;
+    grid-template-columns: 1fr 420px;
+    grid-template-areas:
+      "main      reviews"
+      "description reviews"
+      "related   related";
+    gap: 2rem;
+    align-items: start;
+  }
+
+  .product-main {
+    grid-area: main;
+    padding: 0;   /* remove the old side padding since grid gap handles spacing now */
+  }
+
+  .product-description {
+    grid-area: description;
+  }
+
+  .testimonials {
+    grid-area: reviews;
+    max-height: 720px;
+    overflow-y: auto;
+    padding-right: 8px;   /* space for the scrollbar so it doesn't overlap text */
+  }
+
+  .related-products {
+    grid-area: related;
+  }
+}
+
+/* Optional: nicer scrollbar for the reviews column on wide screens */
+@media (min-width: 1400px) {
+  .testimonials::-webkit-scrollbar {
+    width: 6px;
+  }
+  .testimonials::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 3px;
+  }
+  .testimonials::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}

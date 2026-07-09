@@ -1,0 +1,112 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}Sales Report{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'admin/sales_report.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="sales-report-page">
+
+  <div class="report-header">
+    <h1>Sales Report</h1>
+    <div class="header-actions">
+      <a href="{% url 'sales_report_pdf' %}?range={{ range_type }}&start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}" class="btn-outline">
+        Download PDF
+      </a>
+      <a href="{% url 'sales_report_excel' %}?range={{ range_type }}&start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}" class="btn-outline">
+        Export Excel
+      </a>
+    </div>
+  </div>
+
+  <form method="GET" class="date-filter-form">
+    <label>Date Range</label>
+    <select name="range" id="range-select" onchange="toggleCustomRange(this.value)">
+      <option value="daily" {% if range_type == 'daily' %}selected{% endif %}>Daily</option>
+      <option value="weekly" {% if range_type == 'weekly' %}selected{% endif %}>Weekly</option>
+      <option value="monthly" {% if range_type == 'monthly' %}selected{% endif %}>Monthly</option>
+      <option value="yearly" {% if range_type == 'yearly' %}selected{% endif %}>Yearly</option>
+      <option value="custom" {% if range_type == 'custom' %}selected{% endif %}>Custom</option>
+    </select>
+
+    <div id="custom-range-fields" style="display:{% if range_type == 'custom' %}inline-flex{% else %}none{% endif %};">
+      <input type="date" name="start_date" value="{{ start_date|date:'Y-m-d' }}">
+      <input type="date" name="end_date" value="{{ end_date|date:'Y-m-d' }}">
+    </div>
+
+    <button type="submit" class="btn-apply">Apply</button>
+  </form>
+
+  <p class="range-label">Showing: {{ range_label }}</p>
+
+  <div class="summary-cards">
+    <div class="summary-card">
+      <p class="card-label">Total Revenue</p>
+      <p class="card-value">₹{{ total_revenue }}</p>
+    </div>
+    <div class="summary-card">
+      <p class="card-label">Total Discount</p>
+      <p class="card-value">₹{{ total_discount }}</p>
+    </div>
+    <div class="summary-card">
+      <p class="card-label">Sales Count</p>
+      <p class="card-value">{{ total_orders }}</p>
+    </div>
+  </div>
+
+  <section class="detail-section">
+    <h3>Detailed Transaction Log</h3>
+    <table class="report-table">
+      <thead>
+        <tr>
+          <th>SL NO</th>
+          <th>Date</th>
+          <th>Total Orders</th>
+          <th>Total Discount</th>
+          <th>Total Revenue</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in daily_breakdown %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ row.day|date:"M d, Y" }}</td>
+          <td>{{ row.order_count }}</td>
+          <td class="discount-cell">−₹{{ row.discount|add:row.coupon_discount }}</td>
+          <td class="revenue-cell">₹{{ row.revenue }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="empty-row">No sales data for this period.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if daily_breakdown.has_other_pages %}
+    <div class="pagination">
+      <p>Showing page {{ daily_breakdown.number }} of {{ daily_breakdown.paginator.num_pages }}</p>
+      <div class="page-links">
+        {% if daily_breakdown.has_previous %}
+          <a href="?range={{ range_type }}&page={{ daily_breakdown.previous_page_number }}">‹</a>
+        {% endif %}
+        <span class="current-page">{{ daily_breakdown.number }}</span>
+        {% if daily_breakdown.has_next %}
+          <a href="?range={{ range_type }}&page={{ daily_breakdown.next_page_number }}">›</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </section>
+
+</div>
+
+<script>
+  function toggleCustomRange(value) {
+    document.getElementById('custom-range-fields').style.display = value === 'custom' ? 'inline-flex' : 'none';
+  }
+</script>
+{% endblock %}

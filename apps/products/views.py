@@ -9,6 +9,14 @@ from django.core.files.base import ContentFile
 from apps.common.decorators import admin_required
 from .models import Category,Product,ProductVariant,VariantImage,Cart,CartItem,Wishlist
 from .forms import CategoryForm,ProductForm, ProductVariantForm
+from .utils import get_offer_price
+from .models import Offer
+from .models import Review
+from django.db.models import Avg
+from .utils import can_review_product
+from datetime import datetime
+from django.utils import timezone
+
 
 @admin_required
 def category_management(request):
@@ -576,6 +584,17 @@ def shop(request):
     else:
         wishlisted_ids = []
 
+    offer_price_map = {}
+    for variant in page_obj:
+        final_price, discount_amount, offer = get_offer_price(variant)
+        variant.final_price = final_price
+        offer_price_map[variant.id] = {
+            'final_price':     final_price,
+            'discount_amount': discount_amount,
+            'offer':           offer,
+            'has_offer':       offer is not None,
+        }
+
     return render(request,'user/shop_page.html',
                   {
                       'variants':page_obj,
@@ -586,6 +605,7 @@ def shop(request):
                       'sort':sort,
                       'page_obj': page_obj,
                       'wishlisted_ids': wishlisted_ids,
+                      'offer_price_map': offer_price_map,
                   })
 
 @login_required
@@ -616,11 +636,36 @@ def product_details(request, variant_id):
     ).exclude(product=variant.product)[:4]
 
     is_wishlisted = Wishlist.objects.filter(user=request.user, product_variant=variant).exists()
+
+    final_price, discount_amount, offer = get_offer_price(variant)
+
+    # Offer prices for other size variants (size selector dropdown)
+    other_variant_prices = {}
+    for v in other_variants:
+        fp, da, o = get_offer_price(v)
+        other_variant_prices[v.id] = {
+            'final_price':     fp,
+            'discount_amount': da,
+            'offer':           o,
+        }
+    variant.final_price = final_price;
+    # Reviews for this product
+    reviews = Review.objects.filter(product=variant.product).select_related('user').order_by('-created_at')
+    avg_rating = reviews.aggregate(avg=Avg('rating'))['avg']
+    review_count = reviews.count()
+
     return render(request, 'user/product_details.html', {
         'variant': variant,
         'other_variants': other_variants,
         'related_variants': related_variants,
-        'is_wishlisted':is_wishlisted
+        'is_wishlisted':is_wishlisted,
+        'final_price': final_price,           
+        'discount_amount': discount_amount,       
+        'offer': offer,                 
+        'other_variant_prices': other_variant_prices,
+        'reviews': reviews,
+        'avg_rating': avg_rating,
+        'review_count': review_count, 
     })
 
 @login_required
@@ -698,15 +743,29 @@ def cart(request):
         cart = Cart.objects.create(user=request.user)
 
     # get all items in that cart
-    items = CartItem.objects.filter(cart=cart).order_by('id')
+    items = CartItem.objects.filter(cart=cart).select_related(
+        'product_variant__product__category'
+    ).order_by('id')
+    
+    for item in items:
+        final_price, _, _ = get_offer_price(item.product_variant)
+        new_total = final_price * item.quantity
+        if new_total != item.total_price:
+            item.total_price = new_total
+            item.save()
+    
+    items = CartItem.objects.filter(cart=cart).select_related(
+        'product_variant__product__category'
+    ).order_by('id')
 
     subtotal = sum(
         item.product_variant.price * item.quantity
         for item in items
     )
 
+    # total_discount = difference between original price and offer/discounted price    
     total_discount = sum(
-        (item.product_variant.discount_price or 0) * item.quantity
+        (item.product_variant.price * item.quantity) - item.total_price
         for item in items
     )
 
@@ -723,7 +782,7 @@ def cart(request):
 def add_to_cart(request, variant_id):
     if request.method == 'POST':
 
-        # get the variant from DB        
+        # get the variant from DB
         variant = get_object_or_404(ProductVariant, id=variant_id)
 
         # if not in stock or inactive redirect to product detail page
@@ -746,7 +805,10 @@ def add_to_cart(request, variant_id):
             
             else:
                 return redirect('shop')
-              
+            
+        #get offer price at time of adding to cart
+        final_price, _,_ = get_offer_price(variant)
+
         # get the cart for this user
         try:
             cart = Cart.objects.get(user=request.user)
@@ -770,7 +832,7 @@ def add_to_cart(request, variant_id):
 
             # if all good then increase quantity by 1
             item.quantity = item.quantity + 1
-            item.total_price = variant.effective_price * item.quantity
+            item.total_price = final_price  * item.quantity
             item.save()
 
         except CartItem.DoesNotExist:
@@ -780,7 +842,7 @@ def add_to_cart(request, variant_id):
                 cart=cart,
                 product_variant=variant,
                 quantity=1,
-                total_price=variant.effective_price
+                total_price=final_price 
             )
 
         # remove from wishlist if it exists
@@ -821,7 +883,7 @@ def remove_from_cart(request, item_id):
 
 @login_required
 def update_cart(request, item_id):
-    if request.method == 'POST':        
+    if request.method == 'POST':
         try:
             item = CartItem.objects.get(id=item_id, cart__user=request.user)
         except CartItem.DoesNotExist:
@@ -852,9 +914,10 @@ def update_cart(request, item_id):
         if quantity > item.product_variant.stock:
             messages.error(request, "Not enough stock!")
             return redirect('cart')
-
+        
+        final_price, _, _ = get_offer_price(item.product_variant)
         item.quantity = quantity
-        item.total_price = item.product_variant.effective_price * quantity
+        item.total_price = final_price  * quantity
         item.save()
 
         return redirect('cart')
@@ -928,3 +991,265 @@ def remove_from_wishlist(request, variant_id):
             return redirect('product_details',variant.id)
         else:
             return redirect('wishlist')
+
+
+@admin_required
+def offer_management(request):
+    search_query = request.GET.get('search', '').strip()
+
+    offers = Offer.objects.select_related('product', 'category').order_by('-created_at')
+
+    if search_query:
+        offers = offers.filter(
+            Q(offer_name__icontains=search_query) |
+            Q(product__product_name__icontains=search_query) |
+            Q(category__category_name__icontains=search_query)
+        )
+
+    paginator = Paginator(offers, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'admin/offer_management.html', {
+        'offers': page_obj,
+        'search_query': search_query,
+    })
+
+@admin_required
+def add_offer(request):
+    if request.method == 'POST':
+        offer_type          = request.POST.get('offer_type', '').strip()
+        offer_name          = request.POST.get('offer_name', '').strip()
+        discount_percentage = request.POST.get('discount_percentage', '').strip()
+        start_date          = request.POST.get('start_date', '').strip()
+        end_date            = request.POST.get('end_date', '').strip()
+        product_id          = request.POST.get('product_id')
+        category_id         = request.POST.get('category_id')
+
+        # Offer name
+        if not offer_name:
+            messages.error(request, "Offer name is required.")
+            return redirect('add_offer')
+
+        if len(offer_name) < 3:
+            messages.error(request, "Offer name must be at least 3 characters.")
+            return redirect('add_offer')
+
+        if len(offer_name) > 100:
+            messages.error(request, "Offer name cannot exceed 100 characters.")
+            return redirect('add_offer')
+
+        if Offer.objects.filter(offer_name__iexact=offer_name).exists():
+            messages.error(request, "An offer with this name already exists.")
+            return redirect('add_offer')
+
+        # Offer type
+        if offer_type not in ['product', 'category']:
+            messages.error(request, "Please select a valid offer type.")
+            return redirect('add_offer')
+
+        # Discount percentage
+        if not discount_percentage:
+            messages.error(request, "Discount percentage is required.")
+            return redirect('add_offer')
+
+        try:
+            discount_value = float(discount_percentage)
+        except ValueError:
+            messages.error(request, "Discount must be a valid number.")
+            return redirect('add_offer')
+
+        if discount_value <= 0 or discount_value > 100:
+            messages.error(request, "Discount must be between 1 and 100.")
+            return redirect('add_offer')
+
+        # Dates
+        if not start_date or not end_date:
+            messages.error(request, "Both start date and end date are required.")
+            return redirect('add_offer')
+
+        try:
+            start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date()
+            end_date_obj = datetime.strptime(end_date, '%Y-%m-%d').date()
+        except ValueError:
+            messages.error(request, "Invalid date format.")
+            return redirect('add_offer')
+
+        today = timezone.now().date()
+        if start_date_obj < today:
+            messages.error(request, "Start date cannot be in the past.")
+            return redirect('add_offer')
+
+        if end_date_obj <= start_date_obj:
+            messages.error(request, "End date must be after start date.")
+            return redirect('add_offer')
+
+        offer = Offer(
+            offer_type          = offer_type,
+            offer_name          = offer_name,
+            discount_percentage = discount_value,
+            start_date          = start_date_obj,
+            end_date            = end_date_obj,
+        )
+
+        # Product / Category selection
+        if offer_type == 'product':
+            if not product_id:
+                messages.error(request, "Please select a product.")
+                return redirect('add_offer')
+
+            product = get_object_or_404(Product, id=product_id)
+
+            if Offer.objects.filter(product=product, status='active').exists():
+                messages.error(request, f"{product.product_name} already has an active offer.")
+                return redirect('add_offer')
+
+            offer.product = product
+
+        elif offer_type == 'category':
+            if not category_id:
+                messages.error(request, "Please select a category.")
+                return redirect('add_offer')
+
+            category = get_object_or_404(Category, id=category_id)
+
+            if Offer.objects.filter(category=category, status='active').exists():
+                messages.error(request, f"{category.category_name} already has an active offer.")
+                return redirect('add_offer')
+
+            offer.category = category
+
+        offer.save()
+        messages.success(request, "Offer created successfully!")
+        return redirect('offer_management')
+
+    products   = Product.objects.filter(status='active')
+    categories = Category.objects.filter(status='active')
+    return render(request, 'admin/add_offer.html', {
+        'products':   products,
+        'categories': categories,
+    })
+
+@admin_required
+def edit_offer(request, offer_id):
+    offer = get_object_or_404(Offer, id=offer_id)
+
+    if request.method == 'POST':
+        offer_name          = request.POST.get('offer_name', '').strip()
+        discount_percentage = request.POST.get('discount_percentage', '').strip()
+        start_date           = request.POST.get('start_date', '').strip()
+        end_date             = request.POST.get('end_date', '').strip()
+
+        if not offer_name:
+            messages.error(request, "Offer name is required.")
+            return redirect('edit_offer', offer_id=offer.id)
+
+        if len(offer_name) < 3:
+            messages.error(request, "Offer name must be at least 3 characters.")
+            return redirect('edit_offer', offer_id=offer.id)
+
+        if len(offer_name) > 100:
+            messages.error(request, "Offer name cannot exceed 100 characters.")
+            return redirect('edit_offer', offer_id=offer.id)
+
+        if Offer.objects.filter(offer_name__iexact=offer_name).exclude(id=offer.id).exists():
+            messages.error(request, "An offer with this name already exists.")
+            return redirect('edit_offer', offer_id=offer.id)
+
+        if not discount_percentage:
+            messages.error(request, "Discount percentage is required.")
+            return redirect('edit_offer', offer_id=offer.id)
+
+        try:
+            discount_value = float(discount_percentage)
+        except ValueError:
+            messages.error(request, "Discount must be a valid number.")
+            return redirect('edit_offer', offer_id=offer.id)
+
+        if discount_value <= 0 or discount_value > 100:
+            messages.error(request, "Discount must be between 1 and 100.")
+            return redirect('edit_offer', offer_id=offer.id)
+
+        if not start_date or not end_date:
+            messages.error(request, "Both start date and end date are required.")
+            return redirect('edit_offer', offer_id=offer.id)
+
+        try:
+            start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date()
+            end_date_obj = datetime.strptime(end_date, '%Y-%m-%d').date()
+        except ValueError:
+            messages.error(request, "Invalid date format.")
+            return redirect('edit_offer', offer_id=offer.id)
+
+        if end_date_obj <= start_date_obj:
+            messages.error(request, "End date must be after start date.")
+            return redirect('edit_offer', offer_id=offer.id)
+
+        offer.offer_name          = offer_name
+        offer.discount_percentage = discount_value
+        offer.start_date          = start_date_obj
+        offer.end_date            = end_date_obj
+        offer.save()
+        messages.success(request, "Offer updated successfully!")
+        return redirect('offer_management')
+
+    products   = Product.objects.filter(status='active')
+    categories = Category.objects.filter(status='active')
+    return render(request, 'admin/edit_offer.html', {
+        'offer':      offer,
+        'products':   products,
+        'categories': categories,
+    })
+
+@admin_required
+def toggle_offer_status(request, offer_id):
+    offer = get_object_or_404(Offer, id=offer_id)
+    offer.status = 'inactive' if offer.status == 'active' else 'active'
+    offer.save()
+    messages.success(request, f"Offer {'activated' if offer.status == 'active' else 'deactivated'} successfully.")
+    return redirect('offer_management')
+
+
+@admin_required
+def delete_offer(request, offer_id):
+    offer = get_object_or_404(Offer, id=offer_id)
+    offer.delete()
+    messages.success(request, "Offer deleted successfully.")
+    return redirect('offer_management')
+
+@login_required
+def add_review(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+
+    if not can_review_product(request.user, product):
+        messages.error(request, "You can only review products you've received in a delivered order.")
+        return redirect('my_orders')
+
+    if request.method == 'POST':
+        rating = request.POST.get('rating')
+        review_text = request.POST.get('review', '').strip()
+
+        if not rating or not rating.isdigit() or not (1 <= int(rating) <= 5):
+            messages.error(request, "Please select a rating between 1 and 5.")
+            return redirect(request.META.get('HTTP_REFERER', 'my_orders'))
+
+        if len(review_text) < 10:
+            messages.error(request, "Review must be at least 10 characters.")
+            return redirect(request.META.get('HTTP_REFERER', 'my_orders'))
+
+        Review.objects.create(
+            user=request.user,
+            product=product,
+            rating=int(rating),
+            review=review_text,
+        )
+        messages.success(request, "Thank you for your review!")
+
+        next_page = request.POST.get('next', '')
+        if next_page == 'order_detail':
+            order_id = request.POST.get('order_id')
+            return redirect('order_detail', order_id=order_id)
+
+        return redirect('product_details', variant_id=request.POST.get('variant_id'))
+
+    return redirect('my_orders')

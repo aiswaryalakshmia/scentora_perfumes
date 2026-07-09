@@ -1,0 +1,102 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}Edit Coupon{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'admin/offer_management.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="offer-form-page">
+
+  <div class="form-header">
+    <h1>Edit Coupon</h1>
+    <a href="{% url 'coupon_management' %}" class="back-link">
+      <i class="fa-solid fa-arrow-left"></i> Back to Coupons
+    </a>
+  </div>
+
+  <form method="POST" novalidate>
+    {% csrf_token %}
+    <div class="form-layout">
+
+      <!-- Left Column -->
+      <div>
+        <div class="form-card">
+          <h2>Coupon Details</h2>
+
+          <!-- Code and type are read-only on edit -->
+          <div class="form-row">
+            <div class="form-group">
+              <label>Coupon Code</label>
+              <input type="text" value="{{ coupon.coupon_code }}" disabled>
+            </div>
+            <div class="form-group">
+              <label>Discount Type</label>
+              <input type="text" value="{{ coupon.get_discount_type_display }}" disabled>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="discount_value">Discount Value</label>
+              <input type="number" id="discount_value" name="discount_value"
+                     value="{{ coupon.discount_value }}"
+                     min="1" step="0.01" required>
+            </div>
+            <div class="form-group">
+              <label for="usage_limit">Usage Limit</label>
+              <input type="number" id="usage_limit" name="usage_limit"
+                     value="{{ coupon.usage_limit }}"
+                     min="1" required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="minimum_price">Minimum Order Amount (₹)</label>
+              <input type="number" id="minimum_price" name="minimum_price"
+                     value="{{ coupon.minimum_price }}"
+                     min="0" step="0.01">
+            </div>
+            <div class="form-group">
+              <label for="maximum_redeem">Maximum Redeem Amount (₹)</label>
+              <input type="number" id="maximum_redeem" name="maximum_redeem"
+                     value="{{ coupon.maximum_redeem|default:'' }}"
+                     min="0" step="0.01"
+                     placeholder="Leave empty for no cap">
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Right Sidebar -->
+      <div>
+        <div class="sidebar-card">
+          <h2>Validity</h2>
+
+          <div class="form-group">
+            <label for="expiry_date">Expiry Date</label>
+            <input type="date" id="expiry_date" name="expiry_date"
+                   value="{{ coupon.expiry_date|date:'Y-m-d' }}" required>
+          </div>
+
+          <div style="margin-bottom:16px; padding:12px; background:#0d0d0d; border:1px solid #1e1e1e; border-radius:4px;">
+            <p style="font-size:0.75rem; color:#666; font-family:'Georgia',serif; margin:0 0 6px;">Usage</p>
+            <p style="font-size:0.9rem; color:#c9a84c; font-weight:700; margin:0;">
+              {{ coupon.used_count }} / {{ coupon.usage_limit }} used
+            </p>
+          </div>
+
+          <button type="submit" class="btn-create">Update Coupon</button>
+          <a href="{% url 'coupon_management' %}" class="btn-cancel">Cancel</a>
+        </div>
+      </div>
+
+    </div>
+  </form>
+
+</div>
+{% endblock %}

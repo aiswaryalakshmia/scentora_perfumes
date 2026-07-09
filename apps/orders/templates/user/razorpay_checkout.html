@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+Payment
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'user/razorpay_checkout.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="payment-page">
+
+    <a href="{% url 'checkout' %}" class="btn-back-checkout">
+        ← Back to Checkout
+    </a>
+
+    <div class="payment-container">
+
+        <div class="payment-card">
+
+            <div class="payment-icon">🔒</div>
+
+            <h2 class="payment-title">
+                Complete Your Payment
+            </h2>
+
+            <h3>Secure Payment</h3>
+
+            <p class="order-number">
+                Order <strong>#{{ order.order_number }}</strong>
+            </p>
+
+            <div class="payment-amount">
+                ₹{{ order.final_amount }}
+            </div>
+
+            <p class="payment-note">
+                You will be redirected to Razorpay's secure payment gateway to complete your purchase.
+            </p>
+
+            <button id="rzp-btn" class="btn-pay">
+                Pay ₹{{ order.final_amount }} with Razorpay
+            </button>
+
+            <p class="secure-text">
+                🔒 Secure payments powered by Razorpay
+            </p>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Hidden form to submit Razorpay response -->
+<form id="rzp-form" action="{% url 'verify_payment' %}" method="POST" hidden>
+    {% csrf_token %}
+    <input type="hidden" name="razorpay_order_id" id="rzp_order_id">
+    <input type="hidden" name="razorpay_payment_id" id="rzp_payment_id">
+    <input type="hidden" name="razorpay_signature" id="rzp_signature">
+    <input type="hidden" name="order_id" value="{{ order.id }}">
+</form>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<script>
+    var options = {
+        key: "{{ razorpay_key_id }}",
+        amount: "{{ amount_paise }}",
+        currency: "INR",
+        name: "Scentora Perfumes",
+        description: "Order #{{ order.order_number }}",
+        order_id: "{{ razorpay_order_id }}",
+
+        prefill: {
+            name: "{{ user_name }}",
+            email: "{{ user_email }}"
+        },
+
+        theme: {
+            color: "#D4AF37"
+        },
+
+        handler: function(response) {
+            document.getElementById('rzp_order_id').value = response.razorpay_order_id;
+            document.getElementById('rzp_payment_id').value = response.razorpay_payment_id;
+            document.getElementById('rzp_signature').value = response.razorpay_signature;
+
+            document.getElementById('rzp-form').submit();
+        },
+
+        modal: {
+            ondismiss: function() {
+                window.location.href = "{% url 'payment_failure' order.id %}?reason=cancelled";
+            }
+        }
+    };
+
+    document.getElementById('rzp-btn').onclick = function(e) {
+        e.preventDefault();
+
+        var rzp = new Razorpay(options);
+        rzp.open();
+    };
+</script>
+
+{% endblock %}

@@ -18,57 +18,64 @@ Admin Dashboard
         <div class="cards">
           <div class="card">
             <p class="label">Total Sales</p>
-            <h4>₹124,500</h4>
-            <span class="growth">+12%</span>
+            <h4>₹{{ total_sales }}</h4>
           </div>
           <div class="card">
             <p class="label">Total Orders</p>
-            <h4>1,240</h4>
-            <span class="growth">+5%</span>
+            <h4>{{ total_orders }}</h4>
           </div>
           <div class="card">
             <p class="label">Total Customers</p>
-            <h4>850</h4>
-            <span class="growth">+8%</span>
+            <h4>{{ total_customers }}</h4>
           </div>
           <div class="card">
             <p class="label">Revenue</p>
-            <h4>₹82,300</h4>
-            <span class="growth">+15%</span>
+            <h4>₹{{ revenue }}</h4>
           </div>
         </div>
       </section>
 
       <section class="analytics">
         <div class="chart-box">
-          <h4>Revenue Over Time</h4>
+          <div class="chart-header">
+            <h4>Revenue Over Time</h4>
+            <select id="chart-period-filter" onchange="loadChartData(this.value)">
+              <option value="daily">Daily (Last 30 days)</option>
+              <option value="monthly" selected>Monthly (Last 12 months)</option>
+              <option value="yearly">Yearly (Last 5 years)</option>
+            </select>
+          </div>
           <canvas id="revenueChart"></canvas>
         </div>
 
         <div class="collections">
-          <h4>Top Collections</h4>
+          <h4>Best Selling Products (Top 10)</h4>
+          {% for p in best_products %}
           <div class="collection-item">
-            <img src="{% static 'images/noir-nite.png' %}" alt="Noir Nite">
             <div>
-              <p>Noir Nite</p>
-              <span>₹18,400</span>
+              <p>{{ p.product_variant__product__product_name }}</p>
+              <span>{{ p.total_sold }} sold — ₹{{ p.total_revenue }}</span>
             </div>
           </div>
+          {% empty %}
+          <p class="no-data">No sales data yet.</p>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section class="analytics">
+        <div class="collections full-width">
+          <h4>Best Selling Categories (Top 10)</h4>
+          {% for c in best_categories %}
           <div class="collection-item">
-            <img src="{% static 'images/oud-royale.png' %}" alt="Oud Royale">
             <div>
-              <p>Oud Royale</p>
-              <span>₹22,150</span>
+              <p>{{ c.product_variant__product__category__category_name }}</p>
+              <span>{{ c.total_sold }} sold — ₹{{ c.total_revenue }}</span>
             </div>
           </div>
-          <div class="collection-item">
-            <img src="{% static 'images/velvet-rose.png' %}" alt="Velvet Rose">
-            <div>
-              <p>Velvet Rose</p>
-              <span>₹14,800</span>
-            </div>
-          </div>
-          <button class="view-btn">View All Products</button>
+          {% empty %}
+          <p class="no-data">No sales data yet.</p>
+          {% endfor %}
         </div>
       </section>
 
@@ -85,25 +92,63 @@ Admin Dashboard
             </tr>
           </thead>
           <tbody>
+            {% for order in recent_orders %}
             <tr>
-              <td>#ORD-9912</td><td>Julienne V.</td><td>₹620.00</td><td class="delivered">Delivered</td><td>Oct 18, 2023</td>
+              <td>#{{ order.order_number }}</td>
+              <td>{{ order.user.full_name }}</td>
+              <td>₹{{ order.final_amount }}</td>
+              <td class="{{ order.order_status }}">{{ order.order_status|capfirst }}</td>
+              <td>{{ order.created_at|date:"M d, Y" }}</td>
             </tr>
-            <tr>
-              <td>#ORD-9910</td><td>Marcus Thorne</td><td>₹1,250.00</td><td class="delivered">Delivered</td><td>Oct 17, 2023</td>
-            </tr>
-            <tr>
-              <td>#ORD-9915</td><td>Serafina L.</td><td>₹890.00</td><td class="delivered">Delivered</td><td>Oct 15, 2023</td>
-            </tr>
-            <tr>
-              <td>#ORD-9912</td><td>Adrian Knight</td><td>₹215.00</td><td class="cancelled">Cancelled</td><td>Oct 10, 2023</td>
-            </tr>
+            {% empty %}
+            <tr><td colspan="5">No orders yet.</td></tr>
+            {% endfor %}
           </tbody>
         </table>
         <div class="table-footer">
-          <button class="export-btn">Export CSV</button>
-          <button class="view-btn">View More Orders</button>
+          <a href="{% url 'order_management' %}" class="view-btn">View More Orders</a>
         </div>
       </section>
     </main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const chartLabels = {{ chart_labels|safe }};
+  const chartValues = {{ chart_values|safe }};
+
+  const ctx = document.getElementById('revenueChart').getContext('2d');
+  let revenueChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: chartLabels,
+      datasets: [{
+        label: 'Revenue (₹)',
+        data: chartValues,
+        borderColor: '#c9a84c',
+        backgroundColor: 'rgba(201, 168, 76, 0.1)',
+        tension: 0.3,
+        fill: true,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#999' }, grid: { color: '#222' } },
+        y: { ticks: { color: '#999' }, grid: { color: '#222' } }
+      }
+    }
+  });
+
+  function loadChartData(period) {
+    fetch(`{% url 'dashboard_chart_data' %}?period=${period}`)
+      .then(res => res.json())
+      .then(data => {
+        revenueChart.data.labels = data.labels;
+        revenueChart.data.datasets[0].data = data.values;
+        revenueChart.update();
+      });
+  }
+</script>
 
 {% endblock %}

@@ -52,7 +52,7 @@
         </span>
 
         <span class="discount-price">
-            ₹{{ variant.effective_price }}
+            ₹{{ variant.final_price }}
         </span>
       {% else %}
         <span class="price">
@@ -118,36 +118,41 @@
     <p>Category: {{ variant.product.category.category_name }}</p>
   </section>
 
-  <section class="testimonials">
-    <h3>Customer Reviews</h3>
+    <section class="testimonials">
+        <h3>Customer Reviews {% if review_count > 0 %}({{ review_count }}){% endif %}</h3>
 
-    <div class="review">
-        <div class="review-header">
-            <h4>Rahul M.</h4>
-            <span class="stars">★★★★★</span>
+        {% if avg_rating %}
+        <div class="average-rating">
+        <span class="stars">
+            {% for i in "12345" %}
+            {% if forloop.counter <= avg_rating %}★{% else %}☆{% endif %}
+            {% endfor %}
+        </span>
+        <span class="avg-number">{{ avg_rating|floatformat:1 }} out of 5</span>
         </div>
-        <p>"Absolutely love this fragrance. Lasts the entire day and gets so many compliments!"</p>
-    </div>
+        {% endif %}
 
-    <div class="review">
-        <div class="review-header">
-            <h4>Priya S.</h4>
-            <span class="stars">★★★★☆</span>
+        {% for review in reviews %}
+        <div class="review">
+            <div class="review-header">
+                <h4>{{ review.user.full_name }}</h4>
+                <span class="stars">
+                {% for i in "12345" %}
+                    {% if forloop.counter <= review.rating %}★{% else %}☆{% endif %}
+                {% endfor %}
+                </span>
+            </div>
+            <p>{{ review.review }}</p>
+            <p class="review-date">{{ review.created_at|date:"M d, Y" }}</p>
         </div>
-        <p>"Beautiful scent, very elegant. The bottle packaging is also premium quality."</p>
-    </div>
+        {% empty %}
+        <p class="no-reviews">No reviews yet. Be the first to review this product!</p>
+        {% endfor %}
 
-    <div class="review">
-        <div class="review-header">
-            <h4>Arjun K.</h4>
-            <span class="stars">★★★★★</span>
-        </div>
-        <p>"Best perfume I have bought in this price range. Highly recommended!"</p>
-    </div>
-
-</section>
+    </section>
 
   <section class="related-products">
+    <hr />
     <h3>You May Also Like</h3>
     <div class="related-grid">
         {% for related in related_variants %}

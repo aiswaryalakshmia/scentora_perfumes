@@ -7,5 +7,6 @@ urlpatterns=[
     path('users/', views.user_management, name='user_management'),
     path('toggle-user-status/<int:user_id>/', views.toggle_user_status, name='toggle_user_status'),
     path('logout/', views.admin_logout, name='admin_logout'),
+    path('admin-panel/dashboard/chart-data/', views.dashboard_chart_data, name='dashboard_chart_data'),
 
 ]

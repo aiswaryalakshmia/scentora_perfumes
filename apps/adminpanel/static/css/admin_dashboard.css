@@ -188,3 +188,37 @@
   }
 }
 
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.chart-header select {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  color: #eee;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.collections.full-width {
+  width: 100%;
+}
+
+.no-data {
+  color: #666;
+  padding: 12px 0;
+  text-align: center;
+}
+
+td.pending { color: #f0ad4e; }
+td.processing { color: #5bc0de; }
+td.shipped { color: #c9a84c; }
+td.delivered { color: #4caf78; }
+td.cancelled { color: #d9534f; }
+td.return_requested { color: #e67e22; }
+td.returned { color: #999; }
+

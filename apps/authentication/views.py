@@ -14,11 +14,14 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth import logout
 from django.contrib import messages
 from .models import User,OTP
+from .referral_utils import apply_referral_code
 
 @never_cache
 def signup(request):
     if request.user.is_authenticated:
         return redirect('home')
+
+    referral_prefill = request.GET.get('ref', '').strip().upper()
 
     if request.method == 'POST':
 
@@ -161,7 +164,9 @@ def signup(request):
 
         return redirect('verify_otp')
 
-    return render(request, 'signup.html')
+    return render(request, 'signup.html', {
+        'referral_prefill': referral_prefill,
+    })
 
 @never_cache
 def login_view(request):
@@ -292,16 +297,23 @@ def verify_otp(request):
 
             if otp_purpose=='signup':
 
-                user_details=request.session.get('signup_data')
-                #create user
+                user_details=request.session.get('signup_data')                
                 user = User.objects.create_user(
                     username=user_details['email'],
                     full_name=user_details['full_name'],
                     email=user_details['email'],
                     mobile_number=user_details['mobile_number'],
                     password=user_details['password'],
-                    referral_code=user_details['referral']
                 )
+                user.is_verified = True
+                user.save()
+
+                # apply referral code entered by this new user
+                referral_input = user_details.get('referral', '')
+                if referral_input:
+                    ref_success, ref_message = apply_referral_code(user, referral_input)
+                    if ref_success:
+                        messages.success(request, ref_message)
 
                 request.session.pop('signup_data', None)
                 request.session.pop('current_user_email', None)

@@ -1,7 +1,13 @@
+import random
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
 from datetime import timedelta
+
+
+def generate_referral_code(length=8):    
+    chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
+    return ''.join(random.choices(chars, k=length))
 
 class User(AbstractUser):
 
@@ -18,6 +24,7 @@ class User(AbstractUser):
 
     referral_code = models.CharField(
         max_length=20,
+        unique=True,
         blank=True,
         null=True
     )
@@ -27,7 +34,6 @@ class User(AbstractUser):
         blank=True,
         null=True
     )
-
 
     status = models.CharField(
         max_length=10,
@@ -48,8 +54,26 @@ class User(AbstractUser):
 
     REQUIRED_FIELDS = ['username']
 
+    def save(self, *args, **kwargs):
+        if not self.referral_code:
+            code = generate_referral_code()
+            while User.objects.filter(referral_code=code).exists():
+                code = generate_referral_code()
+            self.referral_code = code
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return self.email
+
+class ReferralUsage(models.Model):
+    referrer            = models.ForeignKey(User, on_delete=models.CASCADE, related_name='referrals_made')
+    referred_user        = models.OneToOneField(User, on_delete=models.CASCADE, related_name='referred_by')
+    referral_code_used   = models.CharField(max_length=20)
+    created_at           = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.referrer.full_name} referred {self.referred_user.full_name}"
+
 
 class OTP(models.Model):
 

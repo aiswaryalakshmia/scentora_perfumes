@@ -125,3 +125,41 @@
 .details-btn:hover {
   background-color: #e0b84a;
 }
+
+.item-count-badge {
+  font-size: 0.75rem;
+  color: #999;
+  font-weight: normal;
+  margin-left: 6px;
+}
+
+.no-orders {
+  color: #888;
+  padding: 20px 0;
+  text-align: center;
+}
+
+.no-img {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a1a1a;
+  border-radius: 6px;
+  color: #444;
+}
+
+/* status badge colors matching order_detail.css convention */
+.status-pending { color: #f0ad4e; }
+.status-processing { color: #5bc0de; }
+.status-shipped { color: #c9a84c; }
+.status-delivered { color: #4caf78; }
+.status-cancelled { color: #d9534f; }
+.status-return_requested { color: #e67e22; }
+.status-returned { color: #999; }
+
+.details-btn {
+  text-decoration: none;
+  display: inline-block;
+}

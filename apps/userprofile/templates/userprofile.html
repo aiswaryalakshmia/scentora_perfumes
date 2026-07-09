@@ -15,7 +15,7 @@ profile
   <!-- Main Content -->
   <main class="dashboard-content">
     <h2>Welcome back, {{ current_user.full_name }}</h2>
-    <p class="referral">Referral Code: MCBES</p>
+    <p class="referral">Referral Code: {{ current_user.referral_code }}</p>
 
     <!-- Stats Grid -->
     <div class="stats-grid">
@@ -41,24 +41,39 @@ profile
       </div>
     </div>
 
-    <!-- Recent Orders -->
+   <!-- Recent Orders -->
     <section class="recent-orders">
       <div class="section-header">
         <h3>Recent Orders</h3>
-        <a href="#" class="view-all">View All</a>
+        <a href="{% url 'my_orders' %}" class="view-all">View All</a>
       </div>
 
-      <div class="order-card">
-        <div class="order-image">
-          <img src="{% static 'images/Noir_absolute.svg' %}" alt="Noir Absolute">
+      {% for order in recent_orders %}
+        {% with first_item=order.items.first %}
+        <div class="order-card">
+          <div class="order-image">
+            {% if first_item.product_variant.images.first %}
+              <img src="{{ first_item.product_variant.images.first.image.url }}" alt="{{ first_item.product_variant.product.product_name }}">
+            {% else %}
+              <div class="no-img"><i class="fa-solid fa-image"></i></div>
+            {% endif %}
+          </div>
+          <div class="order-details">
+            <h4>
+              {{ first_item.product_variant.product.product_name }}
+              {% if order.items.count > 1 %}
+                <span class="item-count-badge">+{{ order.items.count|add:"-1" }} more</span>
+              {% endif %}
+            </h4>
+            <p>Order #{{ order.order_number }}</p>
+            <span class="status status-{{ order.order_status }}">{{ order.order_status|capfirst }}</span>
+          </div>
+          <a href="{% url 'order_detail' order.id %}" class="details-btn">Details</a>
         </div>
-        <div class="order-details">
-          <h4>Noir Absolute</h4>
-          <p>Order #SO-29841</p>
-          <span class="status">In Transit</span>
-        </div>
-        <button class="details-btn">Details</button>
-      </div>
+        {% endwith %}
+      {% empty %}
+        <p class="no-orders">You haven't placed any orders yet.</p>
+      {% endfor %}
     </section>
   </main>
 {% endblock %}

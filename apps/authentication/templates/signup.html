@@ -35,7 +35,7 @@
           <input type="text" name="mobile_number" placeholder="Mobile Number">
           <input type="password" name="password" placeholder="Password">
           <input type="password" name="confirm_password" placeholder="Confirm Password">
-          <input type="text" name="referral" placeholder="Referral Code (Optional)">
+          <input type="text" name="referral" placeholder="Referral Code (Optional)" value="{{ referral_prefill }}" style="text-transform:uppercase;">
           <button type="submit">Sign Up</button>
         </form>
         <p class="signin-text">Already have an account? <a href="{% url 'login' %}">Sign In</a></p>

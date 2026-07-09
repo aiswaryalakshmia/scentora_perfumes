@@ -11,6 +11,12 @@ from django.db.models import Q
 from django.contrib.auth import logout
 from django.views.decorators.cache import never_cache
 from apps.authentication.models import User
+from django.db.models import Sum, Count
+from django.db.models.functions import TruncDate, TruncMonth, TruncYear
+from django.http import JsonResponse
+from datetime import timedelta
+from django.utils import timezone
+from apps.orders.models import Order, OrderItem
 
 @never_cache
 def admin_login(request):
@@ -40,7 +46,96 @@ def admin_login(request):
 def admin_dashboard(request):
     if not request.user.is_superuser:
         return redirect('login')
-    return render(request,'admin_dashboard.html')
+
+    all_orders = Order.objects.exclude(order_status='cancelled')
+    total_sales = all_orders.aggregate(total=Sum('final_amount'))['total'] or 0
+    total_orders = all_orders.count()
+    total_customers = User.objects.filter(is_superuser=False).count()
+    revenue = all_orders.filter(payment_status='paid').aggregate(total=Sum('final_amount'))['total'] or 0
+
+    chart_data = get_chart_data('monthly')
+
+    best_products = (
+        OrderItem.objects.filter(order__order_status__in=['delivered', 'shipped', 'processing'])
+        .values('product_variant__product__product_name')
+        .annotate(total_sold=Sum('quantity'), total_revenue=Sum('total'))
+        .order_by('-total_sold')[:10]
+    )
+
+    best_categories = (
+        OrderItem.objects.filter(order__order_status__in=['delivered', 'shipped', 'processing'])
+        .values('product_variant__product__category__category_name')
+        .annotate(total_sold=Sum('quantity'), total_revenue=Sum('total'))
+        .order_by('-total_sold')[:10]
+    )
+
+    recent_orders = Order.objects.select_related('user').order_by('-created_at')[:5]
+
+    context = {
+        'total_sales': total_sales,
+        'total_orders': total_orders,
+        'total_customers': total_customers,
+        'revenue': revenue,
+        'chart_labels': chart_data['labels'],
+        'chart_values': chart_data['values'],
+        'best_products': best_products,
+        'best_categories': best_categories,
+        'recent_orders': recent_orders,
+    }
+    return render(request, 'admin_dashboard.html', context)
+
+
+def get_chart_data(period):
+    today = timezone.now().date()
+
+    if period == 'daily':
+        start = today - timedelta(days=29)
+        qs = (
+            Order.objects.exclude(order_status='cancelled')
+            .filter(created_at__date__gte=start)
+            .annotate(period_group=TruncDate('created_at'))
+            .values('period_group')
+            .annotate(total=Sum('final_amount'))
+            .order_by('period_group')
+        )
+        labels = [row['period_group'].strftime('%b %d') for row in qs]
+
+    elif period == 'yearly':
+        start = today.replace(year=today.year - 4, month=1, day=1)
+        qs = (
+            Order.objects.exclude(order_status='cancelled')
+            .filter(created_at__date__gte=start)
+            .annotate(period_group=TruncYear('created_at'))
+            .values('period_group')
+            .annotate(total=Sum('final_amount'))
+            .order_by('period_group')
+        )
+        labels = [row['period_group'].strftime('%Y') for row in qs]
+
+    else:
+        start = (today.replace(day=1) - timedelta(days=365))
+        qs = (
+            Order.objects.exclude(order_status='cancelled')
+            .filter(created_at__date__gte=start)
+            .annotate(period_group=TruncMonth('created_at'))
+            .values('period_group')
+            .annotate(total=Sum('final_amount'))
+            .order_by('period_group')
+        )
+        labels = [row['period_group'].strftime('%b %Y') for row in qs]
+
+    values = [float(row['total'] or 0) for row in qs]
+    return {'labels': labels, 'values': values}
+
+
+@login_required
+@never_cache
+def dashboard_chart_data(request):
+    if not request.user.is_superuser:
+        return redirect('login')
+    period = request.GET.get('period', 'monthly')
+    data = get_chart_data(period)
+    return JsonResponse(data)
 
 @login_required
 @never_cache

@@ -1,9 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}
-Checkout
-{% endblock %}
+{% block title %}Checkout{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'user/checkout.css' %}">
@@ -13,15 +11,15 @@ Checkout
 
 <div class="checkout-page">
   <div class="checkout-header">
-  <a href="{% url 'cart' %}" class="btn-back-cart">
-    ← Back to Cart
-  </a>
-  <h2 class="checkout-title">Checkout</h2>
-</div>  
+    <a href="{% url 'cart' %}" class="btn-back-cart">← Back to Cart</a>
+    <h2 class="checkout-title">Checkout</h2>
+  </div>
 
-  <form id="checkout-form" method="POST" action="{% url 'place_order' %}">
-    {% csrf_token %}
-    <div class="checkout-container">
+  <div class="checkout-container">
+
+    <!-- LEFT SIDE inside its own form -->
+    <form id="checkout-form" method="POST" action="{% url 'place_order' %}">
+      {% csrf_token %}
       <div class="checkout-left">
 
         <!-- Shipping Address -->
@@ -30,19 +28,16 @@ Checkout
             <h3>Shipping Address</h3>
             <a href="{% url 'add_address' %}?next=checkout" class="add-address">+ Add New Address</a>
           </div>
-
           {% if addresses %}
             <div class="address-list">
               {% for address in addresses %}
               <label class="address-card {% if address == default_address %}selected{% endif %}">
-
                 <input
                   type="radio"
                   name="selected_address"
                   value="{{ address.id }}"
                   {% if address == default_address %}checked{% endif %}
                 >
-
                 <div class="address-info">
                   <div class="address-top">
                     <strong>{{ address.full_name }}</strong>
@@ -56,21 +51,15 @@ Checkout
                   <p>{{ address.country }}</p>
                   <p>📞 {{ address.phone_number }}</p>
                 </div>
-
                 <div class="address-actions">
                   <a href="{% url 'edit_address' address.id %}?next=checkout">Edit</a>
-                  <a href="{% url 'delete_address' address.id %}?next=checkout"
-                    class="delete-address-btn">Delete</a>
+                  <a href="{% url 'delete_address' address.id %}?next=checkout" class="delete-address-btn">Delete</a>
                 </div>
-
               </label>
               {% endfor %}
             </div>
-
           {% else %}
-            <p>No saved addresses.
-              <a href="{% url 'add_address' %}?next=checkout">Add one now</a>
-            </p>
+            <p>No saved addresses. <a href="{% url 'add_address' %}?next=checkout">Add one now</a></p>
           {% endif %}
         </section>
 
@@ -90,7 +79,6 @@ Checkout
             </div>
             <span class="price">Free</span>
           </div>
-
           <div class="delivery-choice {% if delivery_option == 'express' %}active{% endif %}"
               onclick="window.location.href='?delivery_option=express'">
             <div class="delivery-info">
@@ -103,81 +91,158 @@ Checkout
             </div>
             <span class="price">₹25.00</span>
           </div>
-
         </section>
 
         <!-- Payment Method -->
         <section class="payment-method">
           <h3>Payment Method</h3>
           <div class="payment-tabs">
-            <button type="button" class="active" onclick="showPayment('card')">Credit Card</button>
-            <button type="button" onclick="showPayment('upi')">UPI Transfer</button>
+            <button type="button" class="active" onclick="showPayment('razorpay')">Razorpay</button>
             <button type="button" onclick="showPayment('cod')">COD</button>
+            <button type="button" onclick="showPayment('wallet')">Wallet</button>
           </div>
-
-          <input type="hidden" name="payment_method" id="payment_method" value="card">
-
-          <div id="payment-card" class="payment-panel">
-            <input type="text" name="card_number" placeholder="Card Number">
-            <div class="form-row">
-              <input type="text" name="expiry_date" placeholder="Expiry Date (MM/YY)">
-              <input type="text" name="cvv" placeholder="CVV">
-            </div>
+          <input type="hidden" name="payment_method" id="payment_method" value="razorpay">
+          <div id="payment-razorpay" class="payment-panel">
+            <p>You'll be redirected to Razorpay's secure payment page after placing the order.</p>
           </div>
-
-          <div id="payment-upi" class="payment-panel" style="display:none;">
-            <input type="text" name="upi_id" placeholder="Enter UPI ID">
-          </div>
-
           <div id="payment-cod" class="payment-panel" style="display:none;">
             <p>Pay cash on delivery.</p>
+          </div>
+           <div id="payment-wallet" class="payment-panel" style="display:none;">
+            <p>Wallet Balance: <strong>₹{{ wallet_balance }}</strong></p>
+            {% if wallet_balance < final_total %}
+              <p style="color:#d9534f;">Insufficient balance to pay for this order.</p>
+            {% else %}
+              <p>₹{{ final_total }} will be deducted from your wallet.</p>
+            {% endif %}
           </div>
         </section>
 
       </div>
+      <!-- end checkout-left -->
 
-      <!-- Order Summary -->
-      <aside class="order-summary">
-        <h3>Order Summary</h3>
+    </form>
+    <!-- end checkout-form — completely closed before aside -->
 
-        {% for item in cart_items %}
-        <div class="summary-item">
-          {% with item.product_variant.images.first as img %}
-            {% if img %}
-              <img src="{{ img.image.url }}" alt="{{ item.product_variant.product.product_name }}">
-            {% endif %}
-          {% endwith %}
-          <div>
-            <h4>{{ item.product_variant.product.product_name }}</h4>
-            <p>{{ item.product_variant.size }}ml</p>
-            <p>Qty: {{ item.quantity }}</p>
+    <!-- RIGHT SIDE — order summary, coupon forms are all independent here -->
+    <aside class="order-summary">
+      <h3>Order Summary</h3>
+
+      {% for item in cart_items %}
+      <div class="summary-item">
+        {% with item.product_variant.images.first as img %}
+          {% if img %}
+            <img src="{{ img.image.url }}" alt="{{ item.product_variant.product.product_name }}">
+          {% endif %}
+        {% endwith %}
+        <div>
+          <h4>{{ item.product_variant.product.product_name }}</h4>
+          <p>{{ item.product_variant.size }}ml</p>
+          <p>Qty: {{ item.quantity }}</p>
+        </div>
+        <span>₹{{ item.total_price }}</span>
+      </div>
+      {% endfor %}
+
+      <!-- Apply Coupon Section -->
+      <div class="coupon-section">
+        <h4 class="coupon-title">Apply Coupon</h4>
+
+        {% if coupon %}
+          <!-- Coupon already applied -->
+          <div class="coupon-applied-box">
+            <div class="coupon-applied-left">
+              <i class="fa-solid fa-tag"></i>
+              <div>
+                <span class="coupon-applied-code">{{ coupon.coupon_code }}</span>
+                <span class="coupon-applied-savings">You save ₹{{ coupon_discount }}</span>
+              </div>
+            </div>
+            <form method="POST" action="{% url 'remove_coupon' %}">
+              {% csrf_token %}
+              <button type="submit" class="coupon-remove-btn">
+                <i class="fa-solid fa-xmark"></i> Remove
+              </button>
+            </form>
           </div>
-          <span>₹{{ item.total_price }}</span>
-        </div>
-        {% endfor %}
 
-        <div class="promo-code">
-          <input type="text" name="promo_code" placeholder="Promo Code">
-          <button type="button">Apply</button>
-        </div>
+        {% else %}
+          <!-- Coupon input form -->
+          <form method="POST" action="{% url 'apply_coupon' %}" class="coupon-input-row">
+            {% csrf_token %}
+            <input
+              type="text"
+              name="coupon_code"
+              id="coupon-input"
+              placeholder="Enter coupon code"
+              autocomplete="off"
+              list="coupon-suggestions"
+            >
+            <datalist id="coupon-suggestions">
+              {% for c in available_coupons %}
+              <option value="{{ c.coupon_code }}">
+              {% endfor %}
+            </datalist>
+            <button type="submit" class="coupon-apply-btn">Apply</button>
+          </form>
 
-        <div class="summary-totals">
-          <p>Subtotal <span>₹{{ subtotal }}</span></p>
-          <p>Shipping <span>{{ shipping_label }}</span></p>
-          <p>Discount: <span>-₹{{ discount_amount }}</span></p>
-          <hr>
-          <p class="total">Total <span>₹{{ total }}</span></p>
-        </div>
+          <!-- Available coupons list -->
+          {% if available_coupons %}
+          <div class="available-coupons">
+            <p class="available-label">Available Coupons</p>
+            {% for c in available_coupons %}
+            <div class="coupon-card" onclick="applyCouponCode('{{ c.coupon_code }}')">
+              <div class="coupon-card-left">
+                <span class="coupon-card-code">{{ c.coupon_code }}</span>
+                <span class="coupon-card-desc">
+                  {% if c.discount_type == 'percentage' %}
+                    {{ c.discount_value }}% off
+                    {% if c.maximum_redeem %} up to ₹{{ c.maximum_redeem }}{% endif %}
+                  {% else %}
+                    ₹{{ c.discount_value }} off
+                  {% endif %}
+                </span>
+                {% if c.minimum_price > 0 %}
+                <span class="coupon-card-min">Min order ₹{{ c.minimum_price }}</span>
+                {% endif %}
+              </div>
+              <span class="coupon-card-apply">Tap to apply</span>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
 
-        <button type="submit" class="btn-place-order">Place Order</button>
-        <p class="secure-text">🔒 Secure Encrypted Transaction</p>
-      </aside>
-    </div>
-  </form>
+        {% endif %}
+      </div>
+
+      <!-- Order Summary Totals -->
+      <div class="summary-totals">
+        <p>Subtotal <span>₹{{ subtotal }}</span></p>
+        <p>Shipping <span>{{ shipping_label }}</span></p>
+        {% if discount_amount > 0 %}
+        <p>Offer Discount <span style="color:#4caf78;">−₹{{ discount_amount }}</span></p>
+        {% endif %}
+        {% if coupon_discount > 0 %}
+        <p>Coupon ({{ coupon.coupon_code }}) <span style="color:#4caf78;">−₹{{ coupon_discount }}</span></p>
+        {% endif %}
+        <hr>
+        <p class="total">Total <span>₹{{ final_total }}</span></p>
+      </div>
+
+      <!-- Place Order button — submits checkout-form using form attribute -->
+      <button type="submit" form="checkout-form" class="btn-place-order">Place Order</button>
+      <p class="secure-text">🔒 Secure Encrypted Transaction</p>
+
+    </aside>
+    <!-- end order-summary -->
+
+  </div>
+  <!-- end checkout-container -->
+
 </div>
+<!-- end checkout-page -->
 
 <script>
-  // Payment tabs
   function showPayment(type) {
     document.querySelectorAll('.payment-panel').forEach(p => p.style.display = 'none');
     document.querySelectorAll('.payment-tabs button').forEach(b => b.classList.remove('active'));
@@ -186,7 +251,14 @@ Checkout
     event.target.classList.add('active');
   }
 
-  // Delete address confirmation
+  function applyCouponCode(code) {
+    const input = document.getElementById('coupon-input');
+    if (input) {
+      input.value = code;
+      input.focus();
+    }
+  }
+
   document.querySelectorAll('.delete-address-btn').forEach(button => {
     button.addEventListener('click', function(e) {
       e.preventDefault();
@@ -205,6 +277,5 @@ Checkout
       });
     });
   });
-
 </script>
 {% endblock %}

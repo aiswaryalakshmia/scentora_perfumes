@@ -518,3 +518,47 @@
   background-color: #2196f3;
   color: #fff;
 }
+
+.star-rating {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.star-rating input {
+  display: none;
+}
+
+.star-rating label {
+  font-size: 1.8rem;
+  color: #444;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.star-rating input:checked ~ label,
+.star-rating label:hover,
+.star-rating label:hover ~ label {
+  color: #c9a84c;
+}
+
+.btn-write-review {
+  background: transparent;
+  border: 1px solid #c9a84c;
+  color: #c9a84c;
+  padding: 6px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.btn-write-review:hover {
+  background: #c9a84c;
+  color: #000;
+}
+
+.review-submitted-badge {
+  color: #4caf78;
+  font-size: 0.85rem;
+}

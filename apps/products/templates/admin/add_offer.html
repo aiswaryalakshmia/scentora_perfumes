@@ -1,0 +1,163 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}Create Offer{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'admin/offer_management.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="offer-form-page">
+
+  <div class="form-header">
+    <h1>Create Offer</h1>
+    <a href="{% url 'offer_management' %}" class="back-link">
+      <i class="fa-solid fa-arrow-left"></i> Back to Offers
+    </a>
+  </div>
+
+  <form method="POST" id="offer-form" novalidate>
+    {% csrf_token %}
+
+    <div class="form-layout">
+
+      <!-- Left Column -->
+      <div>
+
+        <!-- Offer Details -->
+        <div class="form-card">
+          <h2>Offer Details</h2>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="offer_name">Offer Name</label>
+              <input type="text" id="offer_name" name="offer_name"
+                     placeholder="e.g. Summer Essence 2024"
+                     value="{{ request.POST.offer_name }}" required>
+            </div>
+            <div class="form-group">
+              <label for="discount_percentage">Discount Percentage (%)</label>
+              <input type="number" id="discount_percentage" name="discount_percentage"
+                     placeholder="20" min="1" max="100" step="0.01"
+                     value="{{ request.POST.discount_percentage }}" required>
+            </div>
+          </div>
+        </div>
+
+        <!-- Offer Type -->
+        <div class="form-card">
+          <h2>Offer Type</h2>
+          <div class="offer-type-grid">
+            <div class="type-card" id="card-product">
+              <input type="radio" name="offer_type" id="type-product"
+                     value="product"
+                     {% if request.POST.offer_type == 'product' or not request.POST.offer_type %}checked{% endif %}>
+              <label for="type-product">Product Offer</label>
+            </div>
+            <div class="type-card" id="card-category">
+              <input type="radio" name="offer_type" id="type-category"
+                     value="category"
+                     {% if request.POST.offer_type == 'category' %}checked{% endif %}>
+              <label for="type-category">Category Offer</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Product / Category Selection -->
+        <div class="form-card">
+          <h2 id="selection-title">Product Selection</h2>
+
+          <div class="form-group" id="product-select-group">
+            <label for="product_id">Select Product</label>
+            <select name="product_id" id="product_id">
+              <option value="">Select a product...</option>
+              {% for product in products %}
+              <option value="{{ product.id }}"
+                {% if request.POST.product_id == product.id|stringformat:"s" %}selected{% endif %}>
+                {{ product.product_name }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group" id="category-select-group" style="display:none;">
+            <label for="category_id">Select Category</label>
+            <select name="category_id" id="category_id">
+              <option value="">Select a category...</option>
+              {% for category in categories %}
+              <option value="{{ category.id }}"
+                {% if request.POST.category_id == category.id|stringformat:"s" %}selected{% endif %}>
+                {{ category.category_name }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Sidebar -->
+      <div>
+        <div class="sidebar-card">
+          <h2>Offer Scheduling</h2>
+
+          <div class="form-group">
+            <label for="start_date">Start Date</label>
+            <input type="date" id="start_date" name="start_date"
+                   value="{{ request.POST.start_date }}" required>
+          </div>
+
+          <div class="form-group">
+            <label for="end_date">End Date</label>
+            <input type="date" id="end_date" name="end_date"
+                   value="{{ request.POST.end_date }}" required>
+          </div>
+
+          <button type="submit" class="btn-create">Create Offer</button>
+          <a href="{% url 'offer_management' %}" class="btn-cancel">Cancel</a>
+        </div>
+      </div>
+
+    </div>
+  </form>
+
+</div>
+
+<script>
+  // Type card highlight
+  function updateTypeCards() {
+    document.querySelectorAll('.type-card').forEach(card => card.classList.remove('selected'));
+    const checked = document.querySelector('input[name="offer_type"]:checked');
+    if (checked) checked.closest('.type-card').classList.add('selected');
+  }
+
+  // Show/hide product or category dropdown
+  function toggleSelectionPanel() {
+    const type = document.querySelector('input[name="offer_type"]:checked')?.value;
+    const productGroup  = document.getElementById('product-select-group');
+    const categoryGroup = document.getElementById('category-select-group');
+    const title         = document.getElementById('selection-title');
+
+    if (type === 'category') {
+      productGroup.style.display  = 'none';
+      categoryGroup.style.display = 'block';
+      title.textContent = 'Category Selection';
+    } else {
+      productGroup.style.display  = 'block';
+      categoryGroup.style.display = 'none';
+      title.textContent = 'Product Selection';
+    }
+  }
+
+  document.querySelectorAll('input[name="offer_type"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+      updateTypeCards();
+      toggleSelectionPanel();
+    });
+  });
+
+  // Init on load
+  updateTypeCards();
+  toggleSelectionPanel();
+</script>
+{% endblock %}

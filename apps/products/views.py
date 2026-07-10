@@ -1102,7 +1102,8 @@ def add_offer(request):
 
             if Offer.objects.filter(product=product, status='active').exists():
                 messages.error(request, f"{product.product_name} already has an active offer.")
-                return redirect('add_offer')
+                return redirect('add_offer')           
+            
 
             offer.product = product
 

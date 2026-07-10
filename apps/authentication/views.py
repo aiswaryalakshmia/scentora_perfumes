@@ -25,115 +25,154 @@ def signup(request):
 
     if request.method == 'POST':
 
-        full_name = request.POST.get('full_name')
-        email = request.POST.get('email')
-        mobile_number = request.POST.get('mobile_number')
-        password = request.POST.get('password')
-        confirm_password = request.POST.get('confirm_password')
-        referral = request.POST.get('referral')
+        full_name = request.POST.get('full_name', '').strip()
+        full_name = " ".join(full_name.split())
+        email = request.POST.get('email', '').strip().lower()
+        mobile_number = request.POST.get('mobile_number', '').strip()
+        password = request.POST.get('password', '')
+        confirm_password = request.POST.get('confirm_password', '')
+        referral = request.POST.get('referral', '').strip().upper()
+        base_context = {'referral_prefill': referral_prefill}
 
         #full name empty check
         if len(full_name)==0:
-            return render(request,'signup.html', {
+            return render(request,'signup.html', {**base_context,
                 'error':'Full name is required'
+            })
+
+        #letters and spaces only check
+        if not re.match(r'^[A-Za-z ]+$', full_name):
+            return render(request, 'signup.html', {**base_context,
+                'error': 'Full name can contain only letters'
             })
 
         #minimum length check
         if len(full_name) < 3:
-            return render(request, 'signup.html', {
+            return render(request, 'signup.html', {**base_context,
                 'error': 'Full name must contain at least 3 characters'
             })
 
+        #maximum length check
+        if len(full_name) > 150:
+            return render(request, 'signup.html', {**base_context,
+                'error': 'Full name cannot exceed 150 characters'
+            })
+
+
         #email empty check
         if len(email)==0:
-            return render(request,'signup.html', {
+            return render(request,'signup.html', {**base_context,
                 'error':'Email is required'
+            })
+
+        #email maximum length check
+        if len(email) > 254:
+            return render(request, 'signup.html', {**base_context,
+                'error': 'Email address is too long'
             })
 
         email_pattern = r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
 
         #regex validation
         if not re.match(email_pattern, email):
-            return render(request, 'signup.html', {
+            return render(request, 'signup.html', {**base_context,
                 'error': 'Enter a valid email address'
             })
 
         #Duplicate email check
         if User.objects.filter(email=email).exists():
-            return render(request, 'signup.html', {
+            return render(request, 'signup.html', {**base_context,
                 'error': 'Email already exists'
             })
 
         #mobile number empty check
         if len(mobile_number)==0:
-            return render(request,'signup.html', {
+            return render(request,'signup.html', {**base_context,
                 'error':'Mobile number is required'
             })
 
         #digits only check
         if not mobile_number.isdigit():
-            return render(request, 'signup.html', {
+            return render(request, 'signup.html', {**base_context,
                 'error': 'Mobile number must contain only digits'
             })
 
         #mobile number length check
         if len(mobile_number) != 10:
-            return render(request, 'signup.html', {
+            return render(request, 'signup.html', {**base_context,
                 'error': 'Mobile number must be 10 digits'
             })
 
         #Duplicate mobile number check
         if User.objects.filter(mobile_number=mobile_number).exists():
-            return render(request, 'signup.html', {
+            return render(request, 'signup.html', {**base_context,
                 'error': 'Mobile number already exists'
+            })
+        
+        #mobile number starting digit check
+        if mobile_number[0] not in '6789':
+            return render(request, 'signup.html', {**base_context,
+                'error': 'Enter a valid mobile number'
             })
 
         #password empty check
         if len(password)==0:
-            return render(request,'signup.html', {
+            return render(request,'signup.html', {**base_context,
                 'error':'Password is required'
             })
 
         #password length check
         if len(password) < 8:
-            return render(request, 'signup.html', {
+            return render(request, 'signup.html', {**base_context,
                 'error': 'Password must be at least 8 characters'
+            })
+        
+        #password maximum length check
+        if len(password) > 128:
+            return render(request, 'signup.html', {**base_context,
+                'error': 'Password cannot exceed 128 characters'
             })
 
         #uppercase check
         if not re.search(r'[A-Z]', password):
-            return render(request, 'signup.html', {
+            return render(request, 'signup.html', {**base_context,
                 'error': 'Password must contain at least one uppercase letter'
             })
 
         #lowercase check
         if not re.search(r'[a-z]', password):
-            return render(request, 'signup.html', {
+            return render(request, 'signup.html', {**base_context,
                 'error': 'Password must contain at least one lowercase letter'
             })
 
         #number check
         if not re.search(r'[0-9]', password):
-            return render(request, 'signup.html', {
+            return render(request, 'signup.html', {**base_context,
                 'error': 'Password must contain at least one number'
             })
 
         #special character check
         if not re.search(r'[@$!%*?&]', password):
-            return render(request, 'signup.html', {
+            return render(request, 'signup.html', {**base_context,
                 'error': 'Password must contain at least one special character'
             })
 
         #confirm password empty check
         if len(confirm_password)==0:
-            return render(request,'signup.html', {
+            return render(request,'signup.html', {**base_context,
                 'error':'Password is required'
             })
 
         #password match check
         if password != confirm_password:
-            return render(request, 'signup.html', {
+            return render(request, 'signup.html', {**base_context,
                 'error': 'Passwords do not match'
+            })
+        
+        #referral code length check
+        if referral and len(referral) > 20:
+            return render(request, 'signup.html', {**base_context,
+                'error': 'Referral code is invalid'
             })
 
         request.session['signup_data'] = {

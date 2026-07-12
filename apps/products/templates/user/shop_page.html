@@ -156,15 +156,15 @@ Shop
             <p>{{ variant.size }}ml</p>
             {% if variant.discount_price %}
                 <span class="original-price">
-                    <s>₹{{ variant.price }}</s>
+                    <s>₹{{ variant.price|floatformat:2 }}</s>
                 </span>
 
                 <span class="discount-price">
-                    ₹{{ variant.final_price }}
+                    ₹{{ variant.final_price|floatformat:2 }}
                 </span>
             {% else %}
                 <span class="price">
-                    ₹{{ variant.price }}
+                    ₹{{ variant.price|floatformat:2 }}
                 </span>
             {% endif %}
           </a>

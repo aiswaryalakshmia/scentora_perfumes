@@ -263,38 +263,39 @@ def forgot_password(request):
 
     if request.method == 'POST':
 
-        email = request.POST.get('email')
+        email = request.POST.get('email', '').strip().lower()
 
-        try:
+        if not email:
+            return render(request, 'forgot_password.html', {
+                'error': 'Email is required'
+            })
 
-            otp = str(random.randint(100000, 999999))
+        if not User.objects.filter(email=email).exists():
+            return render(request, 'forgot_password.html', {
+                'error': 'No account found with this email address'
+            })
 
-            OTP.objects.create(
-                email=email,
-                otp_code=otp
-            )
+        otp = str(random.randint(100000, 999999))
 
-            send_mail(
-                'Scentora Password Reset OTP',
-                f'Your OTP is {otp}',
-                settings.EMAIL_HOST_USER,
-                [email],
-                fail_silently=False,
-            )
+        OTP.objects.create(
+            email=email,
+            otp_code=otp
+        )
 
-            request.session['current_user_email'] = email
-            request.session['otp_purpose'] = 'forgotp'
+        send_mail(
+            'Scentora Password Reset OTP',
+            f'Your OTP is {otp}',
+            settings.EMAIL_HOST_USER,
+            [email],
+            fail_silently=False,
+        )
 
-            return redirect('verify_otp')
+        request.session['current_user_email'] = email
+        request.session['otp_purpose'] = 'forgotp'
 
-        except User.DoesNotExist:
+        return redirect('verify_otp')
 
-            print('User does not exist')
-
-    return render(
-        request,
-        'forgot_password.html'
-    )
+    return render(request, 'forgot_password.html')
 
 @never_cache
 def verify_otp(request):

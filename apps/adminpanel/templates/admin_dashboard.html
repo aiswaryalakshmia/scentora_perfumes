@@ -18,7 +18,7 @@ Admin Dashboard
         <div class="cards">
           <div class="card">
             <p class="label">Total Sales</p>
-            <h4>₹{{ total_sales }}</h4>
+            <h4>₹{{ total_sales|floatformat:2 }}</h4>
           </div>
           <div class="card">
             <p class="label">Total Orders</p>
@@ -30,7 +30,7 @@ Admin Dashboard
           </div>
           <div class="card">
             <p class="label">Revenue</p>
-            <h4>₹{{ revenue }}</h4>
+            <h4>₹{{ revenue|floatformat:2 }}</h4>
           </div>
         </div>
       </section>
@@ -96,7 +96,7 @@ Admin Dashboard
             <tr>
               <td>#{{ order.order_number }}</td>
               <td>{{ order.user.full_name }}</td>
-              <td>₹{{ order.final_amount }}</td>
+              <td>₹{{ order.final_amount|floatformat:2 }}</td>
               <td class="{{ order.order_status }}">{{ order.order_status|capfirst }}</td>
               <td>{{ order.created_at|date:"M d, Y" }}</td>
             </tr>

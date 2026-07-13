@@ -1,24 +1,19 @@
 from django import forms
 from .models import Category, Product, ProductVariant
-
+import re
 
 class CategoryForm(forms.ModelForm):
 
     class Meta:
         model = Category
-        fields = ['category_name', 'description', 'image']
+        fields = ['category_name', 'description']
 
         widgets = {
             'category_name': forms.TextInput(
-                attrs={
-                    'placeholder': 'Enter category name'
-                }
+                attrs={'placeholder': 'Enter category name'}
             ),
             'description': forms.Textarea(
-                attrs={
-                    'rows': 4,
-                    'placeholder': 'Enter description'
-                }
+                attrs={'rows': 4, 'placeholder': 'Enter description'}
             ),
         }
 
@@ -53,16 +48,6 @@ class CategoryForm(forms.ModelForm):
             raise forms.ValidationError("Description cannot exceed 500 characters.")
 
         return description
-
-    def clean_image(self):
-        image = self.cleaned_data.get('image')
-
-        if not image:
-            raise forms.ValidationError("Category image is required.")
-
-        return image
-
-
 class ProductForm(forms.ModelForm):
 
     class Meta:
@@ -92,6 +77,9 @@ class ProductForm(forms.ModelForm):
             raise forms.ValidationError("Product name must be at least 3 characters.")
         if len(product_name) > 200:
             raise forms.ValidationError("Product name cannot exceed 200 characters.")
+        if not re.match(r'^[A-Za-z0-9]+$', product_name):
+            raise forms.ValidationError("Product name can only contain letters and numbers.")
+
 
         existing_product = Product.objects.filter(
             product_name__iexact=product_name
@@ -164,3 +152,18 @@ class ProductVariantForm(forms.ModelForm):
             raise forms.ValidationError("Stock cannot exceed 10,000.")
 
         return stock
+    
+    def clean_discount_price(self):
+        discount_price = self.cleaned_data.get('discount_price')
+
+        if discount_price is None:
+            return discount_price
+
+        if discount_price < 0:
+            raise forms.ValidationError("Discount price cannot be negative.")
+
+        price = self.cleaned_data.get('price')
+        if price is not None and discount_price >= price:
+            raise forms.ValidationError("Discount price must be less than the actual price.")
+
+        return discount_price

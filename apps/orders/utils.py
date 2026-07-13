@@ -1,6 +1,6 @@
 from decimal import Decimal
 from django.utils import timezone
-from .models import Coupon, CouponUsage
+from .models import Coupon, CouponUsage, Order
 
 
 def validate_coupon(code, user, cart_total):    
@@ -34,3 +34,30 @@ def validate_coupon(code, user, cart_total):
     # If all checks passed
     discount = coupon.calculate_discount(cart_total)
     return coupon, discount, None
+
+def release_abandoned_razorpay_orders(user):
+    
+    abandoned_orders = Order.objects.filter(
+        user=user,
+        payment_method='razorpay',
+        payment_status='pending',
+        order_status='pending',
+    )
+
+    for order in abandoned_orders:
+        # restore stock
+        for item in order.items.select_related('product_variant').all():
+            item.product_variant.stock += item.quantity
+            item.product_variant.save()
+
+        # roll back coupon usage if one was applied
+        if order.coupon:
+            CouponUsage.objects.filter(coupon=order.coupon, user=order.user).delete()
+            order.coupon.used_count = max(0, order.coupon.used_count - 1)
+            order.coupon.save()
+
+        order.order_status = 'cancelled'
+        order.save()
+
+        if hasattr(order, 'payment_detail'):
+            order.payment_detail.mark_failed()

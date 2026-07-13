@@ -144,7 +144,7 @@ def signup(request):
 
         send_mail(
             'Scentora Signup Verification',
-            f'Your OTP is {otp}',
+            f'Your OTP is {otp}. It will be valid for 2 minutes.',
             settings.EMAIL_HOST_USER,
             [email],
             fail_silently=False,
@@ -236,7 +236,7 @@ def forgot_password(request):
 
         send_mail(
             'Scentora Password Reset OTP',
-            f'Your OTP is {otp}',
+            f'Your OTP is {otp}. It will be valid for 2 minutes.',
             settings.EMAIL_HOST_USER,
             [email],
             fail_silently=False,
@@ -439,7 +439,7 @@ def resend_otp(request):
 
         send_mail(
             'Scentora OTP Verification',
-            f'Your new OTP is {otp}',
+            f'Your OTP is {otp}. It will be valid for 2 minutes.',
             settings.EMAIL_HOST_USER,
             [email],
             fail_silently=False,

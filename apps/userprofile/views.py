@@ -390,7 +390,7 @@ def edit_profile(request):
 
             send_mail(
                 'Scentora Email Change OTP',
-                f'Your OTP is {otp}',
+                f'Your OTP is {otp}. It will be valid for 2 minutes.',
                 settings.EMAIL_HOST_USER,
                 [email],
                 fail_silently=False,
@@ -442,7 +442,7 @@ def edit_profile(request):
 
             send_mail(
                 'Scentora Password Change OTP',
-                f'Your OTP is {otp}',
+                f'Your OTP is {otp}. It will be valid for 2 minutes.',
                 settings.EMAIL_HOST_USER,
                 [user.email],
                 fail_silently=False,

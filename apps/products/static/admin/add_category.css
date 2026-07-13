@@ -124,3 +124,36 @@
     justify-content: center;
   }
 }
+
+.error-message {
+  color: #e74c3c;
+  font-size: 13px;
+  margin-top: -10px;
+  margin-bottom: 15px;
+}
+
+.error-message ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+#current-category-image {
+  width: 150px;
+  height: 150px;
+  position: relative;
+  margin-bottom: 15px;
+}
+
+#current-category-image .variant-image {
+  width: 150px;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+#current-category-image .delete-image-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+}

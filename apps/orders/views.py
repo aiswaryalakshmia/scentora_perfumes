@@ -35,6 +35,7 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from django.http import HttpResponse
+from .utils import release_abandoned_razorpay_orders
 
 
 SHIPPING_CHARGES = {
@@ -66,6 +67,9 @@ def handle_payment(payment_method, order):
 @never_cache
 def checkout(request):
     user = request.user
+
+    # clean up any abandoned Razorpay orders before showing checkout
+    release_abandoned_razorpay_orders(user)
 
     cart, _ = Cart.objects.get_or_create(user=user)
 
@@ -135,16 +139,28 @@ def checkout(request):
     total = subtotal + shipping_charge - discount_amount
 
     coupon_code     = request.session.get('coupon_code')
-    coupon_discount = Decimal(request.session.get('coupon_discount', '0'))
+    coupon_discount = Decimal('0')
     coupon          = None
 
-    if coupon_code:
-        try:
-            coupon = Coupon.objects.get(coupon_code=coupon_code)
-        except Coupon.DoesNotExist:
+    if coupon_code:        
+        cart_total_for_coupon = subtotal - discount_amount
+
+        revalidated_coupon, revalidated_discount, coupon_error = validate_coupon(
+            coupon_code, request.user, cart_total_for_coupon
+        )
+
+        if coupon_error:
+            # coupon no longer valid
             request.session.pop('coupon_code', None)
             request.session.pop('coupon_discount', None)
+            messages.warning(request, f"Your coupon was removed: {coupon_error}")
+            coupon = None
             coupon_discount = Decimal('0')
+        else:
+            coupon = revalidated_coupon
+            coupon_discount = revalidated_discount
+            # keep session in sync in case the discount amount changed
+            request.session['coupon_discount'] = str(coupon_discount)
 
     final_total = total - coupon_discount
 
@@ -189,6 +205,9 @@ def checkout(request):
 def place_order(request):
     if request.method == 'POST':
         user = request.user
+
+        # clean up any abandoned Razorpay orders before placing a new one
+        release_abandoned_razorpay_orders(user)
 
         address_id = request.POST.get('selected_address')
         if not address_id:
@@ -285,37 +304,39 @@ def place_order(request):
                 )
 
                 # After order is created, handle coupon
-                coupon_code     = request.session.get('coupon_code')
-                coupon_discount = Decimal(request.session.get('coupon_discount', '0'))
+                coupon_code = request.session.get('coupon_code')
 
-                if coupon_code and coupon_discount > 0:
-                    try:
-                        coupon = Coupon.objects.get(coupon_code=coupon_code)
+                if coupon_code:
+                    # re-check against the actual cart total being charged right now
+                    cart_total_for_coupon = total_amount - discount_amount
 
-                        # Attach coupon to order
-                        order.coupon = coupon
-                        order.coupon_discount = coupon_discount
-                        order.final_amount = order.final_amount - coupon_discount
+                    revalidated_coupon, revalidated_discount, coupon_error = validate_coupon(
+                        coupon_code, user, cart_total_for_coupon
+                    )
+
+                    if coupon_error:
+                        # Coupon no longer valid                        
+                        request.session.pop('coupon_code', None)
+                        request.session.pop('coupon_discount', None)
+                        messages.warning(request, f"Your coupon could not be applied: {coupon_error}")
+                    else:
+                        order.coupon  = revalidated_coupon
+                        order.coupon_discount = revalidated_discount
+                        order.final_amount  = order.final_amount - revalidated_discount
                         order.save()
 
-                        # Record usage — prevents user from using again
                         CouponUsage.objects.create(
-                            coupon=coupon,
+                            coupon=revalidated_coupon,
                             user=user,
                             order=order,
                         )
 
-                        # Increment global used count
-                        coupon.used_count += 1
-                        coupon.save()
+                        revalidated_coupon.used_count += 1
+                        revalidated_coupon.save()
 
-                        # Clear from session
                         if payment_method == 'cod':
                             request.session.pop('coupon_code', None)
                             request.session.pop('coupon_discount', None)
-
-                    except Coupon.DoesNotExist:
-                        pass
 
                 for item in cart_items:
                     OrderItem.objects.create(
@@ -851,6 +872,10 @@ def add_coupon(request):
 
         if minimum_price_num < 0:
             messages.error(request, "Minimum order amount cannot be negative.")
+            return redirect('add_coupon')        
+        
+        if discount_type == 'flat' and minimum_price_num <= discount_value_num:
+            messages.error(request, "Minimum order amount must be greater than the flat discount value.")
             return redirect('add_coupon')
 
         # Maximum redeem
@@ -949,6 +974,10 @@ def edit_coupon(request, coupon_id):
 
         if minimum_price_num < 0:
             messages.error(request, "Minimum order amount cannot be negative.")
+            return redirect('edit_coupon', coupon_id=coupon.id)
+        
+        if coupon.discount_type == 'flat' and minimum_price_num <= discount_value_num:
+            messages.error(request, "Minimum order amount must be greater than the flat discount value.")
             return redirect('edit_coupon', coupon_id=coupon.id)
 
         maximum_redeem_num = None

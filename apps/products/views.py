@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.core.files.base import ContentFile
+from django.urls import reverse
 from apps.common.decorators import admin_required
 from .models import Category,Product,ProductVariant,VariantImage,Cart,CartItem,Wishlist
 from .forms import CategoryForm,ProductForm, ProductVariantForm
@@ -45,50 +46,85 @@ def category_management(request):
 @admin_required
 def add_category(request):
 
-    # If user submitted form
     if request.method == 'POST':
-        form = CategoryForm(request.POST,request.FILES)
+        form = CategoryForm(request.POST)
 
         if form.is_valid():
-            form.save()   # Save the data to database
-            messages.success(
-                request,
-                "Category added successfully!"
-            )
+            category = form.save(commit=False)
 
+            cropped_image = request.POST.get('cropped_image')
+
+            if not cropped_image:
+                messages.error(request, "Category image is required.")
+                return render(request, 'admin/add_category.html', {'form': form})
+
+            try:
+                images = json.loads(cropped_image)
+                if not images:
+                    raise ValueError("No image data")
+
+                format_data, imgstr = images[0].split(";base64,")
+                ext = format_data.split("/")[-1]
+                category.image = ContentFile(
+                    base64.b64decode(imgstr),
+                    name=f"category_{form.cleaned_data['category_name']}.{ext}"
+                )
+            except Exception:
+                messages.error(request, "Error while processing image.")
+                return render(request, 'admin/add_category.html', {'form': form})
+
+            category.save()
+            messages.success(request, "Category added successfully!")
             return redirect('category_management')
 
-    # If user just opened page
     else:
         form = CategoryForm()
 
     return render(request, 'admin/add_category.html', {'form': form})
 
 @admin_required
-def edit_category(request,category_id):
-    category = get_object_or_404(
-        Category,
-        id=category_id
-    )
+def edit_category(request, category_id):
+    category = get_object_or_404(Category, id=category_id)
 
     if request.method == 'POST':
-        form=CategoryForm(request.POST,request.FILES,instance=category)
+        form = CategoryForm(request.POST, instance=category)
 
         if form.is_valid():
-            form.save()
+            category = form.save(commit=False)
 
-            messages.success(request,"Category updated successfully!")
+            cropped_image = request.POST.get('cropped_image')
+
+            if cropped_image:
+                try:
+                    images = json.loads(cropped_image)
+                    if images:
+                        format_data, imgstr = images[0].split(";base64,")
+                        ext = format_data.split("/")[-1]
+                        category.image = ContentFile(
+                            base64.b64decode(imgstr),
+                            name=f"category_{category.id}.{ext}"
+                        )
+                except Exception:
+                    messages.error(request, "Error while processing image.")
+                    return render(request, 'admin/edit_category.html', {'form': form, 'category': category})
+
+            elif request.POST.get('image-clear') == 'on':
+                category.image.delete(save=False)
+                category.image = None
+
+            category.save()
+            messages.success(request, "Category updated successfully!")
             return redirect('category_management')
 
     else:
-        form=CategoryForm(instance=category)
+        form = CategoryForm(instance=category)
 
     return render(
         request,
         'admin/edit_category.html',
         {
-            'form':form,
-            'category':category
+            'form': form,
+            'category': category
         }
     )
 
@@ -390,39 +426,54 @@ def update_variant(request, variant_id):
             instance=variant
         )
 
-        if form.is_valid():
+        edit_redirect = f"{reverse('edit_product', args=[variant.product.id])}?editing={variant.id}"
 
-            variant = form.save()
+        if form.is_valid():
 
             # Cropped images from Cropper.js
             cropped_images = request.POST.get("cropped_images")
 
+            new_images = []
             if cropped_images:
+                try:
+                    new_images = json.loads(cropped_images)
+                except Exception:
+                    messages.error(
+                        request,
+                        "Invalid image data."
+                    )
+                    return redirect(edit_redirect)
+
+            existing_count = variant.images.count()
+
+            if existing_count + len(new_images) < 3:
+                messages.error(
+                    request,
+                    "A variant must have at least 3 images."
+                )
+                return redirect(edit_redirect)
+
+            variant = form.save()
+
+            for index, image_data in enumerate(new_images):
 
                 try:
+                    format_data, imgstr = image_data.split(";base64,")
 
-                    images = json.loads(cropped_images)
+                    ext = format_data.split("/")[-1]
 
-                    for index, image_data in enumerate(images):
+                    image_file = ContentFile(
+                        base64.b64decode(imgstr),
+                        name=f"variant_{variant.id}_{index}.{ext}"
+                    )
 
-                        format_data, imgstr = image_data.split(";base64,")
-
-                        ext = format_data.split("/")[-1]
-
-                        image_file = ContentFile(
-                            base64.b64decode(imgstr),
-                            name=f"variant_{variant.id}_{index}.{ext}"
-                        )
-
-                        VariantImage.objects.create(
-                            variant=variant,
-                            image=image_file
-                        )
+                    VariantImage.objects.create(
+                        variant=variant,
+                        image=image_file
+                    )
 
                 except Exception as e:
-
                     print("Crop image error:", e)
-
                     messages.error(
                         request,
                         "Error while processing cropped images."
@@ -437,20 +488,14 @@ def update_variant(request, variant_id):
                         error["message"]
                     )
 
-            return redirect(
-                "edit_product",
-                product_id=variant.product.id
-            )
+            return redirect(edit_redirect)
 
         messages.success(
             request,
             "Variant updated successfully."
         )
 
-    return redirect(
-        "edit_product",
-        product_id=variant.product.id
-    )
+    return redirect(edit_redirect)
 
 @admin_required
 def toggle_variant_status(request, variant_id):
@@ -473,7 +518,9 @@ def delete_variant_image(request, image_id):
         id=image_id
     )
 
-    product_id = image.variant.product.id
+    variant = image.variant
+    product_id = variant.product.id
+    variant_id = variant.id
 
     image.delete()
 
@@ -483,8 +530,7 @@ def delete_variant_image(request, image_id):
     )
 
     return redirect(
-        "edit_product",
-        product_id=product_id
+        f"{reverse('edit_product', args=[product_id])}?editing={variant_id}"
     )
 
 @admin_required

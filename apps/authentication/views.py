@@ -15,6 +15,7 @@ from django.contrib.auth import logout
 from django.contrib import messages
 from .models import User,OTP
 from .referral_utils import apply_referral_code
+from .validators import validate_password
 
 @never_cache
 def signup(request):
@@ -114,60 +115,11 @@ def signup(request):
             return render(request, 'signup.html', {**base_context,
                 'error': 'Enter a valid mobile number'
             })
-
-        #password empty check
-        if len(password)==0:
-            return render(request,'signup.html', {**base_context,
-                'error':'Password is required'
-            })
-
-        #password length check
-        if len(password) < 8:
-            return render(request, 'signup.html', {**base_context,
-                'error': 'Password must be at least 8 characters'
-            })
         
-        #password maximum length check
-        if len(password) > 128:
-            return render(request, 'signup.html', {**base_context,
-                'error': 'Password cannot exceed 128 characters'
-            })
-
-        #uppercase check
-        if not re.search(r'[A-Z]', password):
-            return render(request, 'signup.html', {**base_context,
-                'error': 'Password must contain at least one uppercase letter'
-            })
-
-        #lowercase check
-        if not re.search(r'[a-z]', password):
-            return render(request, 'signup.html', {**base_context,
-                'error': 'Password must contain at least one lowercase letter'
-            })
-
-        #number check
-        if not re.search(r'[0-9]', password):
-            return render(request, 'signup.html', {**base_context,
-                'error': 'Password must contain at least one number'
-            })
-
-        #special character check
-        if not re.search(r'[@$!%*?&]', password):
-            return render(request, 'signup.html', {**base_context,
-                'error': 'Password must contain at least one special character'
-            })
-
-        #confirm password empty check
-        if len(confirm_password)==0:
-            return render(request,'signup.html', {**base_context,
-                'error':'Password is required'
-            })
-
-        #password match check
-        if password != confirm_password:
-            return render(request, 'signup.html', {**base_context,
-                'error': 'Passwords do not match'
-            })
+        #password validation
+        password_error = validate_password(password, confirm_password)
+        if password_error:
+            return render(request, 'signup.html', {**base_context, 'error': password_error})
         
         #referral code length check
         if referral and len(referral) > 20:
@@ -326,9 +278,13 @@ def verify_otp(request):
 
             # check expiry
             if timezone.now() > otp_obj.expires_at:
-
+                latest_otp = OTP.objects.filter(email=email, is_used=False).order_by('-created_at').first()
+                expires_at_timestamp = None
+                if latest_otp:
+                    expires_at_timestamp = int(latest_otp.expires_at.timestamp() * 1000)
                 return render(request, 'verify_otp.html', {
-                    'error': 'OTP expired'
+                    'error': 'OTP expired',
+                    'expires_at_timestamp': expires_at_timestamp,
                 })
 
             # mark OTP used
@@ -397,11 +353,23 @@ def verify_otp(request):
                 return redirect('reset_password')
 
         except OTP.DoesNotExist:
+            latest_otp = OTP.objects.filter(email=email, is_used=False).order_by('-created_at').first()
+            expires_at_timestamp = None
+            if latest_otp:
+                expires_at_timestamp = int(latest_otp.expires_at.timestamp() * 1000)
             return render(request, 'verify_otp.html', {
-                'error': 'Invalid OTP'
+                'error': 'Invalid OTP',
+                'expires_at_timestamp': expires_at_timestamp,
             })
 
-    return render(request, 'verify_otp.html')
+    latest_otp = OTP.objects.filter(email=email, is_used=False).order_by('-created_at').first()
+    expires_at_timestamp = None
+    if latest_otp:
+        expires_at_timestamp = int(latest_otp.expires_at.timestamp() * 1000)  # JS uses milliseconds
+
+    return render(request, 'verify_otp.html', {
+        'expires_at_timestamp': expires_at_timestamp,
+    })
 
 @never_cache
 def reset_password(request):
@@ -420,12 +388,13 @@ def reset_password(request):
 
     if request.method == 'POST':
 
-        password = request.POST.get('password')
-        confirm_password = request.POST.get('confirm_password')
+        password = request.POST.get('password', '')
+        confirm_password = request.POST.get('confirm_password', '')
 
-        if password != confirm_password:
+        password_error = validate_password(password, confirm_password)
+        if password_error:
             return render(request, 'reset_password.html', {
-                'error': 'Passwords do not match'
+                'error': password_error
             })
 
         user.set_password(password)

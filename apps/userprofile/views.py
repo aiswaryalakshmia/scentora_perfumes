@@ -30,6 +30,7 @@ from apps.userprofile.models import WalletTransaction
 from django.core.paginator import Paginator
 from apps.products.utils import can_review_product
 from apps.products.models import Review
+from apps.authentication.validators import validate_password
 
 @login_required
 @never_cache
@@ -400,11 +401,10 @@ def edit_profile(request):
             request.session['current_user_email'] = email
             return redirect('verify_otp')         
 
-        # PASSWORD CHANGE
         elif 'change_password' in request.POST:
-            current_password=request.POST.get('current_password')
-            new_password = request.POST.get('new_password')
-            confirm_password = request.POST.get('confirm_password')
+            current_password = request.POST.get('current_password', '')
+            new_password = request.POST.get('new_password', '')
+            confirm_password = request.POST.get('confirm_password', '')
 
             if not current_password:
                 return render(request, 'edit_profile.html', {
@@ -412,69 +412,24 @@ def edit_profile(request):
                     'password_error': 'Current password is required'
                 })
 
-            if not new_password:
+            password_error = validate_password(new_password, confirm_password)
+            if password_error:
                 return render(request, 'edit_profile.html', {
                     'user': user,
-                    'password_error': 'New password is required'
-                })
-
-            if not confirm_password:
-                return render(request, 'edit_profile.html', {
-                    'user': user,
-                    'password_error': 'Confirm password is required'
-                })
-
-            if len(new_password)==0:
-                return render(request,'edit_profile.html', {
-                    'password_error':'Password is required'
-                })
-
-            # PASSWORD LENGTH
-            if len(new_password) < 8:
-                return render(request, 'edit_profile.html', {
-                    'password_error': 'Password must be at least 8 characters'
-                })
-
-            # PASSWORD UPPERCASE
-            if not re.search(r'[A-Z]', new_password):
-                return render(request, 'edit_profile.html', {
-                    'password_error': 'Password must contain at least one uppercase letter'
-                })
-
-            # PASSWORD LOWERCASE
-            if not re.search(r'[a-z]', new_password):
-                return render(request, 'edit_profile.html', {
-                    'password_error': 'Password must contain at least one lowercase letter'
-                })
-
-            # PASSWORD NUMBER
-            if not re.search(r'[0-9]', new_password):
-                return render(request, 'edit_profile.html', {
-                    'password_error': 'Password must contain at least one number'
-                })
-
-            # PASSWORD SPECIAL CHARACTER
-            if not re.search(r'[@$!%*?&]', new_password):
-                return render(request, 'edit_profile.html', {
-                    'password_error': 'Password must contain at least one special character'
+                    'password_error': password_error
                 })
 
             # current password check
             if not user.check_password(current_password):
-                return render(request,'edit_profile.html',{
-                            'password_error': 'Current password is incorrect'})
-
-            # password match
-            if new_password != confirm_password:
-
                 return render(request, 'edit_profile.html', {
-                    'password_error': 'Passwords do not match'
+                    'user': user,
+                    'password_error': 'Current password is incorrect'
                 })
 
             # same password check
             if current_password == new_password:
-
                 return render(request, 'edit_profile.html', {
+                    'user': user,
                     'password_error': 'New password cannot be same as old password'
                 })
 
@@ -493,12 +448,11 @@ def edit_profile(request):
                 fail_silently=False,
             )
 
-            # store session
             request.session['current_user_email'] = user.email
             request.session['otp_purpose'] = 'change_password'
             request.session['new_password'] = new_password
             return redirect('verify_otp')
-
+        
         return redirect('edit_profile')
     return render(request, 'edit_profile.html', {'user': user})
 

@@ -10,7 +10,7 @@ from django.urls import reverse
 from apps.common.decorators import admin_required
 from .models import Category,Product,ProductVariant,VariantImage,Cart,CartItem,Wishlist
 from .forms import CategoryForm,ProductForm, ProductVariantForm
-from .utils import get_offer_price
+from .utils import get_offer_price,has_overlapping_offer
 from .models import Offer
 from .models import Review
 from django.db.models import Avg
@@ -1062,7 +1062,10 @@ def offer_management(request):
     })
 
 @admin_required
-def add_offer(request):
+def add_offer(request):    
+    products   = Product.objects.filter(status='active')
+    categories = Category.objects.filter(status='active')       
+
     if request.method == 'POST':
         offer_type          = request.POST.get('offer_type', '').strip()
         offer_name          = request.POST.get('offer_name', '').strip()
@@ -1072,63 +1075,65 @@ def add_offer(request):
         product_id          = request.POST.get('product_id')
         category_id         = request.POST.get('category_id')
 
+        error_context = {'products': products, 'categories': categories}
+
         # Offer name
         if not offer_name:
             messages.error(request, "Offer name is required.")
-            return redirect('add_offer')
+            return render(request, 'admin/add_offer.html', error_context)
 
         if len(offer_name) < 3:
             messages.error(request, "Offer name must be at least 3 characters.")
-            return redirect('add_offer')
+            return render(request, 'admin/add_offer.html', error_context)
 
         if len(offer_name) > 100:
             messages.error(request, "Offer name cannot exceed 100 characters.")
-            return redirect('add_offer')
+            return render(request, 'admin/add_offer.html', error_context)
 
         if Offer.objects.filter(offer_name__iexact=offer_name).exists():
             messages.error(request, "An offer with this name already exists.")
-            return redirect('add_offer')
+            return render(request, 'admin/add_offer.html', error_context)
 
         # Offer type
         if offer_type not in ['product', 'category']:
             messages.error(request, "Please select a valid offer type.")
-            return redirect('add_offer')
+            return render(request, 'admin/add_offer.html', error_context)
 
         # Discount percentage
         if not discount_percentage:
             messages.error(request, "Discount percentage is required.")
-            return redirect('add_offer')
+            return render(request, 'admin/add_offer.html', error_context)
 
         try:
             discount_value = float(discount_percentage)
         except ValueError:
             messages.error(request, "Discount must be a valid number.")
-            return redirect('add_offer')
+            return render(request, 'admin/add_offer.html', error_context)
 
         if discount_value <= 0 or discount_value > 100:
             messages.error(request, "Discount must be between 1 and 100.")
-            return redirect('add_offer')
+            return render(request, 'admin/add_offer.html', error_context)
 
         # Dates
         if not start_date or not end_date:
             messages.error(request, "Both start date and end date are required.")
-            return redirect('add_offer')
+            return render(request, 'admin/add_offer.html', error_context)
 
         try:
             start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date()
             end_date_obj = datetime.strptime(end_date, '%Y-%m-%d').date()
         except ValueError:
             messages.error(request, "Invalid date format.")
-            return redirect('add_offer')
+            return render(request, 'admin/add_offer.html', error_context)
 
         today = timezone.now().date()
         if start_date_obj < today:
             messages.error(request, "Start date cannot be in the past.")
-            return redirect('add_offer')
+            return render(request, 'admin/add_offer.html', error_context)
 
         if end_date_obj <= start_date_obj:
             messages.error(request, "End date must be after start date.")
-            return redirect('add_offer')
+            return render(request, 'admin/add_offer.html', error_context)
 
         offer = Offer(
             offer_type          = offer_type,
@@ -1142,27 +1147,26 @@ def add_offer(request):
         if offer_type == 'product':
             if not product_id:
                 messages.error(request, "Please select a product.")
-                return redirect('add_offer')
+                return render(request, 'admin/add_offer.html', error_context)
 
             product = get_object_or_404(Product, id=product_id)
 
-            if Offer.objects.filter(product=product, status='active').exists():
-                messages.error(request, f"{product.product_name} already has an active offer.")
-                return redirect('add_offer')           
-            
+            if has_overlapping_offer('product', product.id, start_date_obj, end_date_obj):
+                messages.error(request, f"{product.product_name} already has an active offer during this date range.")
+                return render(request, 'admin/add_offer.html', error_context)
 
             offer.product = product
 
         elif offer_type == 'category':
             if not category_id:
                 messages.error(request, "Please select a category.")
-                return redirect('add_offer')
+                return render(request, 'admin/add_offer.html', error_context)
 
             category = get_object_or_404(Category, id=category_id)
 
-            if Offer.objects.filter(category=category, status='active').exists():
-                messages.error(request, f"{category.category_name} already has an active offer.")
-                return redirect('add_offer')
+            if has_overlapping_offer('category', category.id, start_date_obj, end_date_obj):
+                messages.error(request, f"{category.category_name} already has an active offer during this date range.")
+                return render(request, 'admin/add_offer.html', error_context)
 
             offer.category = category
 
@@ -1170,8 +1174,8 @@ def add_offer(request):
         messages.success(request, "Offer created successfully!")
         return redirect('offer_management')
 
-    products   = Product.objects.filter(status='active')
-    categories = Category.objects.filter(status='active')
+    # products   = Product.objects.filter(status='active')
+    # categories = Category.objects.filter(status='active')
     return render(request, 'admin/add_offer.html', {
         'products':   products,
         'categories': categories,
@@ -1230,6 +1234,17 @@ def edit_offer(request, offer_id):
 
         if end_date_obj <= start_date_obj:
             messages.error(request, "End date must be after start date.")
+            return redirect('edit_offer', offer_id=offer.id)
+
+        # check overlap against the same product/category, excluding this offer itself
+        if offer.offer_type == 'product':
+            target_id = offer.product_id
+        else:
+            target_id = offer.category_id
+
+        if has_overlapping_offer(offer.offer_type, target_id, start_date_obj, end_date_obj, exclude_offer_id=offer.id):
+            target_name = offer.product.product_name if offer.offer_type == 'product' else offer.category.category_name
+            messages.error(request, f"{target_name} already has an active offer during this date range.")
             return redirect('edit_offer', offer_id=offer.id)
 
         offer.offer_name          = offer_name

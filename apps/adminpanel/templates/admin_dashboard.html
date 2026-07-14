@@ -47,7 +47,9 @@ Admin Dashboard
           </div>
           <canvas id="revenueChart"></canvas>
         </div>
+      </section>
 
+      <section class="analytics bests-sellers">
         <div class="collections">
           <h4>Best Selling Products (Top 10)</h4>
           {% for p in best_products %}
@@ -61,10 +63,7 @@ Admin Dashboard
           <p class="no-data">No sales data yet.</p>
           {% endfor %}
         </div>
-      </section>
-
-      <section class="analytics">
-        <div class="collections full-width">
+        <div class="collections">
           <h4>Best Selling Categories (Top 10)</h4>
           {% for c in best_categories %}
           <div class="collection-item">

@@ -46,8 +46,11 @@
 .analytics {
   grid-column: 1 / 3;
   display: grid;
-  grid-template-columns: 2fr 1fr;
   gap: 25px;
+}
+
+.bests-sellers {
+  grid-template-columns: 2fr 2fr;
 }
 
 .chart-box,

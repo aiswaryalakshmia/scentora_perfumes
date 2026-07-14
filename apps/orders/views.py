@@ -36,6 +36,8 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from django.http import HttpResponse
 from .utils import release_abandoned_razorpay_orders
+from .utils import calculate_item_refund
+from apps.userprofile.wallet_utils import has_item_been_refunded
 
 
 SHIPPING_CHARGES = {
@@ -577,6 +579,54 @@ def handle_return_request(request, order_id):
 
     return redirect('admin_order_detail', order_id=order.id)
 
+@admin_required
+@never_cache
+def handle_item_return_request(request, order_id, item_id):
+    order = get_object_or_404(Order, id=order_id)
+    item = get_object_or_404(OrderItem, id=item_id, order=order)
+
+    if item.status != 'return_requested':
+        messages.error(request, "This item has no pending return request.")
+        return redirect('admin_order_detail', order_id=order.id)
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'approve':
+            item.product_variant.stock += item.quantity
+            item.product_variant.save()
+
+            item.status = 'returned'
+            item.save()
+
+            refund_amount = calculate_item_refund(item)
+
+            if order.payment_status == 'paid' and refund_amount > 0 and not has_item_been_refunded(item):
+                credit_wallet(
+                    user=order.user,
+                    amount=refund_amount,
+                    description=f"Refund for returned item ({item.product_variant}) in Order #{order.order_number}",
+                    order=order,
+                    order_item=item,
+                )
+                messages.success(request, f"Item return approved. Stock restored and ₹{refund_amount} refunded to customer's wallet.")
+            else:
+                messages.success(request, "Item return approved. Stock has been restored.")
+
+            if not order.items.filter(status__in=['active', 'return_requested']).exists():
+                order.order_status = 'returned'
+                order.save()
+
+        elif action == 'reject':
+            item.status = 'active'
+            item.return_reason = None
+            item.save()
+            messages.success(request, "Item return request rejected.")
+
+        else:
+            messages.error(request, "Invalid action.")
+
+    return redirect('admin_order_detail', order_id=order.id)
 
 razorpay_client = razorpay.Client(
     auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)

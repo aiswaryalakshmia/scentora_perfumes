@@ -97,6 +97,16 @@
                   <i class="fa-solid fa-xmark"></i> Cancel
                 </button>
               </form>
+            {% elif item.status == 'return_requested' %}
+              <form method="POST" action="{% url 'handle_item_return_request' order.id item.id %}">
+                {% csrf_token %}
+                <button type="submit" name="action" value="approve" class="btn-approve">
+                  <i class="fa-solid fa-check"></i>
+                </button>
+                <button type="submit" name="action" value="reject" class="btn-reject">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              </form>
             {% else %}
               <span class="no-action">—</span>
             {% endif %}
@@ -105,6 +115,14 @@
         {% endfor %}
       </tbody>
     </table>
+
+    {% for item in order_items %}
+      {% if item.status == 'return_requested' %}
+      <div class="item-return-reason-box">
+        <p><strong>{{ item.product_variant.product.product_name }}</strong> — return reason: {{ item.return_reason }}</p>
+      </div>
+      {% endif %}
+    {% endfor %}
 
     <div class="order-total-box">
       <p><span>Items Subtotal</span><strong>₹{{ order.total_amount }}</strong></p>
@@ -153,26 +171,6 @@
         <input type="text" value="{{ order.get_payment_status_display }}" readonly>
       {% endif %}
     </div>
-    {% if order.order_status == 'return_requested' %}
-    <div class="return-request-card">
-      <h3>Return Request</h3>
-      
-      <p class="label">Reason from Customer</p>
-      <p class="return-reason">{{ order.return_reason }}</p>
-
-      <form method="POST" action="{% url 'handle_return_request' order.id %}">
-        {% csrf_token %}
-        <div class="return-actions">
-          <button type="submit" name="action" value="approve" class="btn-approve">
-            <i class="fa-solid fa-check"></i> Approve Return
-          </button>
-          <button type="submit" name="action" value="reject" class="btn-reject">
-            <i class="fa-solid fa-xmark"></i> Reject Return
-          </button>
-        </div>
-      </form>
-    </div>
-    {% endif %}
 
     <div class="history-card">
       <h3>Order Activity History</h3>

@@ -31,6 +31,8 @@ from django.core.paginator import Paginator
 from apps.products.utils import can_review_product
 from apps.products.models import Review
 from apps.authentication.validators import validate_password
+from apps.orders.utils import calculate_item_refund
+from apps.userprofile.wallet_utils import has_item_been_refunded
 
 @login_required
 @never_cache
@@ -505,10 +507,13 @@ def order_detail(request, order_id):
             'existing_review': existing,
         }
 
+    has_active_items = order_items.filter(status='active').exists()
+
     context = {
         'order': order,
         'order_items': order_items,
         'review_map': review_map,
+        'has_active_items': has_active_items,
     }
     return render(request, 'order_detail.html', context)
 
@@ -677,14 +682,17 @@ def cancel_order_item(request, order_id, item_id):
         item.status = 'cancelled'
         item.save()
 
-        # Refund just this item's amount if order was paid
+        # Refund just this item's amount if order was paid — proportionally split coupon
         if order.payment_status == 'paid':
-            credit_wallet(
-                user=order.user,
-                amount=item.total,
-                description=f"Refund for cancelled item ({item.product_variant}) in Order #{order.order_number}",
-                order=order,
-            )
+            refund_amount = calculate_item_refund(item)
+            if refund_amount > 0 and not has_item_been_refunded(item):
+                credit_wallet(
+                    user=order.user,
+                    amount=refund_amount,
+                    description=f"Refund for cancelled item ({item.product_variant}) in Order #{order.order_number}",
+                    order=order,
+                    order_item=item,
+                )
 
         # check if all items are cancelled  then cancel entire order
         all_cancelled = not order.items.filter(status='active').exists()
@@ -701,11 +709,16 @@ def cancel_order_item(request, order_id, item_id):
 
 @login_required
 @never_cache
-def return_order(request, order_id):
+def return_order_item(request, order_id, item_id):
     order = get_object_or_404(Order, id=order_id, user=request.user)
+    item = get_object_or_404(OrderItem, id=item_id, order=order)
 
     if order.order_status != 'delivered':
         messages.error(request, "Only delivered orders can be returned.")
+        return redirect('order_detail', order_id=order.id)
+
+    if item.status != 'active':
+        messages.error(request, "This item cannot be returned.")
         return redirect('order_detail', order_id=order.id)
 
     if request.method == 'POST':
@@ -715,22 +728,46 @@ def return_order(request, order_id):
             messages.error(request, "Return reason must be at least 10 characters.")
             return redirect('order_detail', order_id=order.id)
 
-        if not reason:
-            messages.error(request, "Please provide a reason for return.")
-            return redirect('order_detail', order_id=order.id)
+        item.return_reason = reason
+        item.status = 'return_requested'
+        item.save()
 
-        # just save the reason and set status to return_requested
-        # admin will verify and approve/reject
-        order.return_reason = reason
-        order.order_status = 'return_requested'
-        order.save()
-
-        messages.success(request, "Return request submitted. We will review it shortly.")
+        messages.success(request, "Return request submitted for this item. We'll review it shortly.")
         return redirect('order_detail', order_id=order.id)
 
     return redirect('order_detail', order_id=order.id)
 
+@login_required
+@never_cache
+def return_order(request, order_id):
+    order = get_object_or_404(Order, id=order_id, user=request.user)
 
+    if order.order_status != 'delivered':
+        messages.error(request, "Only delivered orders can be returned.")
+        return redirect('order_detail', order_id=order.id)
+
+    active_items = order.items.filter(status='active')
+
+    if not active_items.exists():
+        messages.error(request, "There are no items left to return in this order.")
+        return redirect('order_detail', order_id=order.id)
+
+    if request.method == 'POST':
+        reason = request.POST.get('reason', '').strip()
+
+        if len(reason) < 10:
+            messages.error(request, "Return reason must be at least 10 characters.")
+            return redirect('order_detail', order_id=order.id)
+
+        # mark every currently-active item as return_requested,
+        # so the admin approval flow (per item, with correct proportional
+        # coupon refund) handles each one exactly like an individual return
+        active_items.update(status='return_requested', return_reason=reason)
+
+        messages.success(request, "Return request submitted for all items. We will review it shortly.")
+        return redirect('order_detail', order_id=order.id)
+
+    return redirect('order_detail', order_id=order.id)
 
 @login_required
 @never_cache

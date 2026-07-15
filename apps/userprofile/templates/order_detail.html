@@ -195,21 +195,33 @@
       <h3><i class="fa-solid fa-credit-card"></i> Payment Details</h3>
       <div class="payment-row">
         <span class="pay-label">METHOD</span>
-        <span>Cash on Delivery</span>
+        <span>{{ order.get_payment_method_display }}</span>
       </div>
       <div class="payment-row">
         <span class="pay-label">STATUS</span>
         <span class="pay-status">
-          {% if order.order_status == 'delivered' %}Paid{% else %}Pending{% endif %}
+          {% if order.payment_status == 'paid' %}Paid{% else %}Pending{% endif %}
         </span>
       </div>
       <div class="payment-row">
         <span class="pay-label">SUBTOTAL</span>
         <span>₹{{ order.total_amount }}</span>
       </div>
+      {% if order.discount_amount > 0 %}
       <div class="payment-row">
-        <span class="pay-label">SHIPPING</span>
-        <span>{% if order.total_amount == order.final_amount %}Complementary{% else %}₹{{ order.final_amount|add:"-order.total_amount" }}{% endif %}</span>
+        <span class="pay-label">DISCOUNT</span>
+        <span>-₹{{ order.discount_amount }}</span>
+      </div>
+      {% endif %}
+      {% if order.coupon_discount > 0 %}
+      <div class="payment-row">
+        <span class="pay-label">COUPON DISCOUNT</span>
+        <span>-₹{{ order.coupon_discount }}</span>
+      </div>
+      {% endif %}
+      <div class="payment-row payment-total-row">
+        <span class="pay-label">TOTAL PAID</span>
+        <span><strong>₹{{ order.final_amount }}</strong></span>
       </div>
     </div>
 

@@ -373,7 +373,7 @@ def place_order(request):
                     raise Exception(message)
 
                 # Only clear cart for COD — Razorpay clears after payment confirmed
-                if payment_method == 'cod':
+                if payment_method in ('cod', 'wallet'):
                     cart_items.delete()
 
         except Exception as e:

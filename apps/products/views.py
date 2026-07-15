@@ -1236,6 +1236,11 @@ def edit_offer(request, offer_id):
             messages.error(request, "End date must be after start date.")
             return redirect('edit_offer', offer_id=offer.id)
 
+        today = timezone.now().date()
+        if start_date_obj < today:
+            messages.error(request, "Start date cannot be in the past.")
+            return redirect('edit_offer', offer_id=offer.id)
+
         # check overlap against the same product/category, excluding this offer itself
         if offer.offer_type == 'product':
             target_id = offer.product_id

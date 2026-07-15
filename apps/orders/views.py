@@ -923,66 +923,66 @@ def add_coupon(request):
         # Coupon code
         if not code:
             messages.error(request, "Coupon code is required.")
-            return render(request, 'admin/add_coupon.html')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         if len(code) < 3:
             messages.error(request, "Coupon code must be at least 3 characters.")
-            return render(request, 'admin/add_coupon.html')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         if len(code) > 20:
             messages.error(request, "Coupon code cannot exceed 20 characters.")
-            return render(request, 'admin/add_coupon.html')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         if not code.isalnum():
             messages.error(request, "Coupon code can only contain letters and numbers.")
-            return render(request, 'admin/add_coupon.html')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         if Coupon.objects.filter(coupon_code=code).exists():
             messages.error(request, "Coupon code already exists.")
-            return render(request, 'admin/add_coupon.html')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         # Discount type
         if discount_type not in ['percentage', 'flat']:
             messages.error(request, "Please select a valid discount type.")
-            return render(request, 'admin/add_coupon.html')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         # Discount value
         if not discount_value:
             messages.error(request, "Discount value is required.")
-            return render(request, 'admin/add_coupon.html')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         try:
             discount_value_num = float(discount_value)
         except ValueError:
             messages.error(request, "Discount value must be a valid number.")
-            return render(request, 'admin/add_coupon.html')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         if discount_value_num <= 0:
             messages.error(request, "Discount value must be greater than 0.")
-            return render(request, 'admin/add_coupon.html')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         if discount_type == 'percentage' and discount_value_num > 100:
             messages.error(request, "Percentage discount cannot exceed 100.")
-            return render(request, 'admin/add_coupon.html')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         if discount_type == 'flat' and discount_value_num > 100000:
             messages.error(request, "Flat discount amount seems unreasonably high.")
-            return render(request, 'admin/add_coupon.html')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         # Minimum order amount
         try:
             minimum_price_num = float(minimum_price) if minimum_price else 0
         except ValueError:
             messages.error(request, "Minimum order amount must be a valid number.")
-            return render(request, 'admin/add_coupon.html')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         if minimum_price_num < 0:
             messages.error(request, "Minimum order amount cannot be negative.")
-            return render(request, 'admin/add_coupon.html')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         if discount_type == 'flat' and minimum_price_num <= discount_value_num:
             messages.error(request, "Minimum order amount must be greater than the flat discount value.")
-            return render(request, 'admin/add_coupon.html')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         # Maximum redeem
         maximum_redeem_num = None
@@ -991,42 +991,42 @@ def add_coupon(request):
                 maximum_redeem_num = float(maximum_redeem)
             except ValueError:
                 messages.error(request, "Maximum redeem amount must be a valid number.")
-                return render(request, 'admin/add_coupon.html')
+                return render(request, 'admin/add_coupon.html', status=400)
 
             if maximum_redeem_num <= 0:
                 messages.error(request, "Maximum redeem amount must be greater than 0.")
-                return render(request, 'admin/add_coupon.html')
+                return render(request, 'admin/add_coupon.html', status=400)
 
         # Expiry date
         if not expiry_date:
             messages.error(request, "Expiry date is required.")
-            return render(request, 'admin/add_coupon.html')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         try:
             expiry_date_obj = datetime.strptime(expiry_date, '%Y-%m-%d').date()
         except ValueError:
             messages.error(request, "Invalid expiry date format.")
-            return render(request, 'admin/add_coupon.html')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         today = timezone.now().date()
         if expiry_date_obj <= today:
             messages.error(request, "Expiry date must be in the future.")
-            return render(request, 'admin/add_coupon.html')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         # Usage limit
         if not usage_limit:
             messages.error(request, "Usage limit is required.")
-            return render(request, 'admin/add_coupon.html')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         try:
             usage_limit_num = int(usage_limit)
         except ValueError:
             messages.error(request, "Usage limit must be a whole number.")
-            return render(request, 'admin/add_coupon.html')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         if usage_limit_num < 1:
             messages.error(request, "Usage limit must be at least 1.")
-            return render(request, 'admin/add_coupon.html')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         Coupon.objects.create(
             coupon_code    = code,
@@ -1056,35 +1056,35 @@ def edit_coupon(request, coupon_id):
 
         if not discount_value:
             messages.error(request, "Discount value is required.")
-            return redirect('edit_coupon', coupon_id=coupon.id)
+            return redirect('edit_coupon', coupon_id=coupon.id, status=400)
 
         try:
             discount_value_num = float(discount_value)
         except ValueError:
             messages.error(request, "Discount value must be a valid number.")
-            return redirect('edit_coupon', coupon_id=coupon.id)
+            return redirect('edit_coupon', coupon_id=coupon.id, status=400)
 
         if discount_value_num <= 0:
             messages.error(request, "Discount value must be greater than 0.")
-            return redirect('edit_coupon', coupon_id=coupon.id)
+            return redirect('edit_coupon', coupon_id=coupon.id, status=400)
 
         if coupon.discount_type == 'percentage' and discount_value_num > 100:
             messages.error(request, "Percentage discount cannot exceed 100.")
-            return redirect('edit_coupon', coupon_id=coupon.id)
+            return redirect('edit_coupon', coupon_id=coupon.id, status=400)
 
         try:
             minimum_price_num = float(minimum_price) if minimum_price else 0
         except ValueError:
             messages.error(request, "Minimum order amount must be a valid number.")
-            return redirect('edit_coupon', coupon_id=coupon.id)
+            return redirect('edit_coupon', coupon_id=coupon.id, status=400)
 
         if minimum_price_num < 0:
             messages.error(request, "Minimum order amount cannot be negative.")
-            return redirect('edit_coupon', coupon_id=coupon.id)
+            return redirect('edit_coupon', coupon_id=coupon.id, status=400)
         
         if coupon.discount_type == 'flat' and minimum_price_num <= discount_value_num:
             messages.error(request, "Minimum order amount must be greater than the flat discount value.")
-            return redirect('edit_coupon', coupon_id=coupon.id)
+            return redirect('edit_coupon', coupon_id=coupon.id, status=400)
 
         maximum_redeem_num = None
         if maximum_redeem:
@@ -1092,39 +1092,39 @@ def edit_coupon(request, coupon_id):
                 maximum_redeem_num = float(maximum_redeem)
             except ValueError:
                 messages.error(request, "Maximum redeem amount must be a valid number.")
-                return redirect('edit_coupon', coupon_id=coupon.id)
+                return redirect('edit_coupon', coupon_id=coupon.id, status=400)
 
             if maximum_redeem_num <= 0:
                 messages.error(request, "Maximum redeem amount must be greater than 0.")
-                return redirect('edit_coupon', coupon_id=coupon.id)
+                return redirect('edit_coupon', coupon_id=coupon.id, status=400)
 
         if not expiry_date:
             messages.error(request, "Expiry date is required.")
-            return redirect('edit_coupon', coupon_id=coupon.id)
+            return redirect('edit_coupon', coupon_id=coupon.id, status=400)
 
         try:
             expiry_date_obj = datetime.strptime(expiry_date, '%Y-%m-%d').date()
         except ValueError:
             messages.error(request, "Invalid expiry date format.")
-            return redirect('edit_coupon', coupon_id=coupon.id)
+            return redirect('edit_coupon', coupon_id=coupon.id, status=400)
 
         if not usage_limit:
             messages.error(request, "Usage limit is required.")
-            return redirect('edit_coupon', coupon_id=coupon.id)
+            return redirect('edit_coupon', coupon_id=coupon.id, status=400)
 
         try:
             usage_limit_num = int(usage_limit)
         except ValueError:
             messages.error(request, "Usage limit must be a whole number.")
-            return redirect('edit_coupon', coupon_id=coupon.id)
+            return redirect('edit_coupon', coupon_id=coupon.id, status=400)
 
         if usage_limit_num < 1:
             messages.error(request, "Usage limit must be at least 1.")
-            return redirect('edit_coupon', coupon_id=coupon.id)
+            return redirect('edit_coupon', coupon_id=coupon.id, status=400)
 
         if usage_limit_num < coupon.used_count:
             messages.error(request, f"Usage limit cannot be less than the number of times already used ({coupon.used_count}).")
-            return redirect('edit_coupon', coupon_id=coupon.id)
+            return redirect('edit_coupon', coupon_id=coupon.id, status=400)
 
         coupon.discount_value  = discount_value_num
         coupon.minimum_price   = minimum_price_num

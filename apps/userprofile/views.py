@@ -75,7 +75,8 @@ def add_address(request):
             return render(
                 request,
                 'add_address.html',
-                address_form_context(request, error)
+                address_form_context(request, error),
+                status=400
             )
 
         if request.POST.get('is_default'):
@@ -268,7 +269,8 @@ def edit_address(request, address_id):
             return render(
                 request,
                 'add_address.html',
-                address_form_context(request, error, address)
+                address_form_context(request, error, address),
+                status=400
             )
 
         if request.POST.get('is_default'):
@@ -312,37 +314,68 @@ def edit_profile(request):
             mobile_number = request.POST.get('mobile_number', '').strip()
 
             # Full Name
-            if not full_name:
+            if len(full_name) == 0:
                 return render(request, 'edit_profile.html', {
                     'user': user,
                     'error': 'Full name is required'
-                })
+                }, status=400)
 
+            # Letters and spaces only
             if not re.match(r'^[A-Za-z ]+$', full_name):
                 return render(request, 'edit_profile.html', {
                     'user': user,
                     'error': 'Full name can contain only letters'
-                })
+                }, status=400)
 
+            # Minimum length
             if len(full_name) < 3:
                 return render(request, 'edit_profile.html', {
                     'user': user,
-                    'error': 'Full name must be at least 3 characters'
-                })
+                    'error': 'Full name must contain at least 3 characters'
+                }, status=400)
+
+            # Maximum length
+            if len(full_name) > 150:
+                return render(request, 'edit_profile.html', {
+                    'user': user,
+                    'error': 'Full name cannot exceed 150 characters'
+                }, status=400)
 
            
-            # Mobile Number
-            if not mobile_number:
+            # Mobile number empty check
+            if len(mobile_number) == 0:
                 return render(request, 'edit_profile.html', {
                     'user': user,
                     'error': 'Mobile number is required'
-                })
+                }, status=400)
 
-            if not re.match(r'^\d{10}$', mobile_number):
+            # Digits only
+            if not mobile_number.isdigit():
                 return render(request, 'edit_profile.html', {
                     'user': user,
-                    'error': 'Enter a valid 10-digit mobile number'
-                })
+                    'error': 'Mobile number must contain only digits'
+                }, status=400)
+
+            # Length check
+            if len(mobile_number) != 10:
+                return render(request, 'edit_profile.html', {
+                    'user': user,
+                    'error': 'Mobile number must be 10 digits'
+                }, status=400)
+
+            # Duplicate mobile number check (exclude current user)
+            if User.objects.filter(mobile_number=mobile_number).exclude(id=user.id).exists():
+                return render(request, 'edit_profile.html', {
+                    'user': user,
+                    'error': 'Mobile number already exists'
+                }, status=400)
+
+            # Starting digit check
+            if mobile_number[0] not in '6789':
+                return render(request, 'edit_profile.html', {
+                    'user': user,
+                    'error': 'Enter a valid mobile number'
+                }, status=400)
 
             # Profile Image Validation
             if request.FILES.get('profile_image'):
@@ -362,7 +395,7 @@ def edit_profile(request):
                 return render(request, 'edit_profile.html', {
                     'user': user,
                     'error': 'Email is required'
-                })
+                },status=400)
 
             try:
                 validate_email(email)
@@ -370,7 +403,7 @@ def edit_profile(request):
                 return render(request, 'edit_profile.html', {
                     'user': user,
                     'error': 'Enter a valid email address'
-                })
+                },status=400)
 
             # Email already exists
             if (
@@ -381,7 +414,7 @@ def edit_profile(request):
                 return render(request, 'edit_profile.html', {
                     'user': user,
                     'error': 'Email already exists'
-                })
+                },status=400)
 
             otp = str(random.randint(100000, 999999))
 
@@ -412,28 +445,28 @@ def edit_profile(request):
                 return render(request, 'edit_profile.html', {
                     'user': user,
                     'password_error': 'Current password is required'
-                })
+                },status=400)
 
             password_error = validate_password(new_password, confirm_password)
             if password_error:
                 return render(request, 'edit_profile.html', {
                     'user': user,
                     'password_error': password_error
-                })
+                },status=400)
 
             # current password check
             if not user.check_password(current_password):
                 return render(request, 'edit_profile.html', {
                     'user': user,
                     'password_error': 'Current password is incorrect'
-                })
+                },status=400)
 
             # same password check
             if current_password == new_password:
                 return render(request, 'edit_profile.html', {
                     'user': user,
                     'password_error': 'New password cannot be same as old password'
-                })
+                },status=400)
 
             otp = str(random.randint(100000, 999999))
 

@@ -71,7 +71,7 @@ def add_category(request):
                 )
             except Exception:
                 messages.error(request, "Error while processing image.")
-                return render(request, 'admin/add_category.html', {'form': form})
+                return render(request, 'admin/add_category.html', {'form': form}, status=400)
 
             category.save()
             messages.success(request, "Category added successfully!")
@@ -106,7 +106,7 @@ def edit_category(request, category_id):
                         )
                 except Exception:
                     messages.error(request, "Error while processing image.")
-                    return render(request, 'admin/edit_category.html', {'form': form, 'category': category})
+                    return render(request, 'admin/edit_category.html', {'form': form, 'category': category}, status=400)
 
             elif request.POST.get('image-clear') == 'on':
                 category.image.delete(save=False)
@@ -1080,60 +1080,60 @@ def add_offer(request):
         # Offer name
         if not offer_name:
             messages.error(request, "Offer name is required.")
-            return render(request, 'admin/add_offer.html', error_context)
+            return render(request, 'admin/add_offer.html', error_context, status=400)
 
         if len(offer_name) < 3:
             messages.error(request, "Offer name must be at least 3 characters.")
-            return render(request, 'admin/add_offer.html', error_context)
+            return render(request, 'admin/add_offer.html', error_context, status=400)
 
         if len(offer_name) > 100:
             messages.error(request, "Offer name cannot exceed 100 characters.")
-            return render(request, 'admin/add_offer.html', error_context)
+            return render(request, 'admin/add_offer.html', error_context, status=400)
 
         if Offer.objects.filter(offer_name__iexact=offer_name).exists():
             messages.error(request, "An offer with this name already exists.")
-            return render(request, 'admin/add_offer.html', error_context)
+            return render(request, 'admin/add_offer.html', error_context, status=400)
 
         # Offer type
         if offer_type not in ['product', 'category']:
             messages.error(request, "Please select a valid offer type.")
-            return render(request, 'admin/add_offer.html', error_context)
+            return render(request, 'admin/add_offer.html', error_context, status=400)
 
         # Discount percentage
         if not discount_percentage:
             messages.error(request, "Discount percentage is required.")
-            return render(request, 'admin/add_offer.html', error_context)
+            return render(request, 'admin/add_offer.html', error_context, status=400)
 
         try:
             discount_value = float(discount_percentage)
         except ValueError:
             messages.error(request, "Discount must be a valid number.")
-            return render(request, 'admin/add_offer.html', error_context)
+            return render(request, 'admin/add_offer.html', error_context, status=400)
 
         if discount_value <= 0 or discount_value > 100:
             messages.error(request, "Discount must be between 1 and 100.")
-            return render(request, 'admin/add_offer.html', error_context)
+            return render(request, 'admin/add_offer.html', error_context, status=400)
 
         # Dates
         if not start_date or not end_date:
             messages.error(request, "Both start date and end date are required.")
-            return render(request, 'admin/add_offer.html', error_context)
+            return render(request, 'admin/add_offer.html', error_context, status=400)
 
         try:
             start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date()
             end_date_obj = datetime.strptime(end_date, '%Y-%m-%d').date()
         except ValueError:
             messages.error(request, "Invalid date format.")
-            return render(request, 'admin/add_offer.html', error_context)
+            return render(request, 'admin/add_offer.html', error_context, status=400)
 
         today = timezone.now().date()
         if start_date_obj < today:
             messages.error(request, "Start date cannot be in the past.")
-            return render(request, 'admin/add_offer.html', error_context)
+            return render(request, 'admin/add_offer.html', error_context, status=400)
 
         if end_date_obj <= start_date_obj:
             messages.error(request, "End date must be after start date.")
-            return render(request, 'admin/add_offer.html', error_context)
+            return render(request, 'admin/add_offer.html', error_context, status=400)
 
         offer = Offer(
             offer_type          = offer_type,
@@ -1147,26 +1147,26 @@ def add_offer(request):
         if offer_type == 'product':
             if not product_id:
                 messages.error(request, "Please select a product.")
-                return render(request, 'admin/add_offer.html', error_context)
+                return render(request, 'admin/add_offer.html', error_context, status=400)
 
             product = get_object_or_404(Product, id=product_id)
 
             if has_overlapping_offer('product', product.id, start_date_obj, end_date_obj):
                 messages.error(request, f"{product.product_name} already has an active offer during this date range.")
-                return render(request, 'admin/add_offer.html', error_context)
+                return render(request, 'admin/add_offer.html', error_context, status=400)
 
             offer.product = product
 
         elif offer_type == 'category':
             if not category_id:
                 messages.error(request, "Please select a category.")
-                return render(request, 'admin/add_offer.html', error_context)
+                return render(request, 'admin/add_offer.html', error_context, status=400)
 
             category = get_object_or_404(Category, id=category_id)
 
             if has_overlapping_offer('category', category.id, start_date_obj, end_date_obj):
                 messages.error(request, f"{category.category_name} already has an active offer during this date range.")
-                return render(request, 'admin/add_offer.html', error_context)
+                return render(request, 'admin/add_offer.html', error_context, status=400)
 
             offer.category = category
 

@@ -39,38 +39,38 @@ def signup(request):
         if len(full_name)==0:
             return render(request,'signup.html', {**base_context,
                 'error':'Full name is required'
-            })
+            },status=400)
 
         #letters and spaces only check
         if not re.match(r'^[A-Za-z ]+$', full_name):
             return render(request, 'signup.html', {**base_context,
                 'error': 'Full name can contain only letters'
-            })
+            },status=400)
 
         #minimum length check
         if len(full_name) < 3:
             return render(request, 'signup.html', {**base_context,
                 'error': 'Full name must contain at least 3 characters'
-            })
+            },status=400)
 
         #maximum length check
         if len(full_name) > 150:
             return render(request, 'signup.html', {**base_context,
                 'error': 'Full name cannot exceed 150 characters'
-            })
+            },status=400)
 
 
         #email empty check
         if len(email)==0:
             return render(request,'signup.html', {**base_context,
                 'error':'Email is required'
-            })
+            },status=400)
 
         #email maximum length check
         if len(email) > 254:
             return render(request, 'signup.html', {**base_context,
                 'error': 'Email address is too long'
-            })
+            },status=400)
 
         email_pattern = r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
 
@@ -78,54 +78,54 @@ def signup(request):
         if not re.match(email_pattern, email):
             return render(request, 'signup.html', {**base_context,
                 'error': 'Enter a valid email address'
-            })
+            },status=400)
 
         #Duplicate email check
         if User.objects.filter(email=email).exists():
             return render(request, 'signup.html', {**base_context,
                 'error': 'Email already exists'
-            })
+            },status=400)
 
         #mobile number empty check
         if len(mobile_number)==0:
             return render(request,'signup.html', {**base_context,
                 'error':'Mobile number is required'
-            })
+            },status=400)
 
         #digits only check
         if not mobile_number.isdigit():
             return render(request, 'signup.html', {**base_context,
                 'error': 'Mobile number must contain only digits'
-            })
+            },status=400)
 
         #mobile number length check
         if len(mobile_number) != 10:
             return render(request, 'signup.html', {**base_context,
                 'error': 'Mobile number must be 10 digits'
-            })
+            },status=400)
 
         #Duplicate mobile number check
         if User.objects.filter(mobile_number=mobile_number).exists():
             return render(request, 'signup.html', {**base_context,
                 'error': 'Mobile number already exists'
-            })
+            },status=400)
         
         #mobile number starting digit check
         if mobile_number[0] not in '6789':
             return render(request, 'signup.html', {**base_context,
                 'error': 'Enter a valid mobile number'
-            })
+            },status=400)
         
         #password validation
         password_error = validate_password(password, confirm_password)
         if password_error:
-            return render(request, 'signup.html', {**base_context, 'error': password_error})
+            return render(request, 'signup.html', {**base_context, 'error': password_error},status=400)
         
         #referral code length check
         if referral and len(referral) > 20:
             return render(request, 'signup.html', {**base_context,
                 'error': 'Referral code is invalid'
-            })
+            },status=400)
 
         request.session['signup_data'] = {
             'full_name': full_name,
@@ -172,12 +172,12 @@ def login_view(request):
         if not email:
             return render(request, 'login.html', {
                 'error': 'Email is required'
-            })
+            },status=400)
 
         if not password:
             return render(request, 'login.html', {
                 'error': 'Password is required'
-            })
+            },status=400)
 
         user = authenticate(
             request,
@@ -220,12 +220,12 @@ def forgot_password(request):
         if not email:
             return render(request, 'forgot_password.html', {
                 'error': 'Email is required'
-            })
+            },status=400)
 
         if not User.objects.filter(email=email).exists():
             return render(request, 'forgot_password.html', {
                 'error': 'No account found with this email address'
-            })
+            },status=400)
 
         otp = str(random.randint(100000, 999999))
 
@@ -285,7 +285,7 @@ def verify_otp(request):
                 return render(request, 'verify_otp.html', {
                     'error': 'OTP expired',
                     'expires_at_timestamp': expires_at_timestamp,
-                })
+                },status=400)
 
             # mark OTP used
             otp_obj.is_used = True
@@ -360,7 +360,7 @@ def verify_otp(request):
             return render(request, 'verify_otp.html', {
                 'error': 'Invalid OTP',
                 'expires_at_timestamp': expires_at_timestamp,
-            })
+            },status=400)
 
     latest_otp = OTP.objects.filter(email=email, is_used=False).order_by('-created_at').first()
     expires_at_timestamp = None
@@ -395,7 +395,7 @@ def reset_password(request):
         if password_error:
             return render(request, 'reset_password.html', {
                 'error': password_error
-            })
+            },status=400)
 
         user.set_password(password)
         user.save()

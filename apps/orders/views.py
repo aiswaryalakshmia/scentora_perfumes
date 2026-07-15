@@ -491,7 +491,6 @@ def update_order_status(request, order_id):
 
     if request.method == 'POST':
 
-        # block manual status change for return_requested
         if order.order_status == 'return_requested':
             messages.error(request, 'Please use Approve or Reject buttons to handle return request.')
             return redirect('admin_order_detail', order_id=order.id)
@@ -501,11 +500,40 @@ def update_order_status(request, order_id):
 
         allowed_statuses = get_allowed_next_statuses(order.order_status)
 
-        if new_status in allowed_statuses:
-            order.order_status = new_status
-            messages.success(request, 'Order status updated successfully.')
-        else:
+        if new_status not in allowed_statuses:
             messages.error(request, 'Invalid status transition.')
+            return redirect('admin_order_detail', order_id=order.id)
+
+        if new_status == 'cancelled':
+            total_refunded = Decimal('0')
+
+            for item in order.items.filter(status='active').select_related('product_variant'):
+                item.product_variant.stock += item.quantity
+                item.product_variant.save()
+                item.status = 'cancelled'
+                item.save()
+
+                if order.payment_status == 'paid':
+                    refund_amount = calculate_item_refund(item)
+                    if refund_amount > 0 and not has_item_been_refunded(item):
+                        credit_wallet(
+                            user=order.user,
+                            amount=refund_amount,
+                            description=f"Refund for cancelled item ({item.product_variant}) in Order #{order.order_number}",
+                            order=order,
+                            order_item=item,
+                        )
+                        total_refunded += refund_amount
+
+            order.order_status = new_status   # ← THE MISSING LINE
+
+            if total_refunded > 0:
+                messages.success(request, f"Order cancelled. ₹{total_refunded} refunded to customer's wallet.")
+            else:
+                messages.success(request, 'Order cancelled successfully.')
+        else:
+            order.order_status = new_status   # ← THE MISSING LINE (for every other transition too)
+            messages.success(request, 'Order status updated successfully.')
 
         if new_payment_status in ['pending', 'paid']:
             order.payment_status = new_payment_status
@@ -522,15 +550,43 @@ def update_item_status(request, order_id, item_id):
         return redirect('admin_login')
 
     item = get_object_or_404(OrderItem, id=item_id, order_id=order_id)
+    order = item.order
 
     if request.method == 'POST':
         new_status = request.POST.get('item_status')
-        if new_status in ['active', 'cancelled']:
+
+        if new_status not in ['active', 'cancelled']:
+            messages.error(request, 'Invalid item status.')
+            return redirect('admin_order_detail', order_id=order_id)
+
+        if new_status == 'cancelled' and item.status != 'cancelled':
+            item.product_variant.stock += item.quantity
+            item.product_variant.save()
+
+            if order.payment_status == 'paid':
+                refund_amount = calculate_item_refund(item)
+                if refund_amount > 0 and not has_item_been_refunded(item):
+                    credit_wallet(
+                        user=order.user,
+                        amount=refund_amount,
+                        description=f"Refund for cancelled item ({item.product_variant}) in Order #{order.order_number}",
+                        order=order,
+                        order_item=item,
+                    )
+
+            item.status = 'cancelled'
+            item.save()
+
+            all_cancelled = not order.items.filter(status='active').exists()
+            if all_cancelled:
+                order.order_status = 'cancelled'
+                order.save()
+
+            messages.success(request, 'Item cancelled, stock restored, and refund processed if applicable.')
+        else:
             item.status = new_status
             item.save()
             messages.success(request, f'Item status updated to {new_status}.')
-        else:
-            messages.error(request, 'Invalid item status.')
 
     return redirect('admin_order_detail', order_id=order_id)
 
@@ -661,7 +717,7 @@ def initiate_payment(request, order_id):
         "razorpay_order_id": rzp_order['id'],
         "razorpay_key_id":   settings.RAZORPAY_KEY_ID,
         "amount_paise":      amount_paise,
-        "user_name":         request.user.full_name,   # your User model field
+        "user_name":         request.user.full_name,
         "user_email":        request.user.email,
     })
 

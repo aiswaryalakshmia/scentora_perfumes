@@ -50,6 +50,11 @@ class CategoryForm(forms.ModelForm):
         return description
 class ProductForm(forms.ModelForm):
 
+    category = forms.ModelChoiceField(
+        queryset=Category.objects.filter(status='active'),
+        empty_label="Select a category"
+    )
+
     class Meta:
         model = Product
         fields = ['product_name', 'category', 'description']
@@ -69,7 +74,8 @@ class ProductForm(forms.ModelForm):
         }
 
     def clean_product_name(self):
-        product_name = self.cleaned_data.get('product_name')
+        product_name = self.cleaned_data.get('product_name', '').strip()
+        product_name = " ".join(product_name.split())
 
         if not product_name or not product_name.strip():
             raise forms.ValidationError("Product name cannot be empty.")
@@ -77,7 +83,7 @@ class ProductForm(forms.ModelForm):
             raise forms.ValidationError("Product name must be at least 3 characters.")
         if len(product_name) > 200:
             raise forms.ValidationError("Product name cannot exceed 200 characters.")
-        if not re.match(r'^[A-Za-z0-9]+$', product_name):
+        if not re.match(r'^[A-Za-z0-9 ]+$', product_name):
             raise forms.ValidationError("Product name can only contain letters and numbers.")
 
 

@@ -15,7 +15,22 @@ profile
   <!-- Main Content -->
   <main class="dashboard-content">
     <h2>Welcome back, {{ current_user.full_name }}</h2>
-    <p class="referral">Referral Code: {{ current_user.referral_code }}</p>
+
+    <div class="referral-box">
+      <p class="referral-title">Invite Friends & Earn</p>
+      <p class="referral-subtitle">Share your link — you get ₹100, your friend gets ₹200!</p>
+
+      <div class="referral-link-row">
+        <input type="text" id="referral-link" readonly
+          value="{{ request.scheme }}://{{ request.get_host }}{% url 'signup' %}?ref={{ current_user.referral_code }}">
+        <button type="button" onclick="copyReferralLink()" id="copy-link-btn">Copy Link</button>
+      </div>
+
+      <p class="referral-code-line">
+        Or share your code: <strong>{{ current_user.referral_code }}</strong>
+        <button type="button" onclick="copyReferralCode()" class="copy-code-btn">Copy</button>
+      </p>
+  </div>
 
     <!-- Stats Grid -->
     <div class="stats-grid">
@@ -32,7 +47,7 @@ profile
       <div class="stat-box">
         <i class="fa-solid fa-wallet"></i>
         <h4>Wallet Balance</h4>
-        <p>{{ wallet_balance }}</p>
+        <p>{{ wallet_balance|floatformat:2 }}</p>
       </div>
       <div class="stat-box">
         <i class="fa-solid fa-clock"></i>
@@ -76,4 +91,23 @@ profile
       {% endfor %}
     </section>
   </main>
+  <script>
+  function copyReferralLink() {
+    const input = document.getElementById('referral-link');
+    input.select();
+    navigator.clipboard.writeText(input.value).then(() => {
+      const btn = document.getElementById('copy-link-btn');
+      const originalText = btn.textContent;
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.textContent = originalText; }, 2000);
+    });
+  }
+
+  function copyReferralCode() {
+    const code = "{{ current_user.referral_code }}";
+    navigator.clipboard.writeText(code);
+    event.target.textContent = 'Copied!';
+    setTimeout(() => { event.target.textContent = 'Copy'; }, 2000);
+  }
+</script>
 {% endblock %}

@@ -15,6 +15,7 @@ from django.contrib.auth import logout
 from django.contrib import messages
 from .models import User,OTP
 from .referral_utils import apply_referral_code
+from .validators import validate_password
 
 @never_cache
 def signup(request):
@@ -25,116 +26,106 @@ def signup(request):
 
     if request.method == 'POST':
 
-        full_name = request.POST.get('full_name')
-        email = request.POST.get('email')
-        mobile_number = request.POST.get('mobile_number')
-        password = request.POST.get('password')
-        confirm_password = request.POST.get('confirm_password')
-        referral = request.POST.get('referral')
+        full_name = request.POST.get('full_name', '').strip()
+        full_name = " ".join(full_name.split())
+        email = request.POST.get('email', '').strip().lower()
+        mobile_number = request.POST.get('mobile_number', '').strip()
+        password = request.POST.get('password', '')
+        confirm_password = request.POST.get('confirm_password', '')
+        referral = request.POST.get('referral', '').strip().upper()
+        base_context = {'referral_prefill': referral_prefill}
 
         #full name empty check
         if len(full_name)==0:
-            return render(request,'signup.html', {
+            return render(request,'signup.html', {**base_context,
                 'error':'Full name is required'
-            })
+            },status=400)
+
+        #letters and spaces only check
+        if not re.match(r'^[A-Za-z ]+$', full_name):
+            return render(request, 'signup.html', {**base_context,
+                'error': 'Full name can contain only letters'
+            },status=400)
 
         #minimum length check
         if len(full_name) < 3:
-            return render(request, 'signup.html', {
+            return render(request, 'signup.html', {**base_context,
                 'error': 'Full name must contain at least 3 characters'
-            })
+            },status=400)
+
+        #maximum length check
+        if len(full_name) > 150:
+            return render(request, 'signup.html', {**base_context,
+                'error': 'Full name cannot exceed 150 characters'
+            },status=400)
+
 
         #email empty check
         if len(email)==0:
-            return render(request,'signup.html', {
+            return render(request,'signup.html', {**base_context,
                 'error':'Email is required'
-            })
+            },status=400)
+
+        #email maximum length check
+        if len(email) > 254:
+            return render(request, 'signup.html', {**base_context,
+                'error': 'Email address is too long'
+            },status=400)
 
         email_pattern = r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
 
         #regex validation
         if not re.match(email_pattern, email):
-            return render(request, 'signup.html', {
+            return render(request, 'signup.html', {**base_context,
                 'error': 'Enter a valid email address'
-            })
+            },status=400)
 
         #Duplicate email check
         if User.objects.filter(email=email).exists():
-            return render(request, 'signup.html', {
+            return render(request, 'signup.html', {**base_context,
                 'error': 'Email already exists'
-            })
+            },status=400)
 
         #mobile number empty check
         if len(mobile_number)==0:
-            return render(request,'signup.html', {
+            return render(request,'signup.html', {**base_context,
                 'error':'Mobile number is required'
-            })
+            },status=400)
 
         #digits only check
         if not mobile_number.isdigit():
-            return render(request, 'signup.html', {
+            return render(request, 'signup.html', {**base_context,
                 'error': 'Mobile number must contain only digits'
-            })
+            },status=400)
 
         #mobile number length check
         if len(mobile_number) != 10:
-            return render(request, 'signup.html', {
+            return render(request, 'signup.html', {**base_context,
                 'error': 'Mobile number must be 10 digits'
-            })
+            },status=400)
 
         #Duplicate mobile number check
         if User.objects.filter(mobile_number=mobile_number).exists():
-            return render(request, 'signup.html', {
+            return render(request, 'signup.html', {**base_context,
                 'error': 'Mobile number already exists'
-            })
-
-        #password empty check
-        if len(password)==0:
-            return render(request,'signup.html', {
-                'error':'Password is required'
-            })
-
-        #password length check
-        if len(password) < 8:
-            return render(request, 'signup.html', {
-                'error': 'Password must be at least 8 characters'
-            })
-
-        #uppercase check
-        if not re.search(r'[A-Z]', password):
-            return render(request, 'signup.html', {
-                'error': 'Password must contain at least one uppercase letter'
-            })
-
-        #lowercase check
-        if not re.search(r'[a-z]', password):
-            return render(request, 'signup.html', {
-                'error': 'Password must contain at least one lowercase letter'
-            })
-
-        #number check
-        if not re.search(r'[0-9]', password):
-            return render(request, 'signup.html', {
-                'error': 'Password must contain at least one number'
-            })
-
-        #special character check
-        if not re.search(r'[@$!%*?&]', password):
-            return render(request, 'signup.html', {
-                'error': 'Password must contain at least one special character'
-            })
-
-        #confirm password empty check
-        if len(confirm_password)==0:
-            return render(request,'signup.html', {
-                'error':'Password is required'
-            })
-
-        #password match check
-        if password != confirm_password:
-            return render(request, 'signup.html', {
-                'error': 'Passwords do not match'
-            })
+            },status=400)
+        
+        #mobile number starting digit check
+        if mobile_number[0] not in '6789':
+            return render(request, 'signup.html', {**base_context,
+                'error': 'Enter a valid mobile number'
+            },status=400)
+        
+        #password validation
+        password_error = validate_password(password, confirm_password)
+        if password_error:
+            return render(request, 'signup.html', {**base_context, 'error': password_error},status=400)
+        
+        #referral code length check
+        if referral and len(referral) > 20:
+            return render(request, 'signup.html', {**base_context,
+                'error': 'Referral code is invalid'
+            },status=400)
 
         request.session['signup_data'] = {
             'full_name': full_name,
@@ -153,7 +144,7 @@ def signup(request):
 
         send_mail(
             'Scentora Signup Verification',
-            f'Your OTP is {otp}',
+            f'Your OTP is {otp}. It will be valid for 2 minutes.',
             settings.EMAIL_HOST_USER,
             [email],
             fail_silently=False,
@@ -181,12 +172,12 @@ def login_view(request):
         if not email:
             return render(request, 'login.html', {
                 'error': 'Email is required'
-            })
+            },status=400)
 
         if not password:
             return render(request, 'login.html', {
                 'error': 'Password is required'
-            })
+            },status=400)
 
         user = authenticate(
             request,
@@ -224,38 +215,39 @@ def forgot_password(request):
 
     if request.method == 'POST':
 
-        email = request.POST.get('email')
+        email = request.POST.get('email', '').strip().lower()
 
-        try:
+        if not email:
+            return render(request, 'forgot_password.html', {
+                'error': 'Email is required'
+            },status=400)
 
-            otp = str(random.randint(100000, 999999))
+        if not User.objects.filter(email=email).exists():
+            return render(request, 'forgot_password.html', {
+                'error': 'No account found with this email address'
+            },status=400)
 
-            OTP.objects.create(
-                email=email,
-                otp_code=otp
-            )
+        otp = str(random.randint(100000, 999999))
 
-            send_mail(
-                'Scentora Password Reset OTP',
-                f'Your OTP is {otp}',
-                settings.EMAIL_HOST_USER,
-                [email],
-                fail_silently=False,
-            )
+        OTP.objects.create(
+            email=email,
+            otp_code=otp
+        )
 
-            request.session['current_user_email'] = email
-            request.session['otp_purpose'] = 'forgotp'
+        send_mail(
+            'Scentora Password Reset OTP',
+            f'Your OTP is {otp}. It will be valid for 2 minutes.',
+            settings.EMAIL_HOST_USER,
+            [email],
+            fail_silently=False,
+        )
 
-            return redirect('verify_otp')
+        request.session['current_user_email'] = email
+        request.session['otp_purpose'] = 'forgotp'
 
-        except User.DoesNotExist:
+        return redirect('verify_otp')
 
-            print('User does not exist')
-
-    return render(
-        request,
-        'forgot_password.html'
-    )
+    return render(request, 'forgot_password.html')
 
 @never_cache
 def verify_otp(request):
@@ -286,10 +278,14 @@ def verify_otp(request):
 
             # check expiry
             if timezone.now() > otp_obj.expires_at:
-
+                latest_otp = OTP.objects.filter(email=email, is_used=False).order_by('-created_at').first()
+                expires_at_timestamp = None
+                if latest_otp:
+                    expires_at_timestamp = int(latest_otp.expires_at.timestamp() * 1000)
                 return render(request, 'verify_otp.html', {
-                    'error': 'OTP expired'
-                })
+                    'error': 'OTP expired',
+                    'expires_at_timestamp': expires_at_timestamp,
+                },status=400)
 
             # mark OTP used
             otp_obj.is_used = True
@@ -357,11 +353,23 @@ def verify_otp(request):
                 return redirect('reset_password')
 
         except OTP.DoesNotExist:
+            latest_otp = OTP.objects.filter(email=email, is_used=False).order_by('-created_at').first()
+            expires_at_timestamp = None
+            if latest_otp:
+                expires_at_timestamp = int(latest_otp.expires_at.timestamp() * 1000)
             return render(request, 'verify_otp.html', {
-                'error': 'Invalid OTP'
-            })
+                'error': 'Invalid OTP',
+                'expires_at_timestamp': expires_at_timestamp,
+            },status=400)
 
-    return render(request, 'verify_otp.html')
+    latest_otp = OTP.objects.filter(email=email, is_used=False).order_by('-created_at').first()
+    expires_at_timestamp = None
+    if latest_otp:
+        expires_at_timestamp = int(latest_otp.expires_at.timestamp() * 1000)  # JS uses milliseconds
+
+    return render(request, 'verify_otp.html', {
+        'expires_at_timestamp': expires_at_timestamp,
+    })
 
 @never_cache
 def reset_password(request):
@@ -380,13 +388,14 @@ def reset_password(request):
 
     if request.method == 'POST':
 
-        password = request.POST.get('password')
-        confirm_password = request.POST.get('confirm_password')
+        password = request.POST.get('password', '')
+        confirm_password = request.POST.get('confirm_password', '')
 
-        if password != confirm_password:
+        password_error = validate_password(password, confirm_password)
+        if password_error:
             return render(request, 'reset_password.html', {
-                'error': 'Passwords do not match'
-            })
+                'error': password_error
+            },status=400)
 
         user.set_password(password)
         user.save()
@@ -430,7 +439,7 @@ def resend_otp(request):
 
         send_mail(
             'Scentora OTP Verification',
-            f'Your new OTP is {otp}',
+            f'Your OTP is {otp}. It will be valid for 2 minutes.',
             settings.EMAIL_HOST_USER,
             [email],
             fail_silently=False,

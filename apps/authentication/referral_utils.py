@@ -7,10 +7,7 @@ REFERRED_REWARD = Decimal('200.00')
 
 
 def apply_referral_code(new_user, code):
-    """
-    Call this once, right after a new user's account is created and verified.
-    Returns (success: bool, message: str)
-    """
+    
     code = (code or '').strip().upper()
     if not code:
         return False, ""

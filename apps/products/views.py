@@ -6,10 +6,11 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.core.files.base import ContentFile
+from django.urls import reverse
 from apps.common.decorators import admin_required
 from .models import Category,Product,ProductVariant,VariantImage,Cart,CartItem,Wishlist
 from .forms import CategoryForm,ProductForm, ProductVariantForm
-from .utils import get_offer_price
+from .utils import get_offer_price,has_overlapping_offer
 from .models import Offer
 from .models import Review
 from django.db.models import Avg
@@ -45,50 +46,85 @@ def category_management(request):
 @admin_required
 def add_category(request):
 
-    # If user submitted form
     if request.method == 'POST':
-        form = CategoryForm(request.POST,request.FILES)
+        form = CategoryForm(request.POST)
 
         if form.is_valid():
-            form.save()   # Save the data to database
-            messages.success(
-                request,
-                "Category added successfully!"
-            )
+            category = form.save(commit=False)
 
+            cropped_image = request.POST.get('cropped_image')
+
+            if not cropped_image:
+                messages.error(request, "Category image is required.")
+                return render(request, 'admin/add_category.html', {'form': form})
+
+            try:
+                images = json.loads(cropped_image)
+                if not images:
+                    raise ValueError("No image data")
+
+                format_data, imgstr = images[0].split(";base64,")
+                ext = format_data.split("/")[-1]
+                category.image = ContentFile(
+                    base64.b64decode(imgstr),
+                    name=f"category_{form.cleaned_data['category_name']}.{ext}"
+                )
+            except Exception:
+                messages.error(request, "Error while processing image.")
+                return render(request, 'admin/add_category.html', {'form': form}, status=400)
+
+            category.save()
+            messages.success(request, "Category added successfully!")
             return redirect('category_management')
 
-    # If user just opened page
     else:
         form = CategoryForm()
 
     return render(request, 'admin/add_category.html', {'form': form})
 
 @admin_required
-def edit_category(request,category_id):
-    category = get_object_or_404(
-        Category,
-        id=category_id
-    )
+def edit_category(request, category_id):
+    category = get_object_or_404(Category, id=category_id)
 
     if request.method == 'POST':
-        form=CategoryForm(request.POST,request.FILES,instance=category)
+        form = CategoryForm(request.POST, instance=category)
 
         if form.is_valid():
-            form.save()
+            category = form.save(commit=False)
 
-            messages.success(request,"Category updated successfully!")
+            cropped_image = request.POST.get('cropped_image')
+
+            if cropped_image:
+                try:
+                    images = json.loads(cropped_image)
+                    if images:
+                        format_data, imgstr = images[0].split(";base64,")
+                        ext = format_data.split("/")[-1]
+                        category.image = ContentFile(
+                            base64.b64decode(imgstr),
+                            name=f"category_{category.id}.{ext}"
+                        )
+                except Exception:
+                    messages.error(request, "Error while processing image.")
+                    return render(request, 'admin/edit_category.html', {'form': form, 'category': category}, status=400)
+
+            elif request.POST.get('image-clear') == 'on':
+                category.image.delete(save=False)
+                category.image = None
+
+            category.save()
+            messages.success(request, "Category updated successfully!")
             return redirect('category_management')
 
     else:
-        form=CategoryForm(instance=category)
+        form = CategoryForm(instance=category)
 
     return render(
         request,
         'admin/edit_category.html',
         {
-            'form':form,
-            'category':category
+            'form': form,
+            'category': category
         }
     )
 
@@ -390,39 +426,54 @@ def update_variant(request, variant_id):
             instance=variant
         )
 
-        if form.is_valid():
+        edit_redirect = f"{reverse('edit_product', args=[variant.product.id])}?editing={variant.id}"
 
-            variant = form.save()
+        if form.is_valid():
 
             # Cropped images from Cropper.js
             cropped_images = request.POST.get("cropped_images")
 
+            new_images = []
             if cropped_images:
+                try:
+                    new_images = json.loads(cropped_images)
+                except Exception:
+                    messages.error(
+                        request,
+                        "Invalid image data."
+                    )
+                    return redirect(edit_redirect)
+
+            existing_count = variant.images.count()
+
+            if existing_count + len(new_images) < 3:
+                messages.error(
+                    request,
+                    "A variant must have at least 3 images."
+                )
+                return redirect(edit_redirect)
+
+            variant = form.save()
+
+            for index, image_data in enumerate(new_images):
 
                 try:
+                    format_data, imgstr = image_data.split(";base64,")
 
-                    images = json.loads(cropped_images)
+                    ext = format_data.split("/")[-1]
 
-                    for index, image_data in enumerate(images):
+                    image_file = ContentFile(
+                        base64.b64decode(imgstr),
+                        name=f"variant_{variant.id}_{index}.{ext}"
+                    )
 
-                        format_data, imgstr = image_data.split(";base64,")
-
-                        ext = format_data.split("/")[-1]
-
-                        image_file = ContentFile(
-                            base64.b64decode(imgstr),
-                            name=f"variant_{variant.id}_{index}.{ext}"
-                        )
-
-                        VariantImage.objects.create(
-                            variant=variant,
-                            image=image_file
-                        )
+                    VariantImage.objects.create(
+                        variant=variant,
+                        image=image_file
+                    )
 
                 except Exception as e:
-
                     print("Crop image error:", e)
-
                     messages.error(
                         request,
                         "Error while processing cropped images."
@@ -437,20 +488,14 @@ def update_variant(request, variant_id):
                         error["message"]
                     )
 
-            return redirect(
-                "edit_product",
-                product_id=variant.product.id
-            )
+            return redirect(edit_redirect)
 
         messages.success(
             request,
             "Variant updated successfully."
         )
 
-    return redirect(
-        "edit_product",
-        product_id=variant.product.id
-    )
+    return redirect(edit_redirect)
 
 @admin_required
 def toggle_variant_status(request, variant_id):
@@ -473,7 +518,9 @@ def delete_variant_image(request, image_id):
         id=image_id
     )
 
-    product_id = image.variant.product.id
+    variant = image.variant
+    product_id = variant.product.id
+    variant_id = variant.id
 
     image.delete()
 
@@ -483,8 +530,7 @@ def delete_variant_image(request, image_id):
     )
 
     return redirect(
-        "edit_product",
-        product_id=product_id
+        f"{reverse('edit_product', args=[product_id])}?editing={variant_id}"
     )
 
 @admin_required
@@ -961,11 +1007,11 @@ def add_to_wishlist(request, variant_id):
         existing = Wishlist.objects.filter(user=request.user, product_variant=variant).first()
 
         if existing:
-            # Already in wishlist → remove it
+            # Already in wishlist then remove it
             existing.delete()
             messages.success(request, f"{variant.product.product_name} removed from wishlist!")
         else:
-            # Not in wishlist → add it
+            # Not in wishlist then add it
             Wishlist.objects.create(user=request.user, product_variant=variant)
             messages.success(request, f"{variant.product.product_name} added to wishlist!")
         
@@ -1016,7 +1062,10 @@ def offer_management(request):
     })
 
 @admin_required
-def add_offer(request):
+def add_offer(request):    
+    products   = Product.objects.filter(status='active')
+    categories = Category.objects.filter(status='active')       
+
     if request.method == 'POST':
         offer_type          = request.POST.get('offer_type', '').strip()
         offer_name          = request.POST.get('offer_name', '').strip()
@@ -1026,63 +1075,65 @@ def add_offer(request):
         product_id          = request.POST.get('product_id')
         category_id         = request.POST.get('category_id')
 
+        error_context = {'products': products, 'categories': categories}
+
         # Offer name
         if not offer_name:
             messages.error(request, "Offer name is required.")
-            return redirect('add_offer')
+            return render(request, 'admin/add_offer.html', error_context, status=400)
 
         if len(offer_name) < 3:
             messages.error(request, "Offer name must be at least 3 characters.")
-            return redirect('add_offer')
+            return render(request, 'admin/add_offer.html', error_context, status=400)
 
         if len(offer_name) > 100:
             messages.error(request, "Offer name cannot exceed 100 characters.")
-            return redirect('add_offer')
+            return render(request, 'admin/add_offer.html', error_context, status=400)
 
         if Offer.objects.filter(offer_name__iexact=offer_name).exists():
             messages.error(request, "An offer with this name already exists.")
-            return redirect('add_offer')
+            return render(request, 'admin/add_offer.html', error_context, status=400)
 
         # Offer type
         if offer_type not in ['product', 'category']:
             messages.error(request, "Please select a valid offer type.")
-            return redirect('add_offer')
+            return render(request, 'admin/add_offer.html', error_context, status=400)
 
         # Discount percentage
         if not discount_percentage:
             messages.error(request, "Discount percentage is required.")
-            return redirect('add_offer')
+            return render(request, 'admin/add_offer.html', error_context, status=400)
 
         try:
             discount_value = float(discount_percentage)
         except ValueError:
             messages.error(request, "Discount must be a valid number.")
-            return redirect('add_offer')
+            return render(request, 'admin/add_offer.html', error_context, status=400)
 
         if discount_value <= 0 or discount_value > 100:
             messages.error(request, "Discount must be between 1 and 100.")
-            return redirect('add_offer')
+            return render(request, 'admin/add_offer.html', error_context, status=400)
 
         # Dates
         if not start_date or not end_date:
             messages.error(request, "Both start date and end date are required.")
-            return redirect('add_offer')
+            return render(request, 'admin/add_offer.html', error_context, status=400)
 
         try:
             start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date()
             end_date_obj = datetime.strptime(end_date, '%Y-%m-%d').date()
         except ValueError:
             messages.error(request, "Invalid date format.")
-            return redirect('add_offer')
+            return render(request, 'admin/add_offer.html', error_context, status=400)
 
         today = timezone.now().date()
         if start_date_obj < today:
             messages.error(request, "Start date cannot be in the past.")
-            return redirect('add_offer')
+            return render(request, 'admin/add_offer.html', error_context, status=400)
 
         if end_date_obj <= start_date_obj:
             messages.error(request, "End date must be after start date.")
-            return redirect('add_offer')
+            return render(request, 'admin/add_offer.html', error_context, status=400)
 
         offer = Offer(
             offer_type          = offer_type,
@@ -1096,35 +1147,33 @@ def add_offer(request):
         if offer_type == 'product':
             if not product_id:
                 messages.error(request, "Please select a product.")
-                return redirect('add_offer')
+                return render(request, 'admin/add_offer.html', error_context, status=400)
 
             product = get_object_or_404(Product, id=product_id)
 
-            if Offer.objects.filter(product=product, status='active').exists():
-                messages.error(request, f"{product.product_name} already has an active offer.")
-                return redirect('add_offer')
+            if has_overlapping_offer('product', product.id, start_date_obj, end_date_obj):
+                messages.error(request, f"{product.product_name} already has an active offer during this date range.")
+                return render(request, 'admin/add_offer.html', error_context, status=400)
 
             offer.product = product
 
         elif offer_type == 'category':
             if not category_id:
                 messages.error(request, "Please select a category.")
-                return redirect('add_offer')
+                return render(request, 'admin/add_offer.html', error_context, status=400)
 
             category = get_object_or_404(Category, id=category_id)
 
-            if Offer.objects.filter(category=category, status='active').exists():
-                messages.error(request, f"{category.category_name} already has an active offer.")
-                return redirect('add_offer')
+            if has_overlapping_offer('category', category.id, start_date_obj, end_date_obj):
+                messages.error(request, f"{category.category_name} already has an active offer during this date range.")
+                return render(request, 'admin/add_offer.html', error_context, status=400)
 
             offer.category = category
 
         offer.save()
         messages.success(request, "Offer created successfully!")
         return redirect('offer_management')
-
-    products   = Product.objects.filter(status='active')
-    categories = Category.objects.filter(status='active')
+    
     return render(request, 'admin/add_offer.html', {
         'products':   products,
         'categories': categories,
@@ -1183,6 +1232,22 @@ def edit_offer(request, offer_id):
 
         if end_date_obj <= start_date_obj:
             messages.error(request, "End date must be after start date.")
+            return redirect('edit_offer', offer_id=offer.id)
+
+        today = timezone.now().date()
+        if start_date_obj < today:
+            messages.error(request, "Start date cannot be in the past.")
+            return redirect('edit_offer', offer_id=offer.id)
+
+        # check overlap against the same product/category, excluding this offer itself
+        if offer.offer_type == 'product':
+            target_id = offer.product_id
+        else:
+            target_id = offer.category_id
+
+        if has_overlapping_offer(offer.offer_type, target_id, start_date_obj, end_date_obj, exclude_offer_id=offer.id):
+            target_name = offer.product.product_name if offer.offer_type == 'product' else offer.category.category_name
+            messages.error(request, f"{target_name} already has an active offer during this date range.")
             return redirect('edit_offer', offer_id=offer.id)
 
         offer.offer_name          = offer_name

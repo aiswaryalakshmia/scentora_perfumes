@@ -67,14 +67,14 @@
           <td>
             <span class="discount-value">
               {% if coupon.discount_type == 'percentage' %}
-                {{ coupon.discount_value }}% OFF
+                {{ coupon.discount_value|floatformat:2 }}% OFF
               {% else %}
-                ₹{{ coupon.discount_value }} OFF
+                ₹{{ coupon.discount_value|floatformat:2 }} OFF
               {% endif %}
             </span>
           </td>
 
-          <td class="date-text">₹{{ coupon.minimum_price }}</td>
+          <td class="date-text">₹{{ coupon.minimum_price|floatformat:2 }}</td>
 
           <td class="date-text">
             {% if coupon.maximum_redeem %}₹{{ coupon.maximum_redeem }}{% else %}—{% endif %}

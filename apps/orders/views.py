@@ -35,6 +35,9 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from django.http import HttpResponse
+from .utils import release_abandoned_razorpay_orders
+from .utils import calculate_item_refund
+from apps.userprofile.wallet_utils import has_item_been_refunded
 
 
 SHIPPING_CHARGES = {
@@ -66,6 +69,9 @@ def handle_payment(payment_method, order):
 @never_cache
 def checkout(request):
     user = request.user
+
+    # clean up any abandoned Razorpay orders before showing checkout
+    release_abandoned_razorpay_orders(user)
 
     cart, _ = Cart.objects.get_or_create(user=user)
 
@@ -135,16 +141,28 @@ def checkout(request):
     total = subtotal + shipping_charge - discount_amount
 
     coupon_code     = request.session.get('coupon_code')
-    coupon_discount = Decimal(request.session.get('coupon_discount', '0'))
+    coupon_discount = Decimal('0')
     coupon          = None
 
-    if coupon_code:
-        try:
-            coupon = Coupon.objects.get(coupon_code=coupon_code)
-        except Coupon.DoesNotExist:
+    if coupon_code:        
+        cart_total_for_coupon = subtotal - discount_amount
+
+        revalidated_coupon, revalidated_discount, coupon_error = validate_coupon(
+            coupon_code, request.user, cart_total_for_coupon
+        )
+
+        if coupon_error:
+            # coupon no longer valid
             request.session.pop('coupon_code', None)
             request.session.pop('coupon_discount', None)
+            messages.warning(request, f"Your coupon was removed: {coupon_error}")
+            coupon = None
             coupon_discount = Decimal('0')
+        else:
+            coupon = revalidated_coupon
+            coupon_discount = revalidated_discount
+            # keep session in sync in case the discount amount changed
+            request.session['coupon_discount'] = str(coupon_discount)
 
     final_total = total - coupon_discount
 
@@ -189,6 +207,9 @@ def checkout(request):
 def place_order(request):
     if request.method == 'POST':
         user = request.user
+
+        # clean up any abandoned Razorpay orders before placing a new one
+        release_abandoned_razorpay_orders(user)
 
         address_id = request.POST.get('selected_address')
         if not address_id:
@@ -285,37 +306,39 @@ def place_order(request):
                 )
 
                 # After order is created, handle coupon
-                coupon_code     = request.session.get('coupon_code')
-                coupon_discount = Decimal(request.session.get('coupon_discount', '0'))
+                coupon_code = request.session.get('coupon_code')
 
-                if coupon_code and coupon_discount > 0:
-                    try:
-                        coupon = Coupon.objects.get(coupon_code=coupon_code)
+                if coupon_code:
+                    # re-check against the actual cart total being charged right now
+                    cart_total_for_coupon = total_amount - discount_amount
 
-                        # Attach coupon to order
-                        order.coupon = coupon
-                        order.coupon_discount = coupon_discount
-                        order.final_amount = order.final_amount - coupon_discount
+                    revalidated_coupon, revalidated_discount, coupon_error = validate_coupon(
+                        coupon_code, user, cart_total_for_coupon
+                    )
+
+                    if coupon_error:
+                        # Coupon no longer valid                        
+                        request.session.pop('coupon_code', None)
+                        request.session.pop('coupon_discount', None)
+                        messages.warning(request, f"Your coupon could not be applied: {coupon_error}")
+                    else:
+                        order.coupon  = revalidated_coupon
+                        order.coupon_discount = revalidated_discount
+                        order.final_amount  = order.final_amount - revalidated_discount
                         order.save()
 
-                        # Record usage — prevents user from using again
                         CouponUsage.objects.create(
-                            coupon=coupon,
+                            coupon=revalidated_coupon,
                             user=user,
                             order=order,
                         )
 
-                        # Increment global used count
-                        coupon.used_count += 1
-                        coupon.save()
+                        revalidated_coupon.used_count += 1
+                        revalidated_coupon.save()
 
-                        # Clear from session
                         if payment_method == 'cod':
                             request.session.pop('coupon_code', None)
                             request.session.pop('coupon_discount', None)
-
-                    except Coupon.DoesNotExist:
-                        pass
 
                 for item in cart_items:
                     OrderItem.objects.create(
@@ -350,7 +373,7 @@ def place_order(request):
                     raise Exception(message)
 
                 # Only clear cart for COD — Razorpay clears after payment confirmed
-                if payment_method == 'cod':
+                if payment_method in ('cod', 'wallet'):
                     cart_items.delete()
 
         except Exception as e:
@@ -468,7 +491,6 @@ def update_order_status(request, order_id):
 
     if request.method == 'POST':
 
-        # block manual status change for return_requested
         if order.order_status == 'return_requested':
             messages.error(request, 'Please use Approve or Reject buttons to handle return request.')
             return redirect('admin_order_detail', order_id=order.id)
@@ -478,11 +500,40 @@ def update_order_status(request, order_id):
 
         allowed_statuses = get_allowed_next_statuses(order.order_status)
 
-        if new_status in allowed_statuses:
+        if new_status not in allowed_statuses:
+            messages.error(request, 'Invalid status transition.')
+            return redirect('admin_order_detail', order_id=order.id)
+
+        if new_status == 'cancelled':
+            total_refunded = Decimal('0')
+
+            for item in order.items.filter(status='active').select_related('product_variant'):
+                item.product_variant.stock += item.quantity
+                item.product_variant.save()
+                item.status = 'cancelled'
+                item.save()
+
+                if order.payment_status == 'paid':
+                    refund_amount = calculate_item_refund(item)
+                    if refund_amount > 0 and not has_item_been_refunded(item):
+                        credit_wallet(
+                            user=order.user,
+                            amount=refund_amount,
+                            description=f"Refund for cancelled item ({item.product_variant}) in Order #{order.order_number}",
+                            order=order,
+                            order_item=item,
+                        )
+                        total_refunded += refund_amount
+
+            order.order_status = new_status
+
+            if total_refunded > 0:
+                messages.success(request, f"Order cancelled. ₹{total_refunded} refunded to customer's wallet.")
+            else:
+                messages.success(request, 'Order cancelled successfully.')
+        else:
             order.order_status = new_status
             messages.success(request, 'Order status updated successfully.')
-        else:
-            messages.error(request, 'Invalid status transition.')
 
         if new_payment_status in ['pending', 'paid']:
             order.payment_status = new_payment_status
@@ -499,15 +550,43 @@ def update_item_status(request, order_id, item_id):
         return redirect('admin_login')
 
     item = get_object_or_404(OrderItem, id=item_id, order_id=order_id)
+    order = item.order
 
     if request.method == 'POST':
         new_status = request.POST.get('item_status')
-        if new_status in ['active', 'cancelled']:
+
+        if new_status not in ['active', 'cancelled']:
+            messages.error(request, 'Invalid item status.')
+            return redirect('admin_order_detail', order_id=order_id)
+
+        if new_status == 'cancelled' and item.status != 'cancelled':
+            item.product_variant.stock += item.quantity
+            item.product_variant.save()
+
+            if order.payment_status == 'paid':
+                refund_amount = calculate_item_refund(item)
+                if refund_amount > 0 and not has_item_been_refunded(item):
+                    credit_wallet(
+                        user=order.user,
+                        amount=refund_amount,
+                        description=f"Refund for cancelled item ({item.product_variant}) in Order #{order.order_number}",
+                        order=order,
+                        order_item=item,
+                    )
+
+            item.status = 'cancelled'
+            item.save()
+
+            all_cancelled = not order.items.filter(status='active').exists()
+            if all_cancelled:
+                order.order_status = 'cancelled'
+                order.save()
+
+            messages.success(request, 'Item cancelled, stock restored, and refund processed if applicable.')
+        else:
             item.status = new_status
             item.save()
             messages.success(request, f'Item status updated to {new_status}.')
-        else:
-            messages.error(request, 'Invalid item status.')
 
     return redirect('admin_order_detail', order_id=order_id)
 
@@ -556,6 +635,54 @@ def handle_return_request(request, order_id):
 
     return redirect('admin_order_detail', order_id=order.id)
 
+@admin_required
+@never_cache
+def handle_item_return_request(request, order_id, item_id):
+    order = get_object_or_404(Order, id=order_id)
+    item = get_object_or_404(OrderItem, id=item_id, order=order)
+
+    if item.status != 'return_requested':
+        messages.error(request, "This item has no pending return request.")
+        return redirect('admin_order_detail', order_id=order.id)
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'approve':
+            item.product_variant.stock += item.quantity
+            item.product_variant.save()
+
+            item.status = 'returned'
+            item.save()
+
+            refund_amount = calculate_item_refund(item)
+
+            if order.payment_status == 'paid' and refund_amount > 0 and not has_item_been_refunded(item):
+                credit_wallet(
+                    user=order.user,
+                    amount=refund_amount,
+                    description=f"Refund for returned item ({item.product_variant}) in Order #{order.order_number}",
+                    order=order,
+                    order_item=item,
+                )
+                messages.success(request, f"Item return approved. Stock restored and ₹{refund_amount} refunded to customer's wallet.")
+            else:
+                messages.success(request, "Item return approved. Stock has been restored.")
+
+            if not order.items.filter(status__in=['active', 'return_requested']).exists():
+                order.order_status = 'returned'
+                order.save()
+
+        elif action == 'reject':
+            item.status = 'active'
+            item.return_reason = None
+            item.save()
+            messages.success(request, "Item return request rejected.")
+
+        else:
+            messages.error(request, "Invalid action.")
+
+    return redirect('admin_order_detail', order_id=order.id)
 
 razorpay_client = razorpay.Client(
     auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
@@ -566,7 +693,7 @@ razorpay_client = razorpay.Client(
 def initiate_payment(request, order_id):
     order = get_object_or_404(Order, id=order_id, user=request.user)
 
-    # Amount in paise (₹1 = 100 paise)
+    # Amount in paise
     amount_paise = int(order.final_amount * 100)
 
     # Create order on Razorpay's server
@@ -590,7 +717,7 @@ def initiate_payment(request, order_id):
         "razorpay_order_id": rzp_order['id'],
         "razorpay_key_id":   settings.RAZORPAY_KEY_ID,
         "amount_paise":      amount_paise,
-        "user_name":         request.user.full_name,   # your User model field
+        "user_name":         request.user.full_name,
         "user_email":        request.user.email,
     })
 
@@ -785,73 +912,77 @@ def coupon_management(request):
 @never_cache
 def add_coupon(request):
     if request.method == 'POST':
-        code  = request.POST.get('coupon_code', '').strip().upper()
-        discount_type  = request.POST.get('discount_type', '').strip()
-        discount_value = request.POST.get('discount_value', '').strip()
-        minimum_price  = request.POST.get('minimum_price', '0').strip()
+        code            = request.POST.get('coupon_code', '').strip().upper()
+        discount_type   = request.POST.get('discount_type', '').strip()
+        discount_value  = request.POST.get('discount_value', '').strip()
+        minimum_price   = request.POST.get('minimum_price', '0').strip()
         maximum_redeem  = request.POST.get('maximum_redeem', '').strip()
-        expiry_date  = request.POST.get('expiry_date', '').strip()
-        usage_limit  = request.POST.get('usage_limit', '1').strip()
+        expiry_date     = request.POST.get('expiry_date', '').strip()
+        usage_limit     = request.POST.get('usage_limit', '1').strip() 
 
         # Coupon code
         if not code:
             messages.error(request, "Coupon code is required.")
-            return redirect('add_coupon')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         if len(code) < 3:
             messages.error(request, "Coupon code must be at least 3 characters.")
-            return redirect('add_coupon')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         if len(code) > 20:
             messages.error(request, "Coupon code cannot exceed 20 characters.")
-            return redirect('add_coupon')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         if not code.isalnum():
             messages.error(request, "Coupon code can only contain letters and numbers.")
-            return redirect('add_coupon')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         if Coupon.objects.filter(coupon_code=code).exists():
             messages.error(request, "Coupon code already exists.")
-            return redirect('add_coupon')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         # Discount type
         if discount_type not in ['percentage', 'flat']:
             messages.error(request, "Please select a valid discount type.")
-            return redirect('add_coupon')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         # Discount value
         if not discount_value:
             messages.error(request, "Discount value is required.")
-            return redirect('add_coupon')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         try:
             discount_value_num = float(discount_value)
         except ValueError:
             messages.error(request, "Discount value must be a valid number.")
-            return redirect('add_coupon')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         if discount_value_num <= 0:
             messages.error(request, "Discount value must be greater than 0.")
-            return redirect('add_coupon')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         if discount_type == 'percentage' and discount_value_num > 100:
             messages.error(request, "Percentage discount cannot exceed 100.")
-            return redirect('add_coupon')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         if discount_type == 'flat' and discount_value_num > 100000:
             messages.error(request, "Flat discount amount seems unreasonably high.")
-            return redirect('add_coupon')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         # Minimum order amount
         try:
             minimum_price_num = float(minimum_price) if minimum_price else 0
         except ValueError:
             messages.error(request, "Minimum order amount must be a valid number.")
-            return redirect('add_coupon')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         if minimum_price_num < 0:
             messages.error(request, "Minimum order amount cannot be negative.")
-            return redirect('add_coupon')
+            return render(request, 'admin/add_coupon.html', status=400)
+
+        if discount_type == 'flat' and minimum_price_num <= discount_value_num:
+            messages.error(request, "Minimum order amount must be greater than the flat discount value.")
+            return render(request, 'admin/add_coupon.html', status=400)
 
         # Maximum redeem
         maximum_redeem_num = None
@@ -860,42 +991,42 @@ def add_coupon(request):
                 maximum_redeem_num = float(maximum_redeem)
             except ValueError:
                 messages.error(request, "Maximum redeem amount must be a valid number.")
-                return redirect('add_coupon')
+                return render(request, 'admin/add_coupon.html', status=400)
 
             if maximum_redeem_num <= 0:
                 messages.error(request, "Maximum redeem amount must be greater than 0.")
-                return redirect('add_coupon')
+                return render(request, 'admin/add_coupon.html', status=400)
 
         # Expiry date
         if not expiry_date:
             messages.error(request, "Expiry date is required.")
-            return redirect('add_coupon')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         try:
             expiry_date_obj = datetime.strptime(expiry_date, '%Y-%m-%d').date()
         except ValueError:
             messages.error(request, "Invalid expiry date format.")
-            return redirect('add_coupon')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         today = timezone.now().date()
         if expiry_date_obj <= today:
             messages.error(request, "Expiry date must be in the future.")
-            return redirect('add_coupon')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         # Usage limit
         if not usage_limit:
             messages.error(request, "Usage limit is required.")
-            return redirect('add_coupon')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         try:
             usage_limit_num = int(usage_limit)
         except ValueError:
             messages.error(request, "Usage limit must be a whole number.")
-            return redirect('add_coupon')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         if usage_limit_num < 1:
             messages.error(request, "Usage limit must be at least 1.")
-            return redirect('add_coupon')
+            return render(request, 'admin/add_coupon.html', status=400)
 
         Coupon.objects.create(
             coupon_code    = code,
@@ -925,31 +1056,35 @@ def edit_coupon(request, coupon_id):
 
         if not discount_value:
             messages.error(request, "Discount value is required.")
-            return redirect('edit_coupon', coupon_id=coupon.id)
+            return redirect('edit_coupon', coupon_id=coupon.id, status=400)
 
         try:
             discount_value_num = float(discount_value)
         except ValueError:
             messages.error(request, "Discount value must be a valid number.")
-            return redirect('edit_coupon', coupon_id=coupon.id)
+            return redirect('edit_coupon', coupon_id=coupon.id, status=400)
 
         if discount_value_num <= 0:
             messages.error(request, "Discount value must be greater than 0.")
-            return redirect('edit_coupon', coupon_id=coupon.id)
+            return redirect('edit_coupon', coupon_id=coupon.id, status=400)
 
         if coupon.discount_type == 'percentage' and discount_value_num > 100:
             messages.error(request, "Percentage discount cannot exceed 100.")
-            return redirect('edit_coupon', coupon_id=coupon.id)
+            return redirect('edit_coupon', coupon_id=coupon.id, status=400)
 
         try:
             minimum_price_num = float(minimum_price) if minimum_price else 0
         except ValueError:
             messages.error(request, "Minimum order amount must be a valid number.")
-            return redirect('edit_coupon', coupon_id=coupon.id)
+            return redirect('edit_coupon', coupon_id=coupon.id, status=400)
 
         if minimum_price_num < 0:
             messages.error(request, "Minimum order amount cannot be negative.")
-            return redirect('edit_coupon', coupon_id=coupon.id)
+            return redirect('edit_coupon', coupon_id=coupon.id, status=400)
+        
+        if coupon.discount_type == 'flat' and minimum_price_num <= discount_value_num:
+            messages.error(request, "Minimum order amount must be greater than the flat discount value.")
+            return redirect('edit_coupon', coupon_id=coupon.id, status=400)
 
         maximum_redeem_num = None
         if maximum_redeem:
@@ -957,39 +1092,39 @@ def edit_coupon(request, coupon_id):
                 maximum_redeem_num = float(maximum_redeem)
             except ValueError:
                 messages.error(request, "Maximum redeem amount must be a valid number.")
-                return redirect('edit_coupon', coupon_id=coupon.id)
+                return redirect('edit_coupon', coupon_id=coupon.id, status=400)
 
             if maximum_redeem_num <= 0:
                 messages.error(request, "Maximum redeem amount must be greater than 0.")
-                return redirect('edit_coupon', coupon_id=coupon.id)
+                return redirect('edit_coupon', coupon_id=coupon.id, status=400)
 
         if not expiry_date:
             messages.error(request, "Expiry date is required.")
-            return redirect('edit_coupon', coupon_id=coupon.id)
+            return redirect('edit_coupon', coupon_id=coupon.id, status=400)
 
         try:
             expiry_date_obj = datetime.strptime(expiry_date, '%Y-%m-%d').date()
         except ValueError:
             messages.error(request, "Invalid expiry date format.")
-            return redirect('edit_coupon', coupon_id=coupon.id)
+            return redirect('edit_coupon', coupon_id=coupon.id, status=400)
 
         if not usage_limit:
             messages.error(request, "Usage limit is required.")
-            return redirect('edit_coupon', coupon_id=coupon.id)
+            return redirect('edit_coupon', coupon_id=coupon.id, status=400)
 
         try:
             usage_limit_num = int(usage_limit)
         except ValueError:
             messages.error(request, "Usage limit must be a whole number.")
-            return redirect('edit_coupon', coupon_id=coupon.id)
+            return redirect('edit_coupon', coupon_id=coupon.id, status=400)
 
         if usage_limit_num < 1:
             messages.error(request, "Usage limit must be at least 1.")
-            return redirect('edit_coupon', coupon_id=coupon.id)
+            return redirect('edit_coupon', coupon_id=coupon.id, status=400)
 
         if usage_limit_num < coupon.used_count:
             messages.error(request, f"Usage limit cannot be less than the number of times already used ({coupon.used_count}).")
-            return redirect('edit_coupon', coupon_id=coupon.id)
+            return redirect('edit_coupon', coupon_id=coupon.id, status=400)
 
         coupon.discount_value  = discount_value_num
         coupon.minimum_price   = minimum_price_num

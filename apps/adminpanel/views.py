@@ -17,6 +17,7 @@ from django.http import JsonResponse
 from datetime import timedelta
 from django.utils import timezone
 from apps.orders.models import Order, OrderItem
+from apps.common.decorators import admin_required
 
 @never_cache
 def admin_login(request):
@@ -41,7 +42,7 @@ def admin_login(request):
             )
     return render(request,'admin_login.html')
 
-@login_required
+@admin_required
 @never_cache
 def admin_dashboard(request):
     if not request.user.is_superuser:
@@ -128,7 +129,7 @@ def get_chart_data(period):
     return {'labels': labels, 'values': values}
 
 
-@login_required
+@admin_required
 @never_cache
 def dashboard_chart_data(request):
     if not request.user.is_superuser:
@@ -137,7 +138,7 @@ def dashboard_chart_data(request):
     data = get_chart_data(period)
     return JsonResponse(data)
 
-@login_required
+@admin_required
 @never_cache
 def user_management(request):
     if not request.user.is_superuser:
@@ -159,6 +160,7 @@ def user_management(request):
         "search_query": search_query
     })
 
+@admin_required
 def toggle_user_status(request,user_id):
     if not request.user.is_superuser:
         return redirect('login')

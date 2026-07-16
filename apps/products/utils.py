@@ -2,6 +2,7 @@ from decimal import Decimal
 from django.utils import timezone
 from apps.orders.models import OrderItem
 from apps.products.models import Review
+from .models import Offer
 
 def get_best_offer_for_variant(variant):
     """
@@ -36,7 +37,7 @@ def get_best_offer_for_variant(variant):
 
 
 def get_offer_price(variant):
-    # Returns final price after applying best available discount.    
+    # Returns final price after applying best available discount.
     base_price = variant.price
 
     # Offer-based discount (percentage)
@@ -75,3 +76,22 @@ def can_review_product(user, product):
 
     already_reviewed = Review.objects.filter(user=user, product=product).exists()
     return not already_reviewed
+
+def has_overlapping_offer(offer_type, target_id, start_date, end_date, exclude_offer_id=None):
+    filters = {'status': 'active'}
+    if offer_type == 'product':
+        filters['product_id'] = target_id
+    else:
+        filters['category_id'] = target_id
+
+    existing_offers = Offer.objects.filter(**filters)
+
+    if exclude_offer_id:
+        existing_offers = existing_offers.exclude(id=exclude_offer_id)
+
+    for offer in existing_offers:
+        # overlap condition: start1 <= end2 AND start2 <= end1
+        if start_date <= offer.end_date and offer.start_date <= end_date:
+            return True
+
+    return False

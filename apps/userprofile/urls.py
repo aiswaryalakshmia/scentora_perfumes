@@ -15,5 +15,6 @@ urlpatterns = [
     path('profile/my-orders/<int:order_id>/cancel/', views.cancel_order, name='cancel_order'),
     path('profile/my-orders/<int:order_id>/cancel-item/<int:item_id>/', views.cancel_order_item, name='cancel_order_item'),
     path('profile/my-orders/<int:order_id>/return/', views.return_order, name='return_order'),
+    path('profile/my-orders/<int:order_id>/item/<int:item_id>/return/', views.return_order_item, name='return_order_item'),
     path('wallet/', views.wallet_history, name='wallet_history'),
     ]

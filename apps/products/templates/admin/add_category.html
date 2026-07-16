@@ -8,6 +8,7 @@ Add Category
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'admin/add_category.css' %}">
 <link rel="stylesheet" href="{% static 'admin/product_details.css' %}">
+<link rel="stylesheet" href="{% static 'admin/variant_image.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -69,17 +70,10 @@ Add Category
                 {% endif %}
 
                 <!-- Image -->
-                <label for="{{ form.image.id_for_label }}">
-                    Category Image
-                </label>
+                <label>Category Image</label>
+                <input type="checkbox" name="image-clear" id="id-image-clear" style="display:none;">
 
-                {{ form.image }}
-
-                {% if form.image.errors %}
-                    <div class="error-message">
-                        {{ form.image.errors }}
-                    </div>
-                {% endif %}                
+                {% include 'admin/partials/category_image_upload.html' %}              
 
                 <div class="form-actions">
                     <a href="{% url 'category_management' %}"
@@ -96,4 +90,6 @@ Add Category
         </div>
       </section>
     </main>
+    {% include 'admin/partials/crop_modal.html' %}
+<script src="{% static 'admin/js/variant_image_cropper.js' %}"></script>
 {% endblock %}

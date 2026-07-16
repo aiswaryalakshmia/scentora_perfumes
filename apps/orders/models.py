@@ -2,6 +2,7 @@ from django.db import models
 from django.utils import timezone
 from apps.authentication.models import User
 from apps.products.models import ProductVariant
+from decimal import Decimal
 
 class OrderAddress(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='order_addresses')
@@ -147,8 +148,7 @@ class Coupon(models.Model):
             self.used_count < self.usage_limit
         )
 
-    def calculate_discount(self, cart_total):
-        from decimal import Decimal
+    def calculate_discount(self, cart_total):        
         if self.discount_type == 'percentage':
             discount = cart_total * self.discount_value / Decimal('100')
             if self.maximum_redeem:

@@ -525,14 +525,14 @@ def update_order_status(request, order_id):
                         )
                         total_refunded += refund_amount
 
-            order.order_status = new_status   # ← THE MISSING LINE
+            order.order_status = new_status
 
             if total_refunded > 0:
                 messages.success(request, f"Order cancelled. ₹{total_refunded} refunded to customer's wallet.")
             else:
                 messages.success(request, 'Order cancelled successfully.')
         else:
-            order.order_status = new_status   # ← THE MISSING LINE (for every other transition too)
+            order.order_status = new_status
             messages.success(request, 'Order status updated successfully.')
 
         if new_payment_status in ['pending', 'paid']:
@@ -693,7 +693,7 @@ razorpay_client = razorpay.Client(
 def initiate_payment(request, order_id):
     order = get_object_or_404(Order, id=order_id, user=request.user)
 
-    # Amount in paise (₹1 = 100 paise)
+    # Amount in paise
     amount_paise = int(order.final_amount * 100)
 
     # Create order on Razorpay's server

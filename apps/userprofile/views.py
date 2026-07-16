@@ -528,7 +528,7 @@ def order_detail(request, order_id):
     order = get_object_or_404(Order, id=order_id, user=request.user)
     order_items = order.items.select_related('product_variant__product').all()
 
-    # for each item, check reviewability + fetch existing review if any
+    # for each item, check reviewability and fetch existing review if any
     review_map = {}
     for item in order_items:
         product = item.product_variant.product

@@ -1007,11 +1007,11 @@ def add_to_wishlist(request, variant_id):
         existing = Wishlist.objects.filter(user=request.user, product_variant=variant).first()
 
         if existing:
-            # Already in wishlist → remove it
+            # Already in wishlist then remove it
             existing.delete()
             messages.success(request, f"{variant.product.product_name} removed from wishlist!")
         else:
-            # Not in wishlist → add it
+            # Not in wishlist then add it
             Wishlist.objects.create(user=request.user, product_variant=variant)
             messages.success(request, f"{variant.product.product_name} added to wishlist!")
         
@@ -1173,9 +1173,7 @@ def add_offer(request):
         offer.save()
         messages.success(request, "Offer created successfully!")
         return redirect('offer_management')
-
-    # products   = Product.objects.filter(status='active')
-    # categories = Category.objects.filter(status='active')
+    
     return render(request, 'admin/add_offer.html', {
         'products':   products,
         'categories': categories,

@@ -63,12 +63,8 @@ def release_abandoned_razorpay_orders(user):
         if hasattr(order, 'payment_detail'):
             order.payment_detail.mark_failed()
 
-def calculate_item_refund(item):
-    """
-    Returns refund amount for one OrderItem, deducting its proportional
-    share of the order-level coupon discount. Offer/manual discount is
-    already baked into item.total.
-    """
+def calculate_item_refund(item):    
+    # Returns refund amount for one OrderItem, deducting its proportional share of the order-level coupon discount    
     order = item.order
     items_total = order.items.aggregate(total=Sum('total'))['total'] or Decimal('0')
 

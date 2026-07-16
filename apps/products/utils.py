@@ -37,7 +37,7 @@ def get_best_offer_for_variant(variant):
 
 
 def get_offer_price(variant):
-    # Returns final price after applying best available discount.    
+    # Returns final price after applying best available discount.
     base_price = variant.price
 
     # Offer-based discount (percentage)

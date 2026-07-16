@@ -3,6 +3,11 @@
   color: #aaa;
 }
 
+
+* {
+  box-sizing: border-box;
+}
+
 /* Main Content */
 .profile-content {
   margin-left: 260px;
@@ -152,4 +157,20 @@
 .profile-avatar:hover {
     opacity: 0.85;
     transition: 0.3s;
+}
+
+@media (max-width: 768px) {
+  .profile-content {
+    margin-left: 0;
+    padding: 24px 20px;
+  }
+
+  .password-row {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .password-row div {
+    margin-bottom: 0;
+  }
 }

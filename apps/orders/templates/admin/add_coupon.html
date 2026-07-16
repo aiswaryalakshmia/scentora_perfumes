@@ -32,14 +32,15 @@
               <input type="text" id="coupon_code" name="coupon_code"
                      placeholder="e.g. SAVE100"
                      style="text-transform:uppercase;"
+                     value="{{ request.POST.coupon_code|default:'' }}"
                      required>
             </div>
             <div class="form-group">
               <label for="discount_type">Discount Type</label>
               <select id="discount_type" name="discount_type" required>
                 <option value="">Select type...</option>
-                <option value="percentage">Percentage (%)</option>
-                <option value="flat">Flat Amount (₹)</option>
+                <option value="percentage" {% if request.POST.discount_type == 'percentage' %}selected{% endif %}>Percentage (%)</option>
+                <option value="flat" {% if request.POST.discount_type == 'flat' %}selected{% endif %}>Flat Amount (₹)</option>
               </select>
             </div>
           </div>
@@ -49,13 +50,17 @@
               <label for="discount_value">Discount Value</label>
               <input type="number" id="discount_value" name="discount_value"
                      placeholder="e.g. 10 or 100"
-                     min="1" step="0.01" required>
+                     min="1" step="0.01"
+                     value="{{ request.POST.discount_value|default:'' }}"
+                     required>
             </div>
             <div class="form-group">
               <label for="usage_limit">Usage Limit</label>
               <input type="number" id="usage_limit" name="usage_limit"
                      placeholder="e.g. 100"
-                     min="1" value="1" required>
+                     min="1"
+                     value="{{ request.POST.usage_limit|default:'1' }}"
+                     required>
             </div>
           </div>
 
@@ -64,13 +69,15 @@
               <label for="minimum_price">Minimum Order Amount (₹)</label>
               <input type="number" id="minimum_price" name="minimum_price"
                      placeholder="e.g. 500"
-                     min="0" step="0.01" value="0">
+                     min="0" step="0.01"
+                     value="{{ request.POST.minimum_price|default:'0' }}">
             </div>
             <div class="form-group">
               <label for="maximum_redeem">Maximum Redeem Amount (₹)</label>
               <input type="number" id="maximum_redeem" name="maximum_redeem"
                      placeholder="Leave empty for no cap"
-                     min="0" step="0.01">
+                     min="0" step="0.01"
+                     value="{{ request.POST.maximum_redeem|default:'' }}">
             </div>
           </div>
 
@@ -84,7 +91,9 @@
 
           <div class="form-group">
             <label for="expiry_date">Expiry Date</label>
-            <input type="date" id="expiry_date" name="expiry_date" required>
+            <input type="date" id="expiry_date" name="expiry_date"
+                   value="{{ request.POST.expiry_date|default:'' }}"
+                   required>
           </div>
 
           <button type="submit" class="btn-create">Create Coupon</button>

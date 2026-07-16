@@ -16,12 +16,12 @@ def get_wallet_balance(user):
     return result['balance'] or Decimal('0.00')
 
 
-def credit_wallet(user, amount, description, order=None):
+def credit_wallet(user, amount, description, order=None, order_item=None):
     amount = Decimal(amount)
     if amount <= 0:
         raise ValueError("Credit amount must be positive.")
     return WalletTransaction.objects.create(
-        user=user, order=order, amount=amount,
+        user=user, order=order, order_item=order_item, amount=amount,
         transaction_type='credit', description=description,
     )
 
@@ -43,4 +43,9 @@ def has_been_refunded(order):
     # prevents double-crediting the same order on repeated clicks
     return WalletTransaction.objects.filter(
         order=order, transaction_type='credit'
+    ).exists()
+
+def has_item_been_refunded(order_item):
+    return WalletTransaction.objects.filter(
+        order_item=order_item, transaction_type='credit'
     ).exists()

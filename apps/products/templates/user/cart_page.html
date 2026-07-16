@@ -25,7 +25,7 @@ Cart
             <h3>{{ item.product_variant.product.product_name }}</h3>
             <p>{{ item.product_variant.size }}ml</p>
           </div>
-          <div class="item-price">₹{{ item.product_variant.price }}</div>
+          <div class="item-price">₹{{ item.product_variant.price|floatformat:2 }}</div>
           <div class="item-quantity">
             <form method="POST" action="{% url 'update_cart' item.id %}">
                 {% csrf_token %}
@@ -49,14 +49,14 @@ Cart
     <aside class="order-summary">
       <h3>Order Summary</h3>
       <div class="summary-details">
-        <p>Subtotal <span>₹{{ subtotal }}</span></p>
-        <p>Discount <span>-₹{{ total_discount }}</span></p>
+        <p>Subtotal <span>₹{{ subtotal|floatformat:2 }}</span></p>
+        <p>Discount <span>-₹{{ total_discount|floatformat:2 }}</span></p>
         <p>Standard Shipping <span>₹0.00</span></p>
 
         <hr>
 
         <p class="total">
-            Total <span>₹{{ total }}</span>
+            Total <span>₹{{ total|floatformat:2 }}</span>
         </p>
     </div>
       <a href="{% url 'checkout' %}" class="btn-checkout">

@@ -221,3 +221,31 @@ form button:hover {
     font-size: 12px;
   }
 }
+
+/* ── Password Toggle ── */
+.password-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.password-wrapper input {
+  width: 100%;
+  padding-right: 42px;
+  box-sizing: border-box;
+  margin-bottom: 15px;
+}
+
+.eye-icon {
+  position: absolute;
+  right: 12px;
+  top: calc(50% - 7px);
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #888;
+  font-size: 0.9rem;
+  user-select: none;
+}
+
+.eye-icon:hover {
+  color: #c59a3a;
+}

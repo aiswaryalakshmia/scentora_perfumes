@@ -55,7 +55,7 @@ Edit Product
                 <button
                     type="submit"
                     class="save-btn">
-                    Save Changes
+                    Save Product
                 </button>
 
             </div>
@@ -96,7 +96,7 @@ Edit Product
 
                 <p><b>Size:</b> {{ variant.size }}</p>
                 <p><b>Price:</b> ₹{{ variant.price }}</p>
-                <p><b>Discount Price:</b> ₹{{ variant.discount_price }}</p>
+                <p><b>Discount Amount:</b> ₹{{ variant.discount_price }}</p>
                 <p><b>Stock:</b> {{ variant.stock }}</p>
 
                 <div class="variant-images">
@@ -168,7 +168,7 @@ Edit Product
                 </div>
 
                 <div class="form-group">
-                    <label>Discount Price (₹)</label>
+                    <label>Discount Amount (₹)</label>
                     <input
                         type="number"
                         step="0.01"
@@ -222,7 +222,7 @@ Edit Product
 
                     <button type="submit"
                             class="save-btn">
-                        Save Changes
+                        Save Variant
                     </button>
 
                     <button type="button"
@@ -257,7 +257,7 @@ Edit Product
             <label>Price (₹)</label>
             <input type="number" step="0.01" name="price">
 
-            <label>Discount Price (₹)</label>
+            <label>Discount Amount (₹)</label>
             <input type="number" step="0.01" name="discount_price">
 
             <label>Stock</label>
@@ -272,7 +272,7 @@ Edit Product
                 </a>
 
                 <button type="submit" name="add_product_variant" class="save-btn">
-                    Save Changes
+                    Save New Variant
                 </button>
 
             </div>
@@ -309,6 +309,22 @@ Edit Product
             }
         });
     }
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const params = new URLSearchParams(window.location.search);
+        const editingId = params.get("editing");
+
+        if (editingId) {
+            enableEdit(editingId);
+
+            const card = document.getElementById(`variant-${editingId}`);
+            if (card) {
+                card.scrollIntoView({ behavior: "smooth", block: "center" });
+            }
+        }
+    });
 </script>
 
 <script>

@@ -30,6 +30,9 @@ from apps.userprofile.models import WalletTransaction
 from django.core.paginator import Paginator
 from apps.products.utils import can_review_product
 from apps.products.models import Review
+from apps.authentication.validators import validate_password
+from apps.orders.utils import calculate_item_refund
+from apps.userprofile.wallet_utils import has_item_been_refunded
 
 @login_required
 @never_cache
@@ -72,7 +75,8 @@ def add_address(request):
             return render(
                 request,
                 'add_address.html',
-                address_form_context(request, error)
+                address_form_context(request, error),
+                status=400
             )
 
         if request.POST.get('is_default'):
@@ -265,7 +269,8 @@ def edit_address(request, address_id):
             return render(
                 request,
                 'add_address.html',
-                address_form_context(request, error, address)
+                address_form_context(request, error, address),
+                status=400
             )
 
         if request.POST.get('is_default'):
@@ -309,37 +314,68 @@ def edit_profile(request):
             mobile_number = request.POST.get('mobile_number', '').strip()
 
             # Full Name
-            if not full_name:
+            if len(full_name) == 0:
                 return render(request, 'edit_profile.html', {
                     'user': user,
                     'error': 'Full name is required'
-                })
+                }, status=400)
 
+            # Letters and spaces only
             if not re.match(r'^[A-Za-z ]+$', full_name):
                 return render(request, 'edit_profile.html', {
                     'user': user,
                     'error': 'Full name can contain only letters'
-                })
+                }, status=400)
 
+            # Minimum length
             if len(full_name) < 3:
                 return render(request, 'edit_profile.html', {
                     'user': user,
-                    'error': 'Full name must be at least 3 characters'
-                })
+                    'error': 'Full name must contain at least 3 characters'
+                }, status=400)
+
+            # Maximum length
+            if len(full_name) > 150:
+                return render(request, 'edit_profile.html', {
+                    'user': user,
+                    'error': 'Full name cannot exceed 150 characters'
+                }, status=400)
 
            
-            # Mobile Number
-            if not mobile_number:
+            # Mobile number empty check
+            if len(mobile_number) == 0:
                 return render(request, 'edit_profile.html', {
                     'user': user,
                     'error': 'Mobile number is required'
-                })
+                }, status=400)
 
-            if not re.match(r'^\d{10}$', mobile_number):
+            # Digits only
+            if not mobile_number.isdigit():
                 return render(request, 'edit_profile.html', {
                     'user': user,
-                    'error': 'Enter a valid 10-digit mobile number'
-                })
+                    'error': 'Mobile number must contain only digits'
+                }, status=400)
+
+            # Length check
+            if len(mobile_number) != 10:
+                return render(request, 'edit_profile.html', {
+                    'user': user,
+                    'error': 'Mobile number must be 10 digits'
+                }, status=400)
+
+            # Duplicate mobile number check (exclude current user)
+            if User.objects.filter(mobile_number=mobile_number).exclude(id=user.id).exists():
+                return render(request, 'edit_profile.html', {
+                    'user': user,
+                    'error': 'Mobile number already exists'
+                }, status=400)
+
+            # Starting digit check
+            if mobile_number[0] not in '6789':
+                return render(request, 'edit_profile.html', {
+                    'user': user,
+                    'error': 'Enter a valid mobile number'
+                }, status=400)
 
             # Profile Image Validation
             if request.FILES.get('profile_image'):
@@ -359,7 +395,7 @@ def edit_profile(request):
                 return render(request, 'edit_profile.html', {
                     'user': user,
                     'error': 'Email is required'
-                })
+                },status=400)
 
             try:
                 validate_email(email)
@@ -367,7 +403,7 @@ def edit_profile(request):
                 return render(request, 'edit_profile.html', {
                     'user': user,
                     'error': 'Enter a valid email address'
-                })
+                },status=400)
 
             # Email already exists
             if (
@@ -378,7 +414,7 @@ def edit_profile(request):
                 return render(request, 'edit_profile.html', {
                     'user': user,
                     'error': 'Email already exists'
-                })
+                },status=400)
 
             otp = str(random.randint(100000, 999999))
 
@@ -389,7 +425,7 @@ def edit_profile(request):
 
             send_mail(
                 'Scentora Email Change OTP',
-                f'Your OTP is {otp}',
+                f'Your OTP is {otp}. It will be valid for 2 minutes.',
                 settings.EMAIL_HOST_USER,
                 [email],
                 fail_silently=False,
@@ -400,83 +436,37 @@ def edit_profile(request):
             request.session['current_user_email'] = email
             return redirect('verify_otp')         
 
-        # PASSWORD CHANGE
         elif 'change_password' in request.POST:
-            current_password=request.POST.get('current_password')
-            new_password = request.POST.get('new_password')
-            confirm_password = request.POST.get('confirm_password')
+            current_password = request.POST.get('current_password', '')
+            new_password = request.POST.get('new_password', '')
+            confirm_password = request.POST.get('confirm_password', '')
 
             if not current_password:
                 return render(request, 'edit_profile.html', {
                     'user': user,
                     'password_error': 'Current password is required'
-                })
+                },status=400)
 
-            if not new_password:
+            password_error = validate_password(new_password, confirm_password)
+            if password_error:
                 return render(request, 'edit_profile.html', {
                     'user': user,
-                    'password_error': 'New password is required'
-                })
-
-            if not confirm_password:
-                return render(request, 'edit_profile.html', {
-                    'user': user,
-                    'password_error': 'Confirm password is required'
-                })
-
-            if len(new_password)==0:
-                return render(request,'edit_profile.html', {
-                    'password_error':'Password is required'
-                })
-
-            # PASSWORD LENGTH
-            if len(new_password) < 8:
-                return render(request, 'edit_profile.html', {
-                    'password_error': 'Password must be at least 8 characters'
-                })
-
-            # PASSWORD UPPERCASE
-            if not re.search(r'[A-Z]', new_password):
-                return render(request, 'edit_profile.html', {
-                    'password_error': 'Password must contain at least one uppercase letter'
-                })
-
-            # PASSWORD LOWERCASE
-            if not re.search(r'[a-z]', new_password):
-                return render(request, 'edit_profile.html', {
-                    'password_error': 'Password must contain at least one lowercase letter'
-                })
-
-            # PASSWORD NUMBER
-            if not re.search(r'[0-9]', new_password):
-                return render(request, 'edit_profile.html', {
-                    'password_error': 'Password must contain at least one number'
-                })
-
-            # PASSWORD SPECIAL CHARACTER
-            if not re.search(r'[@$!%*?&]', new_password):
-                return render(request, 'edit_profile.html', {
-                    'password_error': 'Password must contain at least one special character'
-                })
+                    'password_error': password_error
+                },status=400)
 
             # current password check
             if not user.check_password(current_password):
-                return render(request,'edit_profile.html',{
-                            'password_error': 'Current password is incorrect'})
-
-            # password match
-            if new_password != confirm_password:
-
                 return render(request, 'edit_profile.html', {
-                    'password_error': 'Passwords do not match'
-                })
+                    'user': user,
+                    'password_error': 'Current password is incorrect'
+                },status=400)
 
             # same password check
             if current_password == new_password:
-
                 return render(request, 'edit_profile.html', {
+                    'user': user,
                     'password_error': 'New password cannot be same as old password'
-                })
+                },status=400)
 
             otp = str(random.randint(100000, 999999))
 
@@ -487,18 +477,17 @@ def edit_profile(request):
 
             send_mail(
                 'Scentora Password Change OTP',
-                f'Your OTP is {otp}',
+                f'Your OTP is {otp}. It will be valid for 2 minutes.',
                 settings.EMAIL_HOST_USER,
                 [user.email],
                 fail_silently=False,
             )
 
-            # store session
             request.session['current_user_email'] = user.email
             request.session['otp_purpose'] = 'change_password'
             request.session['new_password'] = new_password
             return redirect('verify_otp')
-
+        
         return redirect('edit_profile')
     return render(request, 'edit_profile.html', {'user': user})
 
@@ -539,7 +528,7 @@ def order_detail(request, order_id):
     order = get_object_or_404(Order, id=order_id, user=request.user)
     order_items = order.items.select_related('product_variant__product').all()
 
-    # for each item, check reviewability + fetch existing review if any
+    # for each item, check reviewability and fetch existing review if any
     review_map = {}
     for item in order_items:
         product = item.product_variant.product
@@ -551,10 +540,13 @@ def order_detail(request, order_id):
             'existing_review': existing,
         }
 
+    has_active_items = order_items.filter(status='active').exists()
+
     context = {
         'order': order,
         'order_items': order_items,
         'review_map': review_map,
+        'has_active_items': has_active_items,
     }
     return render(request, 'order_detail.html', context)
 
@@ -723,14 +715,17 @@ def cancel_order_item(request, order_id, item_id):
         item.status = 'cancelled'
         item.save()
 
-        # Refund just this item's amount if order was paid
+        # Refund just this item's amount if order was paid — proportionally split coupon
         if order.payment_status == 'paid':
-            credit_wallet(
-                user=order.user,
-                amount=item.total,
-                description=f"Refund for cancelled item ({item.product_variant}) in Order #{order.order_number}",
-                order=order,
-            )
+            refund_amount = calculate_item_refund(item)
+            if refund_amount > 0 and not has_item_been_refunded(item):
+                credit_wallet(
+                    user=order.user,
+                    amount=refund_amount,
+                    description=f"Refund for cancelled item ({item.product_variant}) in Order #{order.order_number}",
+                    order=order,
+                    order_item=item,
+                )
 
         # check if all items are cancelled  then cancel entire order
         all_cancelled = not order.items.filter(status='active').exists()
@@ -747,11 +742,16 @@ def cancel_order_item(request, order_id, item_id):
 
 @login_required
 @never_cache
-def return_order(request, order_id):
+def return_order_item(request, order_id, item_id):
     order = get_object_or_404(Order, id=order_id, user=request.user)
+    item = get_object_or_404(OrderItem, id=item_id, order=order)
 
     if order.order_status != 'delivered':
         messages.error(request, "Only delivered orders can be returned.")
+        return redirect('order_detail', order_id=order.id)
+
+    if item.status != 'active':
+        messages.error(request, "This item cannot be returned.")
         return redirect('order_detail', order_id=order.id)
 
     if request.method == 'POST':
@@ -761,22 +761,46 @@ def return_order(request, order_id):
             messages.error(request, "Return reason must be at least 10 characters.")
             return redirect('order_detail', order_id=order.id)
 
-        if not reason:
-            messages.error(request, "Please provide a reason for return.")
-            return redirect('order_detail', order_id=order.id)
+        item.return_reason = reason
+        item.status = 'return_requested'
+        item.save()
 
-        # just save the reason and set status to return_requested
-        # admin will verify and approve/reject
-        order.return_reason = reason
-        order.order_status = 'return_requested'
-        order.save()
-
-        messages.success(request, "Return request submitted. We will review it shortly.")
+        messages.success(request, "Return request submitted for this item. We'll review it shortly.")
         return redirect('order_detail', order_id=order.id)
 
     return redirect('order_detail', order_id=order.id)
 
+@login_required
+@never_cache
+def return_order(request, order_id):
+    order = get_object_or_404(Order, id=order_id, user=request.user)
 
+    if order.order_status != 'delivered':
+        messages.error(request, "Only delivered orders can be returned.")
+        return redirect('order_detail', order_id=order.id)
+
+    active_items = order.items.filter(status='active')
+
+    if not active_items.exists():
+        messages.error(request, "There are no items left to return in this order.")
+        return redirect('order_detail', order_id=order.id)
+
+    if request.method == 'POST':
+        reason = request.POST.get('reason', '').strip()
+
+        if len(reason) < 10:
+            messages.error(request, "Return reason must be at least 10 characters.")
+            return redirect('order_detail', order_id=order.id)
+
+        # mark every currently-active item as return_requested,
+        # so the admin approval flow (per item, with correct proportional
+        # coupon refund) handles each one exactly like an individual return
+        active_items.update(status='return_requested', return_reason=reason)
+
+        messages.success(request, "Return request submitted for all items. We will review it shortly.")
+        return redirect('order_detail', order_id=order.id)
+
+    return redirect('order_detail', order_id=order.id)
 
 @login_required
 @never_cache

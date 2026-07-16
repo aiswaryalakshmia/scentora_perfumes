@@ -45,11 +45,11 @@
   <div class="summary-cards">
     <div class="summary-card">
       <p class="card-label">Total Revenue</p>
-      <p class="card-value">₹{{ total_revenue }}</p>
+      <p class="card-value">₹{{ total_revenue|floatformat:2 }}</p>
     </div>
     <div class="summary-card">
       <p class="card-label">Total Discount</p>
-      <p class="card-value">₹{{ total_discount }}</p>
+      <p class="card-value">₹{{ total_discount|floatformat:2 }}</p>
     </div>
     <div class="summary-card">
       <p class="card-label">Sales Count</p>
@@ -75,8 +75,8 @@
           <td>{{ forloop.counter }}</td>
           <td>{{ row.day|date:"M d, Y" }}</td>
           <td>{{ row.order_count }}</td>
-          <td class="discount-cell">−₹{{ row.discount|add:row.coupon_discount }}</td>
-          <td class="revenue-cell">₹{{ row.revenue }}</td>
+          <td class="discount-cell">−₹{{ row.discount|add:row.coupon_discount|floatformat:2 }}</td>
+          <td class="revenue-cell">₹{{ row.revenue|floatformat:2 }}</td>
         </tr>
         {% empty %}
         <tr>

@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Scentora | Create Account</title>
   <link rel="stylesheet" href="{% static 'css/signup.css' %}">
+  <link rel="stylesheet" href="{% static 'css/all.min.css' %}">
 </head>
 <body>
   <div class="container">
@@ -30,12 +31,23 @@
         {% endif %}
         <form method="post" novalidate>
           {% csrf_token %}
-          <input type="text" name="full_name" placeholder="Full Name">
-          <input type="email" name="email" placeholder="Email Address">
-          <input type="text" name="mobile_number" placeholder="Mobile Number">
-          <input type="password" name="password" placeholder="Password">
-          <input type="password" name="confirm_password" placeholder="Confirm Password">
-          <input type="text" name="referral" placeholder="Referral Code (Optional)" value="{{ referral_prefill }}" style="text-transform:uppercase;">
+          <input type="text" name="full_name" placeholder="Full Name" value="{{ request.POST.full_name|default:'' }}">
+          <input type="email" name="email" placeholder="Email Address" value="{{ request.POST.email|default:'' }}">
+          <input type="text" name="mobile_number" placeholder="Mobile Number" value="{{ request.POST.mobile_number|default:'' }}">
+          <div class="password-wrapper">
+          <input type="password" name="password" id="password" placeholder="Password">
+          <span class="eye-icon" onclick="togglePassword('password', this)">
+            <i class="fa-solid fa-eye-slash"></i>
+          </span>
+        </div>
+
+        <div class="password-wrapper">
+          <input type="password" name="confirm_password" id="confirm_password" placeholder="Confirm Password">
+          <span class="eye-icon" onclick="togglePassword('confirm_password', this)">
+            <i class="fa-solid fa-eye-slash"></i>
+          </span>
+        </div>
+          <input type="text" name="referral" placeholder="Referral Code (Optional)" value="{{ request.POST.referral|default:referral_prefill }}" style="text-transform:uppercase;">
           <button type="submit">Sign Up</button>
         </form>
         <p class="signin-text">Already have an account? <a href="{% url 'login' %}">Sign In</a></p>
@@ -50,5 +62,21 @@
         <a href="#">Contact</a>
       </footer>
   </div>
+  <script>
+  function togglePassword(fieldId, iconEl) {
+    const input = document.getElementById(fieldId);
+    const icon  = iconEl.querySelector('i');
+
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.classList.remove('fa-eye-slash');
+      icon.classList.add('fa-eye');
+    } else {
+      input.type = 'password';
+      icon.classList.remove('fa-eye');
+      icon.classList.add('fa-eye-slash');
+    }
+  }
+</script>
 </body>
 </html>

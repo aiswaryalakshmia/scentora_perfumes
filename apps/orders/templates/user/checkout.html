@@ -109,11 +109,11 @@
             <p>Pay cash on delivery.</p>
           </div>
            <div id="payment-wallet" class="payment-panel" style="display:none;">
-            <p>Wallet Balance: <strong>₹{{ wallet_balance }}</strong></p>
+            <p>Wallet Balance: <strong>₹{{ wallet_balance|floatformat:2 }}</strong></p>
             {% if wallet_balance < final_total %}
               <p style="color:#d9534f;">Insufficient balance to pay for this order.</p>
             {% else %}
-              <p>₹{{ final_total }} will be deducted from your wallet.</p>
+              <p>₹{{ final_total|floatformat:2 }} will be deducted from your wallet.</p>
             {% endif %}
           </div>
         </section>
@@ -140,7 +140,7 @@
           <p>{{ item.product_variant.size }}ml</p>
           <p>Qty: {{ item.quantity }}</p>
         </div>
-        <span>₹{{ item.total_price }}</span>
+        <span>₹{{ item.total_price|floatformat:2 }}</span>
       </div>
       {% endfor %}
 
@@ -217,16 +217,16 @@
 
       <!-- Order Summary Totals -->
       <div class="summary-totals">
-        <p>Subtotal <span>₹{{ subtotal }}</span></p>
+        <p>Subtotal <span>₹{{ subtotal|floatformat:2 }}</span></p>
         <p>Shipping <span>{{ shipping_label }}</span></p>
         {% if discount_amount > 0 %}
-        <p>Offer Discount <span style="color:#4caf78;">−₹{{ discount_amount }}</span></p>
+        <p>Offer Discount <span style="color:#4caf78;">−₹{{ discount_amount|floatformat:2 }}</span></p>
         {% endif %}
         {% if coupon_discount > 0 %}
-        <p>Coupon ({{ coupon.coupon_code }}) <span style="color:#4caf78;">−₹{{ coupon_discount }}</span></p>
+        <p>Coupon ({{ coupon.coupon_code }}) <span style="color:#4caf78;">−₹{{ coupon_discount|floatformat:2 }}</span></p>
         {% endif %}
         <hr>
-        <p class="total">Total <span>₹{{ final_total }}</span></p>
+        <p class="total">Total <span>₹{{ final_total|floatformat:2 }}</span></p>
       </div>
 
       <!-- Place Order button — submits checkout-form using form attribute -->

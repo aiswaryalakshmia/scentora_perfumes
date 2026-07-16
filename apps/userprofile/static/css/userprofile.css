@@ -163,3 +163,82 @@
   text-decoration: none;
   display: inline-block;
 }
+
+.referral-box {
+  background: #0d0d0d;
+  border: 1px solid #1e1e1e;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 16px 0 24px;
+}
+
+.referral-title {
+  color: #c9a84c;
+  font-weight: 700;
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+
+.referral-subtitle {
+  color: #999;
+  font-size: 0.85rem;
+  margin-bottom: 14px;
+}
+
+.referral-link-row {
+  display: flex;
+  gap: 10px;
+}
+
+.referral-link-row input {
+  flex: 1;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  color: #ddd;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.referral-link-row button {
+  background: #c9a84c;
+  color: #000;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.referral-link-row button:hover {
+  background: #b8963f;
+}
+
+.referral-code-line {
+  margin-top: 12px;
+  color: #ccc;
+  font-size: 0.85rem;
+}
+
+.referral-code-line strong {
+  color: #c9a84c;
+  letter-spacing: 1px;
+}
+
+.copy-code-btn {
+  background: transparent;
+  border: 1px solid #c9a84c;
+  color: #c9a84c;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  margin-left: 8px;
+}
+
+.copy-code-btn:hover {
+  background: #c9a84c;
+  color: #000;
+}

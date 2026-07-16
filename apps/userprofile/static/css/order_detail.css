@@ -562,3 +562,37 @@
   color: #4caf78;
   font-size: 0.85rem;
 }
+
+.btn-return-item {
+  background: transparent;
+  border: 1px solid #5bc0de;
+  color: #5bc0de;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.btn-return-item:hover {
+  background: #5bc0de;
+  color: #000;
+}
+
+.item-return-pending-badge {
+  color: #e67e22;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.item-returned-badge {
+  color: #999;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.payment-total-row {
+  border-top: 1px solid #333;
+  margin-top: 8px;
+  padding-top: 8px;
+}

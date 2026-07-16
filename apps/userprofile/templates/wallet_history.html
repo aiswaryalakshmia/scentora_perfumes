@@ -14,7 +14,7 @@
     <h2>My Wallet</h2>
     <div class="wallet-balance-card">
       <span class="balance-label">Available Balance</span>
-      <span class="balance-amount">₹{{ balance }}</span>
+      <span class="balance-amount">₹{{ balance|floatformat:2 }}</span>
     </div>
   </div>
 
@@ -50,7 +50,7 @@
             </span>
           </td>
           <td class="{% if txn.transaction_type == 'credit' %}amount-credit{% else %}amount-debit{% endif %}">
-            {% if txn.transaction_type == 'credit' %}+{% else %}−{% endif %}₹{{ txn.amount }}
+            {% if txn.transaction_type == 'credit' %}+{% else %}−{% endif %}₹{{ txn.amount|floatformat:2 }}
           </td>
         </tr>
         {% endfor %}

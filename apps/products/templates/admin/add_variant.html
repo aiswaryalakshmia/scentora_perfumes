@@ -58,7 +58,7 @@ Product Detail
                 </div>
 
                 <div class="form-group">
-                    <label>Discount Price (₹)</label>
+                    <label>Discount Amount (₹)</label>
                     {{ form.discount_price }}
                     {{ form.discount_price.errors }}
                 </div>
@@ -116,7 +116,7 @@ Product Detail
                     <p><strong>Size:</strong> {{ variant.size }}</p>
                     <p><strong>Price:</strong> ₹{{ variant.price }}</p>
                     {% if variant.discount_price %}
-                        <p><strong>Discount Price:</strong> ₹{{ variant.discount_price }}</p>
+                        <p><strong>Discount Amount:</strong> ₹{{ variant.discount_price }}</p>
                     {% endif %}
                     <p><strong>Stock:</strong> {{ variant.stock }}</p>
                 </div>

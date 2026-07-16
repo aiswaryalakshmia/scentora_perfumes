@@ -116,3 +116,19 @@ button:hover {
 .back-link:hover {
   text-decoration: underline;
 }
+
+.otp-expiry-text {
+  font-size: 0.85rem;
+  color: #999;
+  margin-top: -8px;
+  margin-bottom: 16px;
+}
+
+.otp-expiry-text #otp-expiry-timer {
+  color: #c9a84c;
+  font-weight: 600;
+}
+
+.otp-expiry-text.expired-text #otp-expiry-timer {
+  color: #d9534f;
+}

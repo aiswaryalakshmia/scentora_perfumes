@@ -18,6 +18,9 @@
 
       <h2>Verify Your Account</h2>
       <p class="subtitle">Enter the 6-digit code sent to your registered email address.</p>
+      <p class="otp-expiry-text">
+        OTP expires in <span id="otp-expiry-timer">--:--</span>
+      </p>
 
       <form method="post" autocomplete="off">
         {% csrf_token %}
@@ -98,6 +101,31 @@
     }
 
   }, 1000);
+</script>
+<script>
+  const expiresAtTimestamp = {{ expires_at_timestamp|default:"null" }};
+  const otpExpiryTimerEl = document.getElementById('otp-expiry-timer');
+
+  if (expiresAtTimestamp) {
+    const expiryCountdown = setInterval(() => {
+      const now = Date.now();
+      const remainingMs = expiresAtTimestamp - now;
+
+      if (remainingMs <= 0) {
+        clearInterval(expiryCountdown);
+        otpExpiryTimerEl.textContent = "expired";
+        otpExpiryTimerEl.parentElement.classList.add('expired-text');
+      } else {
+        const totalSeconds = Math.floor(remainingMs / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        otpExpiryTimerEl.textContent =
+          `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+      }
+    }, 1000);
+  } else {
+    otpExpiryTimerEl.textContent = "unknown";
+  }
 </script>
 <script>
   const otpInputs = document.querySelectorAll('.otp-box');

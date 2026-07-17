@@ -64,7 +64,7 @@ edit profile
         <input type="text" name="mobile_number" value="{{ user.mobile_number }}">
 
         <div class="form-actions">
-            <button type="button" class="btn cancel">Cancel</button>
+            <button type="button" class="btn cancel" onclick="window.location.reload()">Cancel</button>
             <button type="submit" name="update_profile" class="btn save">Save Changes</button>
         </div>
 
@@ -78,7 +78,7 @@ edit profile
         <input type="email" name="email" value="{{ user.email }}">
 
         <div class="form-actions">
-            <button type="button" class="btn cancel">Cancel</button>
+            <button type="button" class="btn cancel" onclick="window.location.reload()">Cancel</button>
             <button type="submit" name="update_email" class="btn save">Verify & Change Email</button>
         </div>
   </form>
@@ -111,7 +111,7 @@ edit profile
           <p style="color:red;">{{ password_error }}</p>
         {% endif %}
         <div class="form-actions">
-            <button type="button" class="btn cancel">Cancel</button>
+            <button type="button" class="btn cancel" onclick="window.location.reload()">Cancel</button>
             <button type="submit" class="btn save" name="change_password">Verify & Change Password</button>
         </div>
       </form>

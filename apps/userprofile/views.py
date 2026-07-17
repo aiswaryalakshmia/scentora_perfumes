@@ -38,7 +38,7 @@ from apps.userprofile.wallet_utils import has_item_been_refunded
 @never_cache
 def profile_dashboard(request):
     user = request.user
-    orders = Order.objects.filter(user=user)
+    orders = Order.objects.filter(user=user)    
 
     recent_orders = orders.select_related('order_address').prefetch_related(
         'items__product_variant__product',
@@ -424,8 +424,12 @@ def edit_profile(request):
             )
 
             send_mail(
-                'Scentora Email Change OTP',
-                f'Your OTP is {otp}. It will be valid for 2 minutes.',
+                'Scentora — Confirm Your New Email',
+                f'You requested to change the email address on your Scentora account to this one.\n\n'
+                f'Your verification code is: {otp}\n\n'
+                f'This code will expire in 2 minutes.\n\n'
+                f'If you did not request this change, please ignore this email and your current email will remain unchanged.\n\n'
+                f'— The Scentora Team',
                 settings.EMAIL_HOST_USER,
                 [email],
                 fail_silently=False,
@@ -476,8 +480,13 @@ def edit_profile(request):
             )
 
             send_mail(
-                'Scentora Password Change OTP',
-                f'Your OTP is {otp}. It will be valid for 2 minutes.',
+                'Scentora — Confirm Your Password Change',
+                f'Hi {user.full_name},\n\n'
+                f'You requested to change your Scentora account password.\n\n'
+                f'Your verification code is: {otp}\n\n'
+                f'This code will expire in 2 minutes.\n\n'
+                f'If you did not request this change, please secure your account immediately and contact support.\n\n'
+                f'— The Scentora Team',
                 settings.EMAIL_HOST_USER,
                 [user.email],
                 fail_silently=False,

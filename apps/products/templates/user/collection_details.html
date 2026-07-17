@@ -124,17 +124,17 @@
           <a href="{% url 'product_details' variant.id %}">
             <h3>{{ variant.product.product_name }}</h3>
             <p>{{ variant.size }}ml</p>
-            {% if variant.discount_price %}
+            {% if variant.final_price < variant.price %}
               <span class="original-price">
-                  <s>₹{{ variant.price }}</s>
+                  <s>₹{{ variant.price|floatformat:2 }}</s>
               </span>
 
               <span class="discount-price">
-                  ₹{{ variant.effective_price }}
+                  ₹{{ variant.final_price|floatformat:2 }}
               </span>
             {% else %}
               <span class="price">
-                  ₹{{ variant.price }}
+                  ₹{{ variant.price|floatformat:2 }}
               </span>
             {% endif %}
           </a>

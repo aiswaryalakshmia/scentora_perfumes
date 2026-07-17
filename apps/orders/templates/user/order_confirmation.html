@@ -54,7 +54,15 @@
 
       <div class="order-totals">
         <p>Subtotal <span>₹{{ order.total_amount }}</span></p>
-        <p>Shipping <span>{% if order.total_amount == order.final_amount %}Free{% else %}₹{{ order.final_amount|add:"-order.total_amount" }}{% endif %}</span></p>
+
+        {% if order.discount_amount > 0 %}
+        <p>Discount <span>-₹{{ order.discount_amount }}</span></p>
+        {% endif %}
+
+        {% if order.coupon_discount > 0 %}
+        <p>Coupon Discount <span>-₹{{ order.coupon_discount }}</span></p>
+        {% endif %}
+
         <hr>
         <p class="final-total">Total <span>₹{{ order.final_amount }}</span></p>
       </div>

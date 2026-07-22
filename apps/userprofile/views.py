@@ -34,6 +34,7 @@ from apps.authentication.validators import validate_password
 from apps.orders.utils import calculate_item_refund
 from apps.userprofile.wallet_utils import has_item_been_refunded
 
+
 @login_required
 @never_cache
 def profile_dashboard(request):
@@ -43,7 +44,7 @@ def profile_dashboard(request):
     recent_orders = orders.select_related('order_address').prefetch_related(
         'items__product_variant__product',
         'items__product_variant__images'
-    ).order_by('-created_at')[:5]
+    ).order_by('-created_at')[:5]   
 
     context = {
         'current_user': user,
@@ -51,8 +52,9 @@ def profile_dashboard(request):
         'pending_orders': orders.filter(order_status='pending').count(),
         'wishlist_count': Wishlist.objects.filter(user=user).count(),
         'wallet_balance': get_wallet_balance(user),
-        'recent_orders': recent_orders,
+        'recent_orders': recent_orders,        
     }
+    
     return render(request, 'userprofile.html', context)
 
 @login_required
@@ -625,12 +627,16 @@ def download_invoice(request, order_id):
     elements.append(Spacer(1, 0.3 * inch))
 
     # totals
+    shipping_charge = order.final_amount - order.total_amount + order.discount_amount + order.coupon_discount
     totals_data = [
-        ['Subtotal', f"Rs.{order.total_amount}"],
-        ['Shipping', 'Free' if order.total_amount == order.final_amount else f"Rs.{order.final_amount - order.total_amount}"],
-        ['Discount', f"Rs.{order.discount_amount}"],
-        ['Total', f"Rs.{order.final_amount}"],
+    ['Subtotal', f"Rs.{order.total_amount}"],
+    ['Shipping', 'Free' if shipping_charge == 0 else f"Rs.{shipping_charge}"],
+    ['Discount', f"Rs.{order.discount_amount}"],
     ]
+    if order.coupon_discount > 0:
+        totals_data.append(['Coupon Discount', f"Rs.{order.coupon_discount}"])
+
+    totals_data.append(['Total', f"Rs.{order.final_amount}"])
     totals_table = Table(totals_data, colWidths=[5*inch, 1.7*inch])
     totals_table.setStyle(TableStyle([
         ('ALIGN', (1, 0), (1, -1), 'RIGHT'),

@@ -58,6 +58,15 @@
         <span class="price">
             ₹{{ variant.price|floatformat:2 }}
         </span>
+        {% if avg_rating %}
+          <div class="average-rating">
+            <span class="stars">
+                {% for i in "12345" %}
+                {% if forloop.counter <= avg_rating %}★{% else %}☆{% endif %}
+                {% endfor %}
+            </span>                    
+          </div>
+        {% endif %}
       {% endif %}
 
       <div class="options">

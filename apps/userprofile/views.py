@@ -34,16 +34,17 @@ from apps.authentication.validators import validate_password
 from apps.orders.utils import calculate_item_refund
 from apps.userprofile.wallet_utils import has_item_been_refunded
 
+
 @login_required
 @never_cache
 def profile_dashboard(request):
     user = request.user
-    orders = Order.objects.filter(user=user)
+    orders = Order.objects.filter(user=user)    
 
     recent_orders = orders.select_related('order_address').prefetch_related(
         'items__product_variant__product',
         'items__product_variant__images'
-    ).order_by('-created_at')[:5]
+    ).order_by('-created_at')[:5]   
 
     context = {
         'current_user': user,
@@ -51,8 +52,9 @@ def profile_dashboard(request):
         'pending_orders': orders.filter(order_status='pending').count(),
         'wishlist_count': Wishlist.objects.filter(user=user).count(),
         'wallet_balance': get_wallet_balance(user),
-        'recent_orders': recent_orders,
+        'recent_orders': recent_orders,        
     }
+    
     return render(request, 'userprofile.html', context)
 
 @login_required
@@ -424,8 +426,12 @@ def edit_profile(request):
             )
 
             send_mail(
-                'Scentora Email Change OTP',
-                f'Your OTP is {otp}. It will be valid for 2 minutes.',
+                'Scentora — Confirm Your New Email',
+                f'You requested to change the email address on your Scentora account to this one.\n\n'
+                f'Your verification code is: {otp}\n\n'
+                f'This code will expire in 2 minutes.\n\n'
+                f'If you did not request this change, please ignore this email and your current email will remain unchanged.\n\n'
+                f'— The Scentora Team',
                 settings.EMAIL_HOST_USER,
                 [email],
                 fail_silently=False,
@@ -476,8 +482,13 @@ def edit_profile(request):
             )
 
             send_mail(
-                'Scentora Password Change OTP',
-                f'Your OTP is {otp}. It will be valid for 2 minutes.',
+                'Scentora — Confirm Your Password Change',
+                f'Hi {user.full_name},\n\n'
+                f'You requested to change your Scentora account password.\n\n'
+                f'Your verification code is: {otp}\n\n'
+                f'This code will expire in 2 minutes.\n\n'
+                f'If you did not request this change, please secure your account immediately and contact support.\n\n'
+                f'— The Scentora Team',
                 settings.EMAIL_HOST_USER,
                 [user.email],
                 fail_silently=False,
@@ -616,12 +627,16 @@ def download_invoice(request, order_id):
     elements.append(Spacer(1, 0.3 * inch))
 
     # totals
+    shipping_charge = order.final_amount - order.total_amount + order.discount_amount + order.coupon_discount
     totals_data = [
-        ['Subtotal', f"Rs.{order.total_amount}"],
-        ['Shipping', 'Free' if order.total_amount == order.final_amount else f"Rs.{order.final_amount - order.total_amount}"],
-        ['Discount', f"Rs.{order.discount_amount}"],
-        ['Total', f"Rs.{order.final_amount}"],
+    ['Subtotal', f"Rs.{order.total_amount}"],
+    ['Shipping', 'Free' if shipping_charge == 0 else f"Rs.{shipping_charge}"],
+    ['Discount', f"Rs.{order.discount_amount}"],
     ]
+    if order.coupon_discount > 0:
+        totals_data.append(['Coupon Discount', f"Rs.{order.coupon_discount}"])
+
+    totals_data.append(['Total', f"Rs.{order.final_amount}"])
     totals_table = Table(totals_data, colWidths=[5*inch, 1.7*inch])
     totals_table.setStyle(TableStyle([
         ('ALIGN', (1, 0), (1, -1), 'RIGHT'),

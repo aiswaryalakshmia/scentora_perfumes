@@ -5,10 +5,12 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/wallet_history.css' %}">
+<link rel="stylesheet" href="{% static 'css/side_bar.css' %}">
 {% endblock %}
 
 {% block content %}
-<div class="wallet-page">
+{% include 'side_bar.html' %}
+<div class="wallet-page wallet_content">
 
   <div class="wallet-header">
     <h2>My Wallet</h2>

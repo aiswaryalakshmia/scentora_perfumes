@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}About Us{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/user/about.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="about-page">
+
+  <section class="about-hero">
+    <p class="est-label">EST. 2025</p>
+    <h1>Crafting Timeless Fragrances</h1>
+    <p class="hero-sub">A century of olfactory mastery, distilled into ethereal bottles. Scentora invites you to a world where heritage meets the avant-garde.</p>
+    <a href="{% url 'shop' %}" class="btn-explore">Explore Collections</a>
+  </section>
+
+  <section class="about-narrative">
+    <div class="narrative-image">
+      <img src="{% static 'images/Hero_image.png' %}" alt="Scentora Perfume">
+    </div>
+    <div class="narrative-text">
+      <h2>The Scentora Narrative</h2>
+      <p>Founded in the aromatic heart of Florence, Scentora began as a private apothecary catering to the refined palates of the Italian nobility. Our journey has always been defined by a relentless pursuit of individuality, treating fragrance not just as a scent, but as a signature of the soul.</p>
+      <p>Every essence we create is a culmination of years of research and rare botanical exploration. We believe that a true fragrance should be a quiet luxury — unspoken, yet deeply felt, by everyone who enters your aura.</p>
+    </div>
+  </section>
+
+  <section class="about-philosophy">
+    <h2>Our Philosophy</h2>
+    <div class="philosophy-grid">
+      <div class="philosophy-card">
+        <i class="fa-solid fa-leaf"></i>
+        <h3>Premium Ingredients</h3>
+        <p>Sourced ethically from the rarest corners of the globe, from Grasse roses to Himalayan oud.</p>
+      </div>
+      <div class="philosophy-card">
+        <i class="fa-solid fa-compass-drafting"></i>
+        <h3>Elegant Craftsmanship</h3>
+        <p>Hand-blended in small batches to ensure the structural integrity of every olfactory note.</p>
+      </div>
+      <div class="philosophy-card">
+        <i class="fa-solid fa-gem"></i>
+        <h3>Luxury Experience</h3>
+        <p>From the tactile weight of the crystal bottle to the sensory journey of the unboxing.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="about-trust-bar">
+    <span><i class="fa-solid fa-circle-check"></i> Authentic Fragrances</span>
+    <span><i class="fa-solid fa-lock"></i> Secure Shopping</span>
+    <span><i class="fa-solid fa-box"></i> Premium Packaging</span>
+  </section>
+
+</div>
+{% endblock %}

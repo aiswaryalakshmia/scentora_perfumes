@@ -146,3 +146,9 @@
 .pagination a:hover {
   text-decoration: underline;
 }
+
+.wallet_content{
+  margin-left: 260px;
+  padding: 40px 60px;
+  color: #fff;
+}

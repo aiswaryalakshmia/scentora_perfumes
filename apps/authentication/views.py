@@ -143,8 +143,12 @@ def signup(request):
         )
 
         send_mail(
-            'Scentora Signup Verification',
-            f'Your OTP is {otp}. It will be valid for 2 minutes.',
+            'Scentora — Verify Your Email',
+            f'Welcome to Scentora!\n\n'
+            f'Your verification code is: {otp}\n\n'
+            f'This code will expire in 2 minutes. Please enter it to complete your signup.\n\n'
+            f'If you did not create an account with Scentora, you can safely ignore this email.\n\n'
+            f'— The Scentora Team',
             settings.EMAIL_HOST_USER,
             [email],
             fail_silently=False,
@@ -235,8 +239,12 @@ def forgot_password(request):
         )
 
         send_mail(
-            'Scentora Password Reset OTP',
-            f'Your OTP is {otp}. It will be valid for 2 minutes.',
+            'Scentora — Password Reset Code',
+            f'We received a request to reset your Scentora account password.\n\n'
+            f'Your verification code is: {otp}\n\n'
+            f'This code will expire in 2 minutes.\n\n'
+            f'If you did not request a password reset, please ignore this email — your password will remain unchanged.\n\n'
+            f'— The Scentora Team',
             settings.EMAIL_HOST_USER,
             [email],
             fail_silently=False,
@@ -437,9 +445,20 @@ def resend_otp(request):
             otp_code=otp
         )
 
+        purpose_text = {
+            'signup': 'complete your signup',
+            'forgotp': 'reset your password',
+            'change_password': 'confirm your password change',
+            'change_email': 'confirm your new email address',
+        }.get(otp_purpose, 'verify your identity')
+
         send_mail(
-            'Scentora OTP Verification',
-            f'Your OTP is {otp}. It will be valid for 2 minutes.',
+            'Scentora — Your Verification Code',
+            f'Here is your new verification code to {purpose_text}:\n\n'
+            f'{otp}\n\n'
+            f'This code will expire in 2 minutes.\n\n'
+            f'If you did not request this, please ignore this email.\n\n'
+            f'— The Scentora Team',
             settings.EMAIL_HOST_USER,
             [email],
             fail_silently=False,

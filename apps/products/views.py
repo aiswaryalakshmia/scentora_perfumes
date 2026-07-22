@@ -11,6 +11,7 @@ from apps.common.decorators import admin_required
 from .models import Category,Product,ProductVariant,VariantImage,Cart,CartItem,Wishlist
 from .forms import CategoryForm,ProductForm, ProductVariantForm
 from .utils import get_offer_price,has_overlapping_offer
+from django.utils.http import url_has_allowed_host_and_scheme
 from .models import Offer
 from .models import Review
 from django.db.models import Avg
@@ -565,73 +566,36 @@ def delete_variant(request, variant_id):
 
 @login_required
 def shop(request):
-
     variants = ProductVariant.objects.filter(
-        status = 'active',
-        product__status = 'active',
-        product__category__status = 'active'
-    ).order_by('-created_at')
-    selected_categories = request.GET.getlist('category')
+        status='active',
+        product__status='active',
+        product__category__status='active'
+    ).select_related('product', 'product__category')
 
+    selected_categories = request.GET.getlist('category')
     if selected_categories:
         variants = variants.filter(
             product__category__category_name__in=selected_categories
         )
 
-    selected_price = request.GET.get('price')
-
-    if selected_price == 'under_3000':
-        variants = variants.filter(price__lt=3000)
-
-    elif selected_price == '3000_5000':
-        variants = variants.filter(
-            price__gte=3000,
-            price__lte=5000
-        )
-
-    elif selected_price == '5000_8000':
-        variants = variants.filter(
-        price__gte=5000,
-        price__lte=8000
-    )
-
-    elif selected_price == 'above_8000':
-        variants = variants.filter(price__gt=8000)
-
-    search_query = request.GET.get('search','')
+    search_query = request.GET.get('search', '')
     if search_query:
-        variants = variants.filter(
-            product__product_name__icontains=search_query
-        )
+        variants = variants.filter(product__product_name__icontains=search_query)
 
     sort = request.GET.get('sort')
-    if sort == 'price_low':
-        variants = variants.order_by('price')
-    elif sort == 'price_high':
-        variants = variants.order_by('-price')
-    elif sort == 'a_z':
+    if sort == 'a_z':
         variants = variants.order_by('product__product_name')
     elif sort == 'z_a':
         variants = variants.order_by('-product__product_name')
-
-    paginator = Paginator(variants, 9)  # 9 products per page
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-
-    categories = Category.objects.filter(
-        status='active'
-    )
-
-    # get all wishlisted variant ids for this user
-    if request.user.is_authenticated:
-        wishlisted_ids = list(Wishlist.objects.filter(
-            user=request.user
-        ).values_list('product_variant_id', flat=True))
     else:
-        wishlisted_ids = []
+        variants = variants.order_by('-created_at')
 
+    # Compute offer/discounted price for every matching variant —
+    # needed before filtering/sorting by price, since final price depends
+    # on offer lookups that can't be expressed as a plain DB column filter.
+    variant_list = list(variants)
     offer_price_map = {}
-    for variant in page_obj:
+    for variant in variant_list:
         final_price, discount_amount, offer = get_offer_price(variant)
         variant.final_price = final_price
         offer_price_map[variant.id] = {
@@ -641,18 +605,46 @@ def shop(request):
             'has_offer':       offer is not None,
         }
 
-    return render(request,'user/shop_page.html',
-                  {
-                      'variants':page_obj,
-                      'categories':categories,
-                      'selected_categories': selected_categories,
-                      'selected_price': selected_price,
-                      'search_query': search_query,
-                      'sort':sort,
-                      'page_obj': page_obj,
-                      'wishlisted_ids': wishlisted_ids,
-                      'offer_price_map': offer_price_map,
-                  })
+    # Price range filter — now applied against final_price, not raw price
+    selected_price = request.GET.get('price')
+    if selected_price == 'under_3000':
+        variant_list = [v for v in variant_list if v.final_price < 3000]
+    elif selected_price == '3000_5000':
+        variant_list = [v for v in variant_list if 3000 <= v.final_price <= 5000]
+    elif selected_price == '5000_8000':
+        variant_list = [v for v in variant_list if 5000 <= v.final_price <= 8000]
+    elif selected_price == 'above_8000':
+        variant_list = [v for v in variant_list if v.final_price > 8000]
+
+    if sort == 'price_low':
+        variant_list.sort(key=lambda v: v.final_price)
+    elif sort == 'price_high':
+        variant_list.sort(key=lambda v: v.final_price, reverse=True)
+
+    paginator = Paginator(variant_list, 9)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    categories = Category.objects.filter(status='active')
+
+    if request.user.is_authenticated:
+        wishlisted_ids = list(Wishlist.objects.filter(
+            user=request.user
+        ).values_list('product_variant_id', flat=True))
+    else:
+        wishlisted_ids = []
+
+    return render(request, 'user/shop_page.html', {
+        'variants': page_obj,
+        'categories': categories,
+        'selected_categories': selected_categories,
+        'selected_price': selected_price,
+        'search_query': search_query,
+        'sort': sort,
+        'page_obj': page_obj,
+        'wishlisted_ids': wishlisted_ids,
+        'offer_price_map': offer_price_map,
+    })
 
 @login_required
 def product_details(request, variant_id):
@@ -722,7 +714,7 @@ def collections(request):
     })
 
 @login_required
-def collection_details(request,category_id):
+def collection_details(request, category_id):
 
     try:
         category = Category.objects.get(id=category_id, status='active')
@@ -730,39 +722,54 @@ def collection_details(request,category_id):
         return redirect('collections')
 
     variants = ProductVariant.objects.filter(
-        product__category = category,
-        product__status = 'active',
-        product__category__status = 'active',
-        status = 'active'
-    )
+        product__category=category,
+        product__status='active',
+        product__category__status='active',
+        status='active'
+    ).select_related('product', 'product__category')
 
     search_query = request.GET.get('search', '')
-    selected_price = request.GET.get('price', '')
-    sort = request.GET.get('sort', '')
-
-    # Search
     if search_query:
         variants = variants.filter(product__product_name__icontains=search_query)
 
-    # Price filter
-    if selected_price == 'under_3000':
-        variants = variants.filter(price__lt=3000)
-    elif selected_price == '3000_5000':
-        variants = variants.filter(price__gte=3000, price__lte=5000)
-    elif selected_price == '5000_8000':
-        variants = variants.filter(price__gte=5000, price__lte=8000)
-    elif selected_price == 'above_8000':
-        variants = variants.filter(price__gt=8000)
-
-    # Sort
-    if sort == 'price_low':
-        variants = variants.order_by('price')
-    elif sort == 'price_high':
-        variants = variants.order_by('-price')
-    elif sort == 'a_z':
+    sort = request.GET.get('sort', '')
+    if sort == 'a_z':
         variants = variants.order_by('product__product_name')
     elif sort == 'z_a':
         variants = variants.order_by('-product__product_name')
+    else:
+        variants = variants.order_by('-created_at')
+
+    # Compute offer/discounted price for every matching variant —
+    # needed before filtering/sorting by price, since final price depends
+    # on offer lookups that can't be expressed as a plain DB column filter.
+    variant_list = list(variants)
+    offer_price_map = {}
+    for variant in variant_list:
+        final_price, discount_amount, offer = get_offer_price(variant)
+        variant.final_price = final_price
+        offer_price_map[variant.id] = {
+            'final_price':     final_price,
+            'discount_amount': discount_amount,
+            'offer':           offer,
+            'has_offer':       offer is not None,
+        }
+
+    # Price range filter — applied against final_price, not raw price
+    selected_price = request.GET.get('price', '')
+    if selected_price == 'under_3000':
+        variant_list = [v for v in variant_list if v.final_price < 3000]
+    elif selected_price == '3000_5000':
+        variant_list = [v for v in variant_list if 3000 <= v.final_price <= 5000]
+    elif selected_price == '5000_8000':
+        variant_list = [v for v in variant_list if 5000 <= v.final_price <= 8000]
+    elif selected_price == 'above_8000':
+        variant_list = [v for v in variant_list if v.final_price > 8000]
+
+    if sort == 'price_low':
+        variant_list.sort(key=lambda v: v.final_price)
+    elif sort == 'price_high':
+        variant_list.sort(key=lambda v: v.final_price, reverse=True)
 
     if request.user.is_authenticated:
         wishlisted_ids = list(Wishlist.objects.filter(
@@ -773,11 +780,12 @@ def collection_details(request,category_id):
 
     return render(request, 'user/collection_details.html', {
         'category': category,
-        'variants': variants,
+        'variants': variant_list,
         'search_query': search_query,
         'selected_price': selected_price,
         'sort': sort,
         'wishlisted_ids': wishlisted_ids,
+        'offer_price_map': offer_price_map,
     })
 
 @login_required
@@ -830,13 +838,23 @@ def add_to_cart(request, variant_id):
 
         # get the variant from DB
         variant = get_object_or_404(ProductVariant, id=variant_id)
+        next_page = request.POST.get('next', '')
+
+        referer = request.META.get('HTTP_REFERER')
+        safe_referer = None
+        if referer and url_has_allowed_host_and_scheme(
+            referer, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+        ):
+            safe_referer = referer
 
         # if not in stock or inactive redirect to product detail page
         if variant.stock == 0 or variant.status == 'inactive' or variant.product.status == 'inactive' or variant.product.category.status == 'inactive':
             if variant.status == 'inactive' or variant.product.status == 'inactive' or variant.product.category.status == 'inactive':
                 messages.error(request, "Currently unavailabe!")
 
-            next_page = request.POST.get('next', '')
+            if safe_referer:
+                return redirect(safe_referer)
+
             if next_page == 'product_details':
                 return redirect('product_details', variant.id)
             
@@ -869,11 +887,15 @@ def add_to_cart(request, variant_id):
             # check max quantity limit
             if item.quantity >= 5:
                 messages.error(request, "Maximum 5 items allowed per product!")
+                if safe_referer:
+                    return redirect(safe_referer)
                 return redirect('product_details', variant.id)
 
             # check stock availability
             if item.quantity + 1 > variant.stock:
                 messages.error(request, "Not enough stock available!")
+                if safe_referer:
+                    return redirect(safe_referer)
                 return redirect('product_details', variant.id)
 
             # if all good then increase quantity by 1
@@ -896,8 +918,10 @@ def add_to_cart(request, variant_id):
 
         messages.success(request, f"{variant.product.product_name} added to cart!")
 
+        if safe_referer:
+            return redirect(safe_referer)
+
         # redirect based on where request came from
-        next_page = request.POST.get('next', '')
         if next_page == 'shop':
             return redirect('shop')
 
@@ -909,6 +933,7 @@ def add_to_cart(request, variant_id):
             return redirect('wishlist')
 
         return redirect('product_details', variant.id)
+
 
 @login_required
 def remove_from_cart(request, item_id):
@@ -990,8 +1015,18 @@ def add_to_wishlist(request, variant_id):
         variant = get_object_or_404(ProductVariant, id=variant_id)
         next_page = request.POST.get('next', '')
 
+        referer = request.META.get('HTTP_REFERER')
+        safe_referer = None
+        if referer and url_has_allowed_host_and_scheme(
+            referer, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+        ):
+            safe_referer = referer
+
         if variant.status == 'inactive' or variant.product.status == 'inactive' or variant.product.category.status == 'inactive':
             messages.error(request, "Currently unavailabe!")
+
+            if safe_referer:
+                return redirect(safe_referer)
             
             if next_page == 'product_details':
                 return redirect('product_details', variant.id)
@@ -1015,6 +1050,9 @@ def add_to_wishlist(request, variant_id):
             Wishlist.objects.create(user=request.user, product_variant=variant)
             messages.success(request, f"{variant.product.product_name} added to wishlist!")
         
+        if safe_referer:
+            return redirect(safe_referer)
+
         if next_page == 'shop':
             return redirect('shop')
         elif next_page == 'collection_details':
@@ -1029,15 +1067,24 @@ def remove_from_wishlist(request, variant_id):
         # get the variant from DB
         variant = get_object_or_404(ProductVariant, id=variant_id, status='active')
 
+        referer = request.META.get('HTTP_REFERER')
+        safe_referer = None
+        if referer and url_has_allowed_host_and_scheme(
+            referer, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+        ):
+            safe_referer = referer
+
         # delete the wishlist item
         Wishlist.objects.filter(user=request.user, product_variant=variant).delete()
         messages.success(request, "Removed from wishlist!")
         
+        if safe_referer:
+            return redirect(safe_referer)
+
         if next_page == 'product_details':
             return redirect('product_details',variant.id)
         else:
             return redirect('wishlist')
-
 
 @admin_required
 def offer_management(request):

@@ -589,10 +589,7 @@ def shop(request):
         variants = variants.order_by('-product__product_name')
     else:
         variants = variants.order_by('-created_at')
-
-    # Compute offer/discounted price for every matching variant —
-    # needed before filtering/sorting by price, since final price depends
-    # on offer lookups that can't be expressed as a plain DB column filter.
+    
     variant_list = list(variants)
     offer_price_map = {}
     for variant in variant_list:
@@ -739,10 +736,7 @@ def collection_details(request, category_id):
         variants = variants.order_by('-product__product_name')
     else:
         variants = variants.order_by('-created_at')
-
-    # Compute offer/discounted price for every matching variant —
-    # needed before filtering/sorting by price, since final price depends
-    # on offer lookups that can't be expressed as a plain DB column filter.
+    
     variant_list = list(variants)
     offer_price_map = {}
     for variant in variant_list:
@@ -850,7 +844,7 @@ def add_to_cart(request, variant_id):
         # if not in stock or inactive redirect to product detail page
         if variant.stock == 0 or variant.status == 'inactive' or variant.product.status == 'inactive' or variant.product.category.status == 'inactive':
             if variant.status == 'inactive' or variant.product.status == 'inactive' or variant.product.category.status == 'inactive':
-                messages.error(request, "Currently unavailabe!")
+                messages.error(request, "Currently unavailable!")
 
             if safe_referer:
                 return redirect(safe_referer)

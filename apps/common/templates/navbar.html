@@ -16,11 +16,17 @@
             <a href="{% url 'shop' %}">
                 <i class="fas fa-search"></i>
             </a>
-            <a href="{% url 'wishlist' %}">
+            <a href="{% url 'wishlist' %}" class="icon-with-badge">
                 <i class="far fa-heart"></i>
+                {% if wishlist_count > 0 %}
+                    <span class="badge">{{ wishlist_count }}</span>
+                {% endif %}
             </a>
-            <a href="{% url 'cart' %}">
+            <a href="{% url 'cart' %}" class="icon-with-badge">
                 <i class="fas fa-shopping-cart"></i>
+                {% if cart_count > 0 %}
+                    <span class="badge">{{ cart_count }}</span>
+                {% endif %}
             </a>
             <a href="/profile/dashboard/">
                 <i class="fas fa-user"></i>

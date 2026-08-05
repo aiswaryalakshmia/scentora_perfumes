@@ -46,27 +46,28 @@
     <div class="product-details">
       <h2>{{ variant.product.product_name }}</h2>
       <p class="tagline">{{ variant.product.description }}</p>
-      {% if variant.discount_price %}
+      {% if discount_amount > 0 %}
         <span class="original-price">
             <s>₹{{ variant.price|floatformat:2 }}</s>
         </span>
 
         <span class="discount-price">
-            ₹{{ variant.final_price|floatformat:2 }}
+            ₹{{ final_price|floatformat:2 }}
         </span>
       {% else %}
         <span class="price">
             ₹{{ variant.price|floatformat:2 }}
         </span>
-        {% if avg_rating %}
-          <div class="average-rating">
-            <span class="stars">
-                {% for i in "12345" %}
-                {% if forloop.counter <= avg_rating %}★{% else %}☆{% endif %}
-                {% endfor %}
-            </span>                    
-          </div>
-        {% endif %}
+      {% endif %}
+
+      {% if avg_rating %}
+        <div class="average-rating">
+          <span class="stars">
+              {% for i in "12345" %}
+              {% if forloop.counter <= avg_rating %}★{% else %}☆{% endif %}
+              {% endfor %}
+          </span>                    
+        </div>
       {% endif %}
 
       <div class="options">

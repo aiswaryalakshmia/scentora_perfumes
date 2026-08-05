@@ -114,7 +114,7 @@ a {
   flex: 1;
   padding: 30px 40px;
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 1fr;
   grid-template-rows: auto auto;
   gap: 25px;
 }

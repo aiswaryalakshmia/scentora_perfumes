@@ -144,7 +144,7 @@ def checkout(request):
     coupon_discount = Decimal('0')
     coupon          = None
 
-    if coupon_code:        
+    if coupon_code:
         cart_total_for_coupon = subtotal - discount_amount
 
         revalidated_coupon, revalidated_discount, coupon_error = validate_coupon(

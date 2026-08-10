@@ -7,24 +7,69 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('products', '0011_productvariant_discount_price'),
+        ("products", "0011_productvariant_discount_price"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Offer',
+            name="Offer",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('offer_name', models.CharField(max_length=100)),
-                ('offer_type', models.CharField(choices=[('product', 'Product Offer'), ('category', 'Category Offer')], max_length=20)),
-                ('discount_percentage', models.DecimalField(decimal_places=2, max_digits=5)),
-                ('start_date', models.DateField()),
-                ('end_date', models.DateField()),
-                ('status', models.CharField(choices=[('active', 'Active'), ('inactive', 'Inactive')], default='active', max_length=20)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('category', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='offers', to='products.category')),
-                ('product', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='offers', to='products.product')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("offer_name", models.CharField(max_length=100)),
+                (
+                    "offer_type",
+                    models.CharField(
+                        choices=[
+                            ("product", "Product Offer"),
+                            ("category", "Category Offer"),
+                        ],
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "discount_percentage",
+                    models.DecimalField(decimal_places=2, max_digits=5),
+                ),
+                ("start_date", models.DateField()),
+                ("end_date", models.DateField()),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[("active", "Active"), ("inactive", "Inactive")],
+                        default="active",
+                        max_length=20,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "category",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="offers",
+                        to="products.category",
+                    ),
+                ),
+                (
+                    "product",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="offers",
+                        to="products.product",
+                    ),
+                ),
             ],
         ),
     ]

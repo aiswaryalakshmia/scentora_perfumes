@@ -6,23 +6,39 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('orders', '0009_coupon_order_coupon_discount_order_coupon_and_more'),
+        ("orders", "0009_coupon_order_coupon_discount_order_coupon_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='order',
-            name='cancel_reason',
+            model_name="order",
+            name="cancel_reason",
             field=models.TextField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='order',
-            name='payment_method',
-            field=models.CharField(choices=[('cod', 'Cash on Delivery'), ('razorpay', 'Razorpay'), ('wallet', 'Wallet')], default='cod', max_length=20),
+            model_name="order",
+            name="payment_method",
+            field=models.CharField(
+                choices=[
+                    ("cod", "Cash on Delivery"),
+                    ("razorpay", "Razorpay"),
+                    ("wallet", "Wallet"),
+                ],
+                default="cod",
+                max_length=20,
+            ),
         ),
         migrations.AlterField(
-            model_name='payment',
-            name='payment_method',
-            field=models.CharField(choices=[('cod', 'Cash on Delivery'), ('razorpay', 'Razorpay'), ('wallet', 'Wallet')], default='cod', max_length=20),
+            model_name="payment",
+            name="payment_method",
+            field=models.CharField(
+                choices=[
+                    ("cod", "Cash on Delivery"),
+                    ("razorpay", "Razorpay"),
+                    ("wallet", "Wallet"),
+                ],
+                default="cod",
+                max_length=20,
+            ),
         ),
     ]

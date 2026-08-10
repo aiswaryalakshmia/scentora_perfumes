@@ -6,13 +6,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('orders', '0007_alter_order_payment_method_payment'),
+        ("orders", "0007_alter_order_payment_method_payment"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='order',
-            name='payment_method',
-            field=models.CharField(choices=[('cod', 'Cash on Delivery'), ('razorpay', 'Razorpay')], default='cod', max_length=20),
+            model_name="order",
+            name="payment_method",
+            field=models.CharField(
+                choices=[("cod", "Cash on Delivery"), ("razorpay", "Razorpay")],
+                default="cod",
+                max_length=20,
+            ),
         ),
     ]

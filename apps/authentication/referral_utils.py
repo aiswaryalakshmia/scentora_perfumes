@@ -1,14 +1,16 @@
 from decimal import Decimal
-from apps.userprofile.wallet_utils import credit_wallet
-from .models import User, ReferralUsage
 
-REFERRER_REWARD = Decimal('100.00')
-REFERRED_REWARD = Decimal('200.00')
+from apps.userprofile.wallet_utils import credit_wallet
+
+from .models import ReferralUsage, User
+
+REFERRER_REWARD = Decimal("100.00")
+REFERRED_REWARD = Decimal("200.00")
 
 
 def apply_referral_code(new_user, code):
-    
-    code = (code or '').strip().upper()
+
+    code = (code or "").strip().upper()
     if not code:
         return False, ""
 

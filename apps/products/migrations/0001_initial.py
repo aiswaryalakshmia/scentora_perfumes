@@ -7,19 +7,38 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Category',
+            name="Category",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('category_name', models.CharField(max_length=20, unique=True)),
-                ('image', models.ImageField(blank=True, null=True, upload_to='category_images/')),
-                ('status', models.CharField(choices=[('active', 'Active'), ('inactive', 'Inactive')], default='active', max_length=20)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updted_at', models.DateTimeField(auto_now_add=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("category_name", models.CharField(max_length=20, unique=True)),
+                (
+                    "image",
+                    models.ImageField(
+                        blank=True, null=True, upload_to="category_images/"
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[("active", "Active"), ("inactive", "Inactive")],
+                        default="active",
+                        max_length=20,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updted_at", models.DateTimeField(auto_now_add=True)),
             ],
         ),
     ]

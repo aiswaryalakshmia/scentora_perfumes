@@ -6,13 +6,15 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('products', '0010_wishlist'),
+        ("products", "0010_wishlist"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='productvariant',
-            name='discount_price',
-            field=models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True),
+            model_name="productvariant",
+            name="discount_price",
+            field=models.DecimalField(
+                blank=True, decimal_places=2, max_digits=10, null=True
+            ),
         ),
     ]

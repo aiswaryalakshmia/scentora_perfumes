@@ -524,6 +524,16 @@ def my_orders(request):
         orders = orders.filter(order_status='pending')
     elif status_filter == 'cancelled':
         orders = orders.filter(order_status='cancelled')
+    elif status_filter == 'return_requested':
+        orders = orders.filter(items__status='return_requested').distinct()
+
+    orders = list(orders)
+    for order in orders:
+        order.display_status = (
+            'return_requested'
+            if order.items.filter(status='return_requested').exists()
+            else order.order_status
+        )
 
     context = {
         'orders': orders,
@@ -552,6 +562,9 @@ def order_detail(request, order_id):
         }
 
     has_active_items = order_items.filter(status='active').exists()
+
+    has_return_requested = order_items.filter(status='return_requested').exists()
+    order.display_status = 'return_requested' if has_return_requested else order.order_status
 
     context = {
         'order': order,

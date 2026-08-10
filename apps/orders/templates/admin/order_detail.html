@@ -134,7 +134,7 @@
   <section class="bottom-grid">
     <div class="status-card">
       <h3>Status Management</h3>
-      {% if order.order_status == 'return_requested' %}
+      {% if order.order_status == 'return_requested' or has_return_requested %}
         <p>This order has a <strong>pending return request</strong>. Please use the Approve or Reject buttons above to handle it.</p>
         <label>Payment Status</label>
         <input type="text" value="{{ order.get_payment_status_display }}" readonly>
@@ -194,7 +194,7 @@
         <i class="fa-solid fa-truck"></i>
         <div>
           <strong>Current Status</strong>
-          <p>{{ order.get_order_status_display }}</p>
+          <p>{{ order.display_status|capfirst }}</p>
           <span>Latest order state from admin management.</span>
         </div>
       </div>

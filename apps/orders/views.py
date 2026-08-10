@@ -421,7 +421,10 @@ def order_management(request):
         )
 
     if status_filter:
-        orders = orders.filter(order_status=status_filter)
+        if status_filter == 'return_requested':
+            orders = orders.filter(items__status='return_requested').distinct()
+        else:
+            orders = orders.filter(order_status=status_filter)
 
     if sort == 'date_old':
         orders = orders.order_by('created_at')
@@ -435,6 +438,13 @@ def order_management(request):
     paginator = Paginator(orders, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
+
+    for order in page_obj:
+        order.display_status = (
+            'return_requested'
+            if order.items.filter(status='return_requested').exists()
+            else order.order_status
+        )
 
     return render(request, 'admin/order_management.html', {
         'orders': page_obj,
@@ -454,9 +464,12 @@ def admin_order_detail(request, order_id):
 
     order_items = order.items.select_related('product_variant__product').all()
 
+    has_return_requested = order_items.filter(status='return_requested').exists()
+    order.display_status = 'return_requested' if has_return_requested else order.order_status
+
     # don't show status choices for return_requested
     # it is handled by approve/reject buttons
-    if order.order_status == 'return_requested':
+    if order.order_status == 'return_requested' or has_return_requested:
         allowed_status_choices = []
     else:
         allowed_values = get_allowed_next_statuses(order.order_status)
@@ -469,6 +482,7 @@ def admin_order_detail(request, order_id):
         'order': order,
         'order_items': order_items,
         'status_choices': allowed_status_choices,
+        'has_return_requested': has_return_requested,
     })
 
 def get_allowed_next_statuses(current_status):

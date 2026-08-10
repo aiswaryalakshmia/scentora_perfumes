@@ -39,6 +39,7 @@
     <a href="?status=delivered{% if search_query %}&search={{ search_query }}{% endif %}" class="tab {% if status_filter == 'delivered' %}active{% endif %}">Delivered</a>
     <a href="?status=pending{% if search_query %}&search={{ search_query }}{% endif %}" class="tab {% if status_filter == 'pending' %}active{% endif %}">Pending</a>
     <a href="?status=cancelled{% if search_query %}&search={{ search_query }}{% endif %}" class="tab {% if status_filter == 'cancelled' %}active{% endif %}">Cancelled</a>
+    <a href="?status=return_requested{% if search_query %}&search={{ search_query }}{% endif %}" class="tab {% if status_filter == 'return_requested' %}active{% endif %}">Return Requested</a>
   </div>
 
   <!-- Orders List -->
@@ -74,8 +75,8 @@
 
       <!-- Order Status and Date -->
       <div class="order-meta">
-        <span class="status-badge status-{{ order.order_status }}">
-          ● {{ order.order_status|capfirst }}
+        <span class="status-badge status-{{ order.display_status }}">
+          ● {{ order.display_status|capfirst }}
         </span>
         <p class="order-date">{{ order.created_at|date:"M d, Y" }}</p>
       </div>

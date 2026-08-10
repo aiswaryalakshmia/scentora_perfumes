@@ -97,9 +97,9 @@
         <section class="payment-method">
           <h3>Payment Method</h3>
           <div class="payment-tabs">
-            <button type="button" class="active" onclick="showPayment('razorpay')">Razorpay</button>
-            <button type="button" onclick="showPayment('cod')">COD</button>
-            <button type="button" onclick="showPayment('wallet')">Wallet</button>
+            <button type="button" class="active" onclick="showPayment('razorpay', this)">Razorpay</button>
+            <button type="button" onclick="showPayment('cod', this)">COD</button>
+            <button type="button" onclick="showPayment('wallet', this)">Wallet</button>
           </div>
           <input type="hidden" name="payment_method" id="payment_method" value="razorpay">
           <div id="payment-razorpay" class="payment-panel">
@@ -243,13 +243,27 @@
 <!-- end checkout-page -->
 
 <script>
-  function showPayment(type) {
+  const paymentStorageKey = 'scentora_payment_method';
+
+  function showPayment(type, clickedButton) {
     document.querySelectorAll('.payment-panel').forEach(p => p.style.display = 'none');
     document.querySelectorAll('.payment-tabs button').forEach(b => b.classList.remove('active'));
     document.getElementById('payment-' + type).style.display = 'block';
     document.getElementById('payment_method').value = type;
-    event.target.classList.add('active');
+    clickedButton.classList.add('active');
+    sessionStorage.setItem(paymentStorageKey, type);
   }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const saved = sessionStorage.getItem(paymentStorageKey);
+    if (saved) {
+      const targetButton = Array.from(document.querySelectorAll('.payment-tabs button'))
+        .find(btn => btn.getAttribute('onclick').includes(`'${saved}'`));
+      if (targetButton) {
+        showPayment(saved, targetButton);
+      }
+    }
+  });
 
   function applyCouponCode(code) {
     const input = document.getElementById('coupon-input');

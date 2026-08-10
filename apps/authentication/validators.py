@@ -1,5 +1,6 @@
 import re
 
+
 def validate_password(password, confirm_password=None):
     if len(password) == 0:
         return "Password is required"
@@ -7,13 +8,13 @@ def validate_password(password, confirm_password=None):
         return "Password must be at least 8 characters"
     if len(password) > 128:
         return "Password cannot exceed 128 characters"
-    if not re.search(r'[A-Z]', password):
+    if not re.search(r"[A-Z]", password):
         return "Password must contain at least one uppercase letter"
-    if not re.search(r'[a-z]', password):
+    if not re.search(r"[a-z]", password):
         return "Password must contain at least one lowercase letter"
-    if not re.search(r'[0-9]', password):
+    if not re.search(r"[0-9]", password):
         return "Password must contain at least one number"
-    if not re.search(r'[@$!%*?&]', password):
+    if not re.search(r"[@$!%*?&]", password):
         return "Password must contain at least one special character"
     if confirm_password is not None:
         if len(confirm_password) == 0:

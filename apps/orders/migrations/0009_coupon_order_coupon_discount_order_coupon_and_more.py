@@ -8,49 +8,118 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('orders', '0008_alter_order_payment_method'),
+        ("orders", "0008_alter_order_payment_method"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Coupon',
+            name="Coupon",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('coupon_code', models.CharField(max_length=20, unique=True)),
-                ('discount_type', models.CharField(choices=[('percentage', 'Percentage'), ('flat', 'Flat Amount')], max_length=20)),
-                ('discount_value', models.DecimalField(decimal_places=2, max_digits=10)),
-                ('minimum_price', models.DecimalField(decimal_places=2, default=0, max_digits=10)),
-                ('maximum_redeem', models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True)),
-                ('expiry_date', models.DateField()),
-                ('usage_limit', models.PositiveIntegerField(default=1)),
-                ('used_count', models.PositiveIntegerField(default=0)),
-                ('status', models.CharField(choices=[('active', 'Active'), ('inactive', 'Inactive')], default='active', max_length=20)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("coupon_code", models.CharField(max_length=20, unique=True)),
+                (
+                    "discount_type",
+                    models.CharField(
+                        choices=[("percentage", "Percentage"), ("flat", "Flat Amount")],
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "discount_value",
+                    models.DecimalField(decimal_places=2, max_digits=10),
+                ),
+                (
+                    "minimum_price",
+                    models.DecimalField(decimal_places=2, default=0, max_digits=10),
+                ),
+                (
+                    "maximum_redeem",
+                    models.DecimalField(
+                        blank=True, decimal_places=2, max_digits=10, null=True
+                    ),
+                ),
+                ("expiry_date", models.DateField()),
+                ("usage_limit", models.PositiveIntegerField(default=1)),
+                ("used_count", models.PositiveIntegerField(default=0)),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[("active", "Active"), ("inactive", "Inactive")],
+                        default="active",
+                        max_length=20,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
             ],
         ),
         migrations.AddField(
-            model_name='order',
-            name='coupon_discount',
+            model_name="order",
+            name="coupon_discount",
             field=models.DecimalField(decimal_places=2, default=0, max_digits=10),
         ),
         migrations.AddField(
-            model_name='order',
-            name='coupon',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='orders', to='orders.coupon'),
+            model_name="order",
+            name="coupon",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="orders",
+                to="orders.coupon",
+            ),
         ),
         migrations.CreateModel(
-            name='CouponUsage',
+            name="CouponUsage",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('used_at', models.DateTimeField(auto_now_add=True)),
-                ('coupon', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='usages', to='orders.coupon')),
-                ('order', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='coupon_usage', to='orders.order')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='coupon_usages', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("used_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "coupon",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="usages",
+                        to="orders.coupon",
+                    ),
+                ),
+                (
+                    "order",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="coupon_usage",
+                        to="orders.order",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="coupon_usages",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'unique_together': {('coupon', 'user')},
+                "unique_together": {("coupon", "user")},
             },
         ),
     ]

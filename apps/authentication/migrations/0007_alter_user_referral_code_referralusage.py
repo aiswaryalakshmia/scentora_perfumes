@@ -8,23 +8,45 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('authentication', '0006_remove_otp_user'),
+        ("authentication", "0006_remove_otp_user"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='user',
-            name='referral_code',
+            model_name="user",
+            name="referral_code",
             field=models.CharField(blank=True, max_length=20, null=True, unique=True),
         ),
         migrations.CreateModel(
-            name='ReferralUsage',
+            name="ReferralUsage",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('referral_code_used', models.CharField(max_length=20)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('referred_user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='referred_by', to=settings.AUTH_USER_MODEL)),
-                ('referrer', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='referrals_made', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("referral_code_used", models.CharField(max_length=20)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "referred_user",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="referred_by",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "referrer",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="referrals_made",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
     ]

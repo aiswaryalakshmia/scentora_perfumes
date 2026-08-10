@@ -7,27 +7,75 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('orders', '0006_order_return_reason_alter_order_order_status'),
+        ("orders", "0006_order_return_reason_alter_order_order_status"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='order',
-            name='payment_method',
-            field=models.CharField(choices=[('cod', 'Cash on Delivery'), ('card', 'Credit Card'), ('upi', 'UPI Transfer'), ('razorpay', 'Razorpay')], default='cod', max_length=20),
+            model_name="order",
+            name="payment_method",
+            field=models.CharField(
+                choices=[
+                    ("cod", "Cash on Delivery"),
+                    ("card", "Credit Card"),
+                    ("upi", "UPI Transfer"),
+                    ("razorpay", "Razorpay"),
+                ],
+                default="cod",
+                max_length=20,
+            ),
         ),
         migrations.CreateModel(
-            name='Payment',
+            name="Payment",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('razorpay_order_id', models.CharField(blank=True, max_length=100, null=True)),
-                ('razorpay_payment_id', models.CharField(blank=True, max_length=100, null=True)),
-                ('payment_method', models.CharField(choices=[('cod', 'Cash on Delivery'), ('razorpay', 'Razorpay')], default='cod', max_length=20)),
-                ('amount', models.DecimalField(decimal_places=2, max_digits=10)),
-                ('payment_status', models.CharField(choices=[('pending', 'Pending'), ('paid', 'Paid'), ('failed', 'Failed')], default='pending', max_length=20)),
-                ('transaction_date', models.DateTimeField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('order', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='payment_detail', to='orders.order')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "razorpay_order_id",
+                    models.CharField(blank=True, max_length=100, null=True),
+                ),
+                (
+                    "razorpay_payment_id",
+                    models.CharField(blank=True, max_length=100, null=True),
+                ),
+                (
+                    "payment_method",
+                    models.CharField(
+                        choices=[("cod", "Cash on Delivery"), ("razorpay", "Razorpay")],
+                        default="cod",
+                        max_length=20,
+                    ),
+                ),
+                ("amount", models.DecimalField(decimal_places=2, max_digits=10)),
+                (
+                    "payment_status",
+                    models.CharField(
+                        choices=[
+                            ("pending", "Pending"),
+                            ("paid", "Paid"),
+                            ("failed", "Failed"),
+                        ],
+                        default="pending",
+                        max_length=20,
+                    ),
+                ),
+                ("transaction_date", models.DateTimeField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "order",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="payment_detail",
+                        to="orders.order",
+                    ),
+                ),
             ],
         ),
     ]

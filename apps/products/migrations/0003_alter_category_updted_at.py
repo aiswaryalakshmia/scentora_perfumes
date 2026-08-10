@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('products', '0002_category_description'),
+        ("products", "0002_category_description"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='category',
-            name='updted_at',
+            model_name="category",
+            name="updted_at",
             field=models.DateTimeField(auto_now=True),
         ),
     ]

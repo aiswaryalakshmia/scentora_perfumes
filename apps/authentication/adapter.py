@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
+
 class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
 
     def pre_social_login(self, request, sociallogin):
@@ -18,7 +19,9 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         except User.DoesNotExist:
             return
 
-        original_password = user.password  # capture the real hash before connect() can wipe it
+        original_password = (
+            user.password
+        )  # capture the real hash before connect() can wipe it
 
         sociallogin.connect(request, user)
 
@@ -27,7 +30,7 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         user.refresh_from_db()
         if not user.has_usable_password() and original_password:
             user.password = original_password
-            user.save(update_fields=['password'])
+            user.save(update_fields=["password"])
 
     def save_user(self, request, sociallogin, form=None):
         user = super().save_user(request, sociallogin, form)

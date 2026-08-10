@@ -1,7 +1,7 @@
 from .models import Cart, Wishlist
 
 
-def cart_wishlist_counts(request):    
+def cart_wishlist_counts(request):
     cart_count = 0
     wishlist_count = 0
 
@@ -13,6 +13,6 @@ def cart_wishlist_counts(request):
         wishlist_count = Wishlist.objects.filter(user=request.user).count()
 
     return {
-        'cart_count': cart_count,
-        'wishlist_count': wishlist_count,
+        "cart_count": cart_count,
+        "wishlist_count": wishlist_count,
     }

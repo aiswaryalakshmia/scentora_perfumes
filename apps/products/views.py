@@ -1,63 +1,70 @@
-import json
 import base64
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render,redirect,get_object_or_404
-from django.contrib import messages
-from django.core.paginator import Paginator
-from django.db.models import Q
-from django.core.files.base import ContentFile
-from django.urls import reverse
-from apps.common.decorators import admin_required
-from .models import Category,Product,ProductVariant,VariantImage,Cart,CartItem,Wishlist
-from .forms import CategoryForm,ProductForm, ProductVariantForm
-from .utils import get_offer_price,has_overlapping_offer
-from django.utils.http import url_has_allowed_host_and_scheme
-from .models import Offer
-from .models import Review
-from django.db.models import Avg
-from .utils import can_review_product
+import json
 from datetime import datetime
+
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.files.base import ContentFile
+from django.core.paginator import Paginator
+from django.db.models import Avg, Q
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
+
+from apps.common.decorators import admin_required
+
+from .forms import CategoryForm, ProductForm, ProductVariantForm
+from .models import (
+    Cart,
+    CartItem,
+    Category,
+    Offer,
+    Product,
+    ProductVariant,
+    Review,
+    VariantImage,
+    Wishlist,
+)
+from .utils import can_review_product, get_offer_price, has_overlapping_offer
 
 
 @admin_required
 def category_management(request):
-    search_query = request.GET.get('search','').strip()
-    categories = Category.objects.order_by('-created_at')
+    search_query = request.GET.get("search", "").strip()
+    categories = Category.objects.order_by("-created_at")
 
     if search_query:
         categories = categories.filter(
-            Q(category_name__icontains=search_query)|
-            Q(description__icontains=search_query)
+            Q(category_name__icontains=search_query)
+            | Q(description__icontains=search_query)
         )
 
-    paginator=Paginator(categories,5)
-    page_number=request.GET.get('page')
-    page_obj=paginator.get_page(page_number)
+    paginator = Paginator(categories, 5)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
 
     return render(
         request,
-        'admin/category_management.html',
-        {
-            'categories': page_obj,
-            'search_query': search_query
-        }
+        "admin/category_management.html",
+        {"categories": page_obj, "search_query": search_query},
     )
+
 
 @admin_required
 def add_category(request):
 
-    if request.method == 'POST':
+    if request.method == "POST":
         form = CategoryForm(request.POST)
 
         if form.is_valid():
             category = form.save(commit=False)
 
-            cropped_image = request.POST.get('cropped_image')
+            cropped_image = request.POST.get("cropped_image")
 
             if not cropped_image:
                 messages.error(request, "Category image is required.")
-                return render(request, 'admin/add_category.html', {'form': form})
+                return render(request, "admin/add_category.html", {"form": form})
 
             try:
                 images = json.loads(cropped_image)
@@ -68,32 +75,35 @@ def add_category(request):
                 ext = format_data.split("/")[-1]
                 category.image = ContentFile(
                     base64.b64decode(imgstr),
-                    name=f"category_{form.cleaned_data['category_name']}.{ext}"
+                    name=f"category_{form.cleaned_data['category_name']}.{ext}",
                 )
             except Exception:
                 messages.error(request, "Error while processing image.")
-                return render(request, 'admin/add_category.html', {'form': form}, status=400)
+                return render(
+                    request, "admin/add_category.html", {"form": form}, status=400
+                )
 
             category.save()
             messages.success(request, "Category added successfully!")
-            return redirect('category_management')
+            return redirect("category_management")
 
     else:
         form = CategoryForm()
 
-    return render(request, 'admin/add_category.html', {'form': form})
+    return render(request, "admin/add_category.html", {"form": form})
+
 
 @admin_required
 def edit_category(request, category_id):
     category = get_object_or_404(Category, id=category_id)
 
-    if request.method == 'POST':
+    if request.method == "POST":
         form = CategoryForm(request.POST, instance=category)
 
         if form.is_valid():
             category = form.save(commit=False)
 
-            cropped_image = request.POST.get('cropped_image')
+            cropped_image = request.POST.get("cropped_image")
 
             if cropped_image:
                 try:
@@ -103,100 +113,105 @@ def edit_category(request, category_id):
                         ext = format_data.split("/")[-1]
                         category.image = ContentFile(
                             base64.b64decode(imgstr),
-                            name=f"category_{category.id}.{ext}"
+                            name=f"category_{category.id}.{ext}",
                         )
                 except Exception:
                     messages.error(request, "Error while processing image.")
-                    return render(request, 'admin/edit_category.html', {'form': form, 'category': category}, status=400)
+                    return render(
+                        request,
+                        "admin/edit_category.html",
+                        {"form": form, "category": category},
+                        status=400,
+                    )
 
-            elif request.POST.get('image-clear') == 'on':
+            elif request.POST.get("image-clear") == "on":
                 category.image.delete(save=False)
                 category.image = None
 
             category.save()
             messages.success(request, "Category updated successfully!")
-            return redirect('category_management')
+            return redirect("category_management")
 
     else:
         form = CategoryForm(instance=category)
 
     return render(
-        request,
-        'admin/edit_category.html',
-        {
-            'form': form,
-            'category': category
-        }
+        request, "admin/edit_category.html", {"form": form, "category": category}
     )
+
 
 @admin_required
 def toggle_category_status(request, category_id):
     category = get_object_or_404(Category, id=category_id)
 
-    if category.status == 'active':
-        category.status = 'inactive'
+    if category.status == "active":
+        category.status = "inactive"
 
         # block all products under this category
-        Product.objects.filter(category=category).update(status='inactive')
+        Product.objects.filter(category=category).update(status="inactive")
 
         # block all variants under this category
-        ProductVariant.objects.filter(product__category=category).update(status='inactive')
+        ProductVariant.objects.filter(product__category=category).update(
+            status="inactive"
+        )
 
-        messages.success(request, f'{category.category_name} blocked successfully.')
+        messages.success(request, f"{category.category_name} blocked successfully.")
 
     else:
-        category.status = 'active'
+        category.status = "active"
 
         # unblock all products under this category
-        Product.objects.filter(category=category).update(status='active')
+        Product.objects.filter(category=category).update(status="active")
 
         # unblock all variants under this category
-        ProductVariant.objects.filter(product__category=category).update(status='active')
+        ProductVariant.objects.filter(product__category=category).update(
+            status="active"
+        )
 
-        messages.success(request, f'{category.category_name} unblocked successfully.')
+        messages.success(request, f"{category.category_name} unblocked successfully.")
 
     category.save()
-    return redirect('category_management')
+    return redirect("category_management")
+
 
 @admin_required
 def product_management(request):
 
-    search_query = request.GET.get('search', '')
-    product_list = Product.objects.select_related('category').order_by("-created_at")
+    search_query = request.GET.get("search", "")
+    product_list = Product.objects.select_related("category").order_by("-created_at")
 
     if search_query:
         product_list = product_list.filter(
-            Q(product_name__icontains=search_query) |
-            Q(description__icontains=search_query) |
-            Q(category__category_name__icontains=search_query)
+            Q(product_name__icontains=search_query)
+            | Q(description__icontains=search_query)
+            | Q(category__category_name__icontains=search_query)
         )
 
     total_products = Product.objects.count()
 
-    active_products = Product.objects.filter(
-        status='active'
-    ).count()
+    active_products = Product.objects.filter(status="active").count()
 
-    blocked_products = Product.objects.filter(
-        status='inactive'
-    ).count()
+    blocked_products = Product.objects.filter(status="inactive").count()
 
-    out_of_stock_products = Product.objects.filter(
-    variants__stock=0
-    ).distinct().count()
+    out_of_stock_products = Product.objects.filter(variants__stock=0).distinct().count()
 
     paginator = Paginator(product_list, 5)
-    page_number = request.GET.get('page')
+    page_number = request.GET.get("page")
     products = paginator.get_page(page_number)
 
-    return render(request, 'admin/product_management.html', {
-        'products': products,
-        'search_query': search_query,
-        'total_products': total_products,
-        'active_products': active_products,
-        'blocked_products': blocked_products,
-        'out_of_stock_products': out_of_stock_products,
-    })
+    return render(
+        request,
+        "admin/product_management.html",
+        {
+            "products": products,
+            "search_query": search_query,
+            "total_products": total_products,
+            "active_products": active_products,
+            "blocked_products": blocked_products,
+            "out_of_stock_products": out_of_stock_products,
+        },
+    )
+
 
 @admin_required
 def add_product(request):
@@ -208,35 +223,25 @@ def add_product(request):
 
             product = form.save()
 
-            messages.success(
-                request,
-                "Product added successfully."
-            )
+            messages.success(request, "Product added successfully.")
 
-            return redirect('add_variant', product_id=product.id)
+            return redirect("add_variant", product_id=product.id)
 
     else:
 
         form = ProductForm()
 
-    return render(request, 'admin/add_product.html', {
-        'form': form
-    })
+    return render(request, "admin/add_product.html", {"form": form})
+
 
 @admin_required
 def add_variant(request, product_id):
 
-    product = get_object_or_404(
-        Product,
-        id=product_id
-    )
+    product = get_object_or_404(Product, id=product_id)
 
     if request.method == "POST":
 
-        form = ProductVariantForm(
-            request.POST,
-            request.FILES
-        )
+        form = ProductVariantForm(request.POST, request.FILES)
 
         if form.is_valid():
 
@@ -244,10 +249,7 @@ def add_variant(request, product_id):
             cropped_images = request.POST.get("cropped_images")
 
             if not cropped_images:
-                messages.error(
-                    request,
-                    "Please upload at least 3 images."
-                )
+                messages.error(request, "Please upload at least 3 images.")
                 return render(
                     request,
                     "admin/add_variant.html",
@@ -255,17 +257,14 @@ def add_variant(request, product_id):
                         "product": product,
                         "form": form,
                         "variants": ProductVariant.objects.filter(product=product),
-                    }
+                    },
                 )
 
             try:
                 images = json.loads(cropped_images)
 
                 if len(images) < 3:
-                    messages.error(
-                        request,
-                        "Please upload at least 3 images."
-                    )
+                    messages.error(request, "Please upload at least 3 images.")
                     return render(
                         request,
                         "admin/add_variant.html",
@@ -273,14 +272,11 @@ def add_variant(request, product_id):
                             "product": product,
                             "form": form,
                             "variants": ProductVariant.objects.filter(product=product),
-                        }
+                        },
                     )
 
             except Exception:
-                messages.error(
-                    request,
-                    "Invalid image data."
-                )
+                messages.error(request, "Invalid image data.")
                 return render(
                     request,
                     "admin/add_variant.html",
@@ -288,13 +284,13 @@ def add_variant(request, product_id):
                         "product": product,
                         "form": form,
                         "variants": ProductVariant.objects.filter(product=product),
-                    }
+                    },
                 )
 
             variant = form.save(commit=False)
             variant.product = product
             variant.save()
-            
+
             if cropped_images:
 
                 try:
@@ -309,49 +305,32 @@ def add_variant(request, product_id):
 
                         image_file = ContentFile(
                             base64.b64decode(imgstr),
-                            name=f"variant_{variant.id}_{index}.{ext}"
+                            name=f"variant_{variant.id}_{index}.{ext}",
                         )
 
-                        VariantImage.objects.create(
-                            variant=variant,
-                            image=image_file
-                        )
+                        VariantImage.objects.create(variant=variant, image=image_file)
 
                 except Exception as e:
 
                     print("Image processing error:", e)
 
-                    messages.error(
-                        request,
-                        "Error while processing images."
-                    )
+                    messages.error(request, "Error while processing images.")
 
-            messages.success(
-                request,
-                "Variant added successfully."
-            )
+            messages.success(request, "Variant added successfully.")
 
             # Coming from Edit Product page
             if "add_product_variant" in request.POST:
 
-                return redirect(
-                    "edit_product",
-                    product_id=product.id
-                )
+                return redirect("edit_product", product_id=product.id)
 
             # Coming from Add Variant page
-            return redirect(
-                "add_variant",
-                product_id=product.id
-            )
+            return redirect("add_variant", product_id=product.id)
 
     else:
 
         form = ProductVariantForm()
 
-    variants = ProductVariant.objects.filter(
-        product=product
-    )
+    variants = ProductVariant.objects.filter(product=product)
 
     return render(
         request,
@@ -360,74 +339,52 @@ def add_variant(request, product_id):
             "product": product,
             "form": form,
             "variants": variants,
-        }
+        },
     )
+
 
 @admin_required
 def edit_product(request, product_id):
 
-    product = get_object_or_404(
-        Product,
-        id=product_id
-    )
+    product = get_object_or_404(Product, id=product_id)
 
     if request.method == "POST":
 
-        form = ProductForm(
-            request.POST,
-            instance=product
-        )
+        form = ProductForm(request.POST, instance=product)
 
         if form.is_valid():
 
             form.save()
 
-            messages.success(
-                request,
-                "Product updated successfully."
-            )
+            messages.success(request, "Product updated successfully.")
 
-            return redirect(
-                'edit_product',
-                product_id=product.id
-            )
+            return redirect("edit_product", product_id=product.id)
 
     else:
 
-        form = ProductForm(
-            instance=product
-        )
+        form = ProductForm(instance=product)
 
-    variants = ProductVariant.objects.filter(
-        product=product
-    )
+    variants = ProductVariant.objects.filter(product=product)
 
     return render(
         request,
-        'admin/edit_product.html',
-        {
-            'product': product,
-            'form': form,
-            'variants': variants
-        }
+        "admin/edit_product.html",
+        {"product": product, "form": form, "variants": variants},
     )
+
 
 @admin_required
 def update_variant(request, variant_id):
 
-    variant = get_object_or_404(
-        ProductVariant,
-        id=variant_id
-    )
+    variant = get_object_or_404(ProductVariant, id=variant_id)
 
     if request.method == "POST":
 
-        form = ProductVariantForm(
-            request.POST,
-            instance=variant
-        )
+        form = ProductVariantForm(request.POST, instance=variant)
 
-        edit_redirect = f"{reverse('edit_product', args=[variant.product.id])}?editing={variant.id}"
+        edit_redirect = (
+            f"{reverse('edit_product', args=[variant.product.id])}?editing={variant.id}"
+        )
 
         if form.is_valid():
 
@@ -439,19 +396,13 @@ def update_variant(request, variant_id):
                 try:
                     new_images = json.loads(cropped_images)
                 except Exception:
-                    messages.error(
-                        request,
-                        "Invalid image data."
-                    )
+                    messages.error(request, "Invalid image data.")
                     return redirect(edit_redirect)
 
             existing_count = variant.images.count()
 
             if existing_count + len(new_images) < 3:
-                messages.error(
-                    request,
-                    "A variant must have at least 3 images."
-                )
+                messages.error(request, "A variant must have at least 3 images.")
                 return redirect(edit_redirect)
 
             variant = form.save()
@@ -465,59 +416,46 @@ def update_variant(request, variant_id):
 
                     image_file = ContentFile(
                         base64.b64decode(imgstr),
-                        name=f"variant_{variant.id}_{index}.{ext}"
+                        name=f"variant_{variant.id}_{index}.{ext}",
                     )
 
-                    VariantImage.objects.create(
-                        variant=variant,
-                        image=image_file
-                    )
+                    VariantImage.objects.create(variant=variant, image=image_file)
 
                 except Exception as e:
                     print("Crop image error:", e)
-                    messages.error(
-                        request,
-                        "Error while processing cropped images."
-                    )
+                    messages.error(request, "Error while processing cropped images.")
         else:
             for field, errors in form.errors.get_json_data().items():
 
                 for error in errors:
 
-                    messages.error(
-                        request,
-                        error["message"]
-                    )
+                    messages.error(request, error["message"])
 
             return redirect(edit_redirect)
 
-        messages.success(
-            request,
-            "Variant updated successfully."
-        )
+        messages.success(request, "Variant updated successfully.")
 
     return redirect(edit_redirect)
+
 
 @admin_required
 def toggle_variant_status(request, variant_id):
     variant = get_object_or_404(ProductVariant, id=variant_id)
 
-    if variant.status == 'active':
-        variant.status = 'inactive'
+    if variant.status == "active":
+        variant.status = "inactive"
     else:
-        variant.status = 'active'
+        variant.status = "active"
 
     variant.save()
 
-    return redirect('edit_product', product_id=variant.product.id)
+    return redirect("edit_product", product_id=variant.product.id)
+
 
 @admin_required
 def delete_variant_image(request, image_id):
 
-    image = get_object_or_404(
-        VariantImage,
-        id=image_id
-    )
+    image = get_object_or_404(VariantImage, id=image_id)
 
     variant = image.variant
     product_id = variant.product.id
@@ -525,30 +463,29 @@ def delete_variant_image(request, image_id):
 
     image.delete()
 
-    messages.success(
-        request,
-        "Image deleted successfully."
-    )
+    messages.success(request, "Image deleted successfully.")
 
     return redirect(
         f"{reverse('edit_product', args=[product_id])}?editing={variant_id}"
     )
 
+
 @admin_required
 def toggle_product_status(request, product_id):
     product = get_object_or_404(Product, id=product_id)
-    
+
     if product.status == "active":
         product.status = "inactive"
         # block all variants under this product
-        ProductVariant.objects.filter(product=product).update(status='inactive')
+        ProductVariant.objects.filter(product=product).update(status="inactive")
     else:
         product.status = "active"
         # unblock all variants under this product
-        ProductVariant.objects.filter(product=product).update(status='active')
+        ProductVariant.objects.filter(product=product).update(status="active")
 
     product.save()
-    return redirect('product_management')
+    return redirect("product_management")
+
 
 @admin_required
 def delete_variant(request, variant_id):
@@ -557,91 +494,94 @@ def delete_variant(request, variant_id):
     product_id = variant.product.id  # to redirect back
     variant.delete()
 
-    messages.success(
-        request,
-        "Variant deleted successfully."
-    )
+    messages.success(request, "Variant deleted successfully.")
 
-    return redirect('edit_product', product_id=product_id)
+    return redirect("edit_product", product_id=product_id)
+
 
 @login_required
 def shop(request):
     variants = ProductVariant.objects.filter(
-        status='active',
-        product__status='active',
-        product__category__status='active'
-    ).select_related('product', 'product__category')
+        status="active", product__status="active", product__category__status="active"
+    ).select_related("product", "product__category")
 
-    selected_categories = request.GET.getlist('category')
+    selected_categories = request.GET.getlist("category")
     if selected_categories:
         variants = variants.filter(
             product__category__category_name__in=selected_categories
         )
 
-    search_query = request.GET.get('search', '')
+    search_query = request.GET.get("search", "")
     if search_query:
         variants = variants.filter(product__product_name__icontains=search_query)
 
-    sort = request.GET.get('sort')
-    if sort == 'a_z':
-        variants = variants.order_by('product__product_name')
-    elif sort == 'z_a':
-        variants = variants.order_by('-product__product_name')
+    sort = request.GET.get("sort")
+    if sort == "a_z":
+        variants = variants.order_by("product__product_name")
+    elif sort == "z_a":
+        variants = variants.order_by("-product__product_name")
     else:
-        variants = variants.order_by('-created_at')
-    
+        variants = variants.order_by("-created_at")
+
     variant_list = list(variants)
     offer_price_map = {}
     for variant in variant_list:
         final_price, discount_amount, offer = get_offer_price(variant)
         variant.final_price = final_price
         offer_price_map[variant.id] = {
-            'final_price':     final_price,
-            'discount_amount': discount_amount,
-            'offer':           offer,
-            'has_offer':       offer is not None,
+            "final_price": final_price,
+            "discount_amount": discount_amount,
+            "offer": offer,
+            "has_offer": offer is not None,
         }
 
     # Price range filter — now applied against final_price, not raw price
-    selected_price = request.GET.get('price')
-    if selected_price == 'under_3000':
+    selected_price = request.GET.get("price")
+    if selected_price == "under_3000":
         variant_list = [v for v in variant_list if v.final_price < 3000]
-    elif selected_price == '3000_5000':
+    elif selected_price == "3000_5000":
         variant_list = [v for v in variant_list if 3000 <= v.final_price <= 5000]
-    elif selected_price == '5000_8000':
+    elif selected_price == "5000_8000":
         variant_list = [v for v in variant_list if 5000 <= v.final_price <= 8000]
-    elif selected_price == 'above_8000':
+    elif selected_price == "above_8000":
         variant_list = [v for v in variant_list if v.final_price > 8000]
 
-    if sort == 'price_low':
+    if sort == "price_low":
         variant_list.sort(key=lambda v: v.final_price)
-    elif sort == 'price_high':
+    elif sort == "price_high":
         variant_list.sort(key=lambda v: v.final_price, reverse=True)
 
     paginator = Paginator(variant_list, 9)
-    page_number = request.GET.get('page')
+    page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
-    categories = Category.objects.filter(status='active')
+    categories = Category.objects.filter(status="active")
 
     if request.user.is_authenticated:
-        wishlisted_ids = list(Wishlist.objects.filter(
-            user=request.user
-        ).values_list('product_variant_id', flat=True))
+        wishlisted_ids = list(
+            Wishlist.objects.filter(user=request.user).values_list(
+                "product_variant_id", flat=True
+            )
+        )
     else:
         wishlisted_ids = []
 
-    return render(request, 'user/shop_page.html', {
-        'variants': page_obj,
-        'categories': categories,
-        'selected_categories': selected_categories,
-        'selected_price': selected_price,
-        'search_query': search_query,
-        'sort': sort,
-        'page_obj': page_obj,
-        'wishlisted_ids': wishlisted_ids,
-        'offer_price_map': offer_price_map,
-    })
+    return render(
+        request,
+        "user/shop_page.html",
+        {
+            "variants": page_obj,
+            "categories": categories,
+            "selected_categories": selected_categories,
+            "selected_price": selected_price,
+            "search_query": search_query,
+            "sort": sort,
+            "page_obj": page_obj,
+            "wishlisted_ids": wishlisted_ids,
+            "offer_price_map": offer_price_map,
+        },
+    )
+
 
 @login_required
 def product_details(request, variant_id):
@@ -649,28 +589,34 @@ def product_details(request, variant_id):
     try:
         variant = ProductVariant.objects.get(id=variant_id)
     except ProductVariant.DoesNotExist:
-        return redirect('shop')
+        return redirect("shop")
 
     # Then check if it is active
-    if variant.status != 'active' or variant.product.status != 'active' or variant.product.category.status != 'active':
-        return redirect('shop')
-    
+    if (
+        variant.status != "active"
+        or variant.product.status != "active"
+        or variant.product.category.status != "active"
+    ):
+        return redirect("shop")
+
     # for size selector dropdown
     other_variants = ProductVariant.objects.filter(
         product=variant.product,
-        status='active',
-        product__status='active',
-        product__category__status='active'
+        status="active",
+        product__status="active",
+        product__category__status="active",
     )
-    
+
     related_variants = ProductVariant.objects.filter(
-        product__category = variant.product.category,
-        product__category__status='active',
-        product__status = 'active',
-        status = 'active'
+        product__category=variant.product.category,
+        product__category__status="active",
+        product__status="active",
+        status="active",
     ).exclude(product=variant.product)[:4]
 
-    is_wishlisted = Wishlist.objects.filter(user=request.user, product_variant=variant).exists()
+    is_wishlisted = Wishlist.objects.filter(
+        user=request.user, product_variant=variant
+    ).exists()
 
     final_price, discount_amount, offer = get_offer_price(variant)
 
@@ -679,108 +625,123 @@ def product_details(request, variant_id):
     for v in other_variants:
         fp, da, o = get_offer_price(v)
         other_variant_prices[v.id] = {
-            'final_price':     fp,
-            'discount_amount': da,
-            'offer':           o,
+            "final_price": fp,
+            "discount_amount": da,
+            "offer": o,
         }
-    variant.final_price = final_price;
+    variant.final_price = final_price
     # Reviews for this product
-    reviews = Review.objects.filter(product=variant.product).select_related('user').order_by('-created_at')
-    avg_rating = reviews.aggregate(avg=Avg('rating'))['avg']
+    reviews = (
+        Review.objects.filter(product=variant.product)
+        .select_related("user")
+        .order_by("-created_at")
+    )
+    avg_rating = reviews.aggregate(avg=Avg("rating"))["avg"]
     review_count = reviews.count()
 
-    return render(request, 'user/product_details.html', {
-        'variant': variant,
-        'other_variants': other_variants,
-        'related_variants': related_variants,
-        'is_wishlisted':is_wishlisted,
-        'final_price': final_price,           
-        'discount_amount': discount_amount,       
-        'offer': offer,                 
-        'other_variant_prices': other_variant_prices,
-        'reviews': reviews,
-        'avg_rating': avg_rating,
-        'review_count': review_count, 
-    })
+    return render(
+        request,
+        "user/product_details.html",
+        {
+            "variant": variant,
+            "other_variants": other_variants,
+            "related_variants": related_variants,
+            "is_wishlisted": is_wishlisted,
+            "final_price": final_price,
+            "discount_amount": discount_amount,
+            "offer": offer,
+            "other_variant_prices": other_variant_prices,
+            "reviews": reviews,
+            "avg_rating": avg_rating,
+            "review_count": review_count,
+        },
+    )
+
 
 @login_required
 def collections(request):
-    categories = Category.objects.filter(status='active')
-    return render(request,'user/collections.html',{
-        'categories':categories
-    })
+    categories = Category.objects.filter(status="active")
+    return render(request, "user/collections.html", {"categories": categories})
+
 
 @login_required
 def collection_details(request, category_id):
 
     try:
-        category = Category.objects.get(id=category_id, status='active')
+        category = Category.objects.get(id=category_id, status="active")
     except Category.DoesNotExist:
-        return redirect('collections')
+        return redirect("collections")
 
     variants = ProductVariant.objects.filter(
         product__category=category,
-        product__status='active',
-        product__category__status='active',
-        status='active'
-    ).select_related('product', 'product__category')
+        product__status="active",
+        product__category__status="active",
+        status="active",
+    ).select_related("product", "product__category")
 
-    search_query = request.GET.get('search', '')
+    search_query = request.GET.get("search", "")
     if search_query:
         variants = variants.filter(product__product_name__icontains=search_query)
 
-    sort = request.GET.get('sort', '')
-    if sort == 'a_z':
-        variants = variants.order_by('product__product_name')
-    elif sort == 'z_a':
-        variants = variants.order_by('-product__product_name')
+    sort = request.GET.get("sort", "")
+    if sort == "a_z":
+        variants = variants.order_by("product__product_name")
+    elif sort == "z_a":
+        variants = variants.order_by("-product__product_name")
     else:
-        variants = variants.order_by('-created_at')
-    
+        variants = variants.order_by("-created_at")
+
     variant_list = list(variants)
     offer_price_map = {}
     for variant in variant_list:
         final_price, discount_amount, offer = get_offer_price(variant)
         variant.final_price = final_price
         offer_price_map[variant.id] = {
-            'final_price':     final_price,
-            'discount_amount': discount_amount,
-            'offer':           offer,
-            'has_offer':       offer is not None,
+            "final_price": final_price,
+            "discount_amount": discount_amount,
+            "offer": offer,
+            "has_offer": offer is not None,
         }
 
     # Price range filter — applied against final_price, not raw price
-    selected_price = request.GET.get('price', '')
-    if selected_price == 'under_3000':
+    selected_price = request.GET.get("price", "")
+    if selected_price == "under_3000":
         variant_list = [v for v in variant_list if v.final_price < 3000]
-    elif selected_price == '3000_5000':
+    elif selected_price == "3000_5000":
         variant_list = [v for v in variant_list if 3000 <= v.final_price <= 5000]
-    elif selected_price == '5000_8000':
+    elif selected_price == "5000_8000":
         variant_list = [v for v in variant_list if 5000 <= v.final_price <= 8000]
-    elif selected_price == 'above_8000':
+    elif selected_price == "above_8000":
         variant_list = [v for v in variant_list if v.final_price > 8000]
 
-    if sort == 'price_low':
+    if sort == "price_low":
         variant_list.sort(key=lambda v: v.final_price)
-    elif sort == 'price_high':
+    elif sort == "price_high":
         variant_list.sort(key=lambda v: v.final_price, reverse=True)
 
     if request.user.is_authenticated:
-        wishlisted_ids = list(Wishlist.objects.filter(
-            user=request.user
-        ).values_list('product_variant_id', flat=True))
+        wishlisted_ids = list(
+            Wishlist.objects.filter(user=request.user).values_list(
+                "product_variant_id", flat=True
+            )
+        )
     else:
         wishlisted_ids = []
 
-    return render(request, 'user/collection_details.html', {
-        'category': category,
-        'variants': variant_list,
-        'search_query': search_query,
-        'selected_price': selected_price,
-        'sort': sort,
-        'wishlisted_ids': wishlisted_ids,
-        'offer_price_map': offer_price_map,
-    })
+    return render(
+        request,
+        "user/collection_details.html",
+        {
+            "category": category,
+            "variants": variant_list,
+            "search_query": search_query,
+            "selected_price": selected_price,
+            "sort": sort,
+            "wishlisted_ids": wishlisted_ids,
+            "offer_price_map": offer_price_map,
+        },
+    )
+
 
 @login_required
 def cart(request):
@@ -791,81 +752,98 @@ def cart(request):
         cart = Cart.objects.create(user=request.user)
 
     # get all items in that cart
-    items = CartItem.objects.filter(cart=cart).select_related(
-        'product_variant__product__category'
-    ).order_by('id')
-    
+    items = (
+        CartItem.objects.filter(cart=cart)
+        .select_related("product_variant__product__category")
+        .order_by("id")
+    )
+
     for item in items:
         final_price, _, _ = get_offer_price(item.product_variant)
         new_total = final_price * item.quantity
         if new_total != item.total_price:
             item.total_price = new_total
             item.save()
-    
-    items = CartItem.objects.filter(cart=cart).select_related(
-        'product_variant__product__category'
-    ).order_by('id')
 
-    subtotal = sum(
-        item.product_variant.price * item.quantity
-        for item in items
+    items = (
+        CartItem.objects.filter(cart=cart)
+        .select_related("product_variant__product__category")
+        .order_by("id")
     )
 
-    # total_discount = difference between original price and offer/discounted price    
+    subtotal = sum(item.product_variant.price * item.quantity for item in items)
+
+    # total_discount = difference between original price and offer/discounted price
     total_discount = sum(
         (item.product_variant.price * item.quantity) - item.total_price
         for item in items
     )
 
     total = subtotal - total_discount
-    return render(request, 'user/cart_page.html', {
-        'cart': cart,
-        'items': items,
-        'subtotal': subtotal,
-        'total_discount': total_discount,
-        'total' : total
-    })
+    return render(
+        request,
+        "user/cart_page.html",
+        {
+            "cart": cart,
+            "items": items,
+            "subtotal": subtotal,
+            "total_discount": total_discount,
+            "total": total,
+        },
+    )
+
 
 @login_required
 def add_to_cart(request, variant_id):
-    if request.method == 'POST':
+    if request.method == "POST":
 
         # get the variant from DB
         variant = get_object_or_404(ProductVariant, id=variant_id)
-        next_page = request.POST.get('next', '')
+        next_page = request.POST.get("next", "")
 
-        referer = request.META.get('HTTP_REFERER')
+        referer = request.META.get("HTTP_REFERER")
         safe_referer = None
         if referer and url_has_allowed_host_and_scheme(
-            referer, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+            referer,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure(),
         ):
             safe_referer = referer
 
         # if not in stock or inactive redirect to product detail page
-        if variant.stock == 0 or variant.status == 'inactive' or variant.product.status == 'inactive' or variant.product.category.status == 'inactive':
-            if variant.status == 'inactive' or variant.product.status == 'inactive' or variant.product.category.status == 'inactive':
+        if (
+            variant.stock == 0
+            or variant.status == "inactive"
+            or variant.product.status == "inactive"
+            or variant.product.category.status == "inactive"
+        ):
+            if (
+                variant.status == "inactive"
+                or variant.product.status == "inactive"
+                or variant.product.category.status == "inactive"
+            ):
                 messages.error(request, "Currently unavailable!")
 
             if safe_referer:
                 return redirect(safe_referer)
 
-            if next_page == 'product_details':
-                return redirect('product_details', variant.id)
-            
-            elif next_page == 'shop':
-                return redirect('shop')
-            
-            elif next_page == 'wishlist':
-                return redirect('wishlist')
-            
-            elif next_page == 'collection_details':
-                return redirect('collection_details',variant.product.category.id)
-            
+            if next_page == "product_details":
+                return redirect("product_details", variant.id)
+
+            elif next_page == "shop":
+                return redirect("shop")
+
+            elif next_page == "wishlist":
+                return redirect("wishlist")
+
+            elif next_page == "collection_details":
+                return redirect("collection_details", variant.product.category.id)
+
             else:
-                return redirect('shop')
-            
-        #get offer price at time of adding to cart
-        final_price, _,_ = get_offer_price(variant)
+                return redirect("shop")
+
+        # get offer price at time of adding to cart
+        final_price, _, _ = get_offer_price(variant)
 
         # get the cart for this user
         try:
@@ -883,28 +861,25 @@ def add_to_cart(request, variant_id):
                 messages.error(request, "Maximum 5 items allowed per product!")
                 if safe_referer:
                     return redirect(safe_referer)
-                return redirect('product_details', variant.id)
+                return redirect("product_details", variant.id)
 
             # check stock availability
             if item.quantity + 1 > variant.stock:
                 messages.error(request, "Not enough stock available!")
                 if safe_referer:
                     return redirect(safe_referer)
-                return redirect('product_details', variant.id)
+                return redirect("product_details", variant.id)
 
             # if all good then increase quantity by 1
             item.quantity = item.quantity + 1
-            item.total_price = final_price  * item.quantity
+            item.total_price = final_price * item.quantity
             item.save()
 
         except CartItem.DoesNotExist:
 
             # item not in cart yet, create a new cart item
             item = CartItem.objects.create(
-                cart=cart,
-                product_variant=variant,
-                quantity=1,
-                total_price=final_price 
+                cart=cart, product_variant=variant, quantity=1, total_price=final_price
             )
 
         # remove from wishlist if it exists
@@ -916,76 +891,78 @@ def add_to_cart(request, variant_id):
             return redirect(safe_referer)
 
         # redirect based on where request came from
-        if next_page == 'shop':
-            return redirect('shop')
+        if next_page == "shop":
+            return redirect("shop")
 
-        elif next_page == 'collection_details':
-            return redirect('collection_details', variant.product.category.id)
+        elif next_page == "collection_details":
+            return redirect("collection_details", variant.product.category.id)
 
         # if request came from wishlist page, redirect back to wishlist
-        elif next_page == 'wishlist':
-            return redirect('wishlist')
+        elif next_page == "wishlist":
+            return redirect("wishlist")
 
-        return redirect('product_details', variant.id)
+        return redirect("product_details", variant.id)
 
 
 @login_required
 def remove_from_cart(request, item_id):
-    if request.method == 'POST':
+    if request.method == "POST":
 
-        # get the cart item        
+        # get the cart item
         try:
             item = CartItem.objects.get(id=item_id, cart__user=request.user)
         except CartItem.DoesNotExist:
             messages.error(request, "Item not found in cart!")
-            return redirect('cart')
+            return redirect("cart")
 
         item.delete()
 
         messages.success(request, "Item removed from cart!")
 
-        return redirect('cart')
+        return redirect("cart")
+
 
 @login_required
 def update_cart(request, item_id):
-    if request.method == 'POST':
+    if request.method == "POST":
         try:
             item = CartItem.objects.get(id=item_id, cart__user=request.user)
         except CartItem.DoesNotExist:
             messages.error(request, "Item not found in cart!")
-            return redirect('cart')
-        
+            return redirect("cart")
+
         if (
-            item.product_variant.stock == 0 or
-            item.product_variant.status == 'inactive' or
-            item.product_variant.product.status == 'inactive' or
-            item.product_variant.product.category.status == 'inactive'
+            item.product_variant.stock == 0
+            or item.product_variant.status == "inactive"
+            or item.product_variant.product.status == "inactive"
+            or item.product_variant.product.category.status == "inactive"
         ):
             item.delete()
             messages.error(request, "Item unavailable!")
-            return redirect('cart')
+            return redirect("cart")
 
-        quantity = int(request.POST.get('quantity'))
+        quantity = int(request.POST.get("quantity"))
 
         if quantity > 5:
             messages.error(request, "Maximum 5 items allowed per product!")
-            return redirect('cart')
+            return redirect("cart")
 
         if quantity < 1:
             item.delete()
             messages.success(request, "Item removed from cart!")
-            return redirect('cart')
+            return redirect("cart")
 
         if quantity > item.product_variant.stock:
             messages.error(request, "Not enough stock!")
-            return redirect('cart')
-        
+            return redirect("cart")
+
         final_price, _, _ = get_offer_price(item.product_variant)
         item.quantity = quantity
-        item.total_price = final_price  * quantity
+        item.total_price = final_price * quantity
         item.save()
 
-        return redirect('cart')
+        return redirect("cart")
+
 
 @login_required
 def wishlist(request):
@@ -993,327 +970,395 @@ def wishlist(request):
     # get all wishlist items for this user
     wishlist_items = Wishlist.objects.filter(
         user=request.user,
-        product_variant__status='active',
-        product_variant__product__status='active',
-        product_variant__product__category__status='active')
+        product_variant__status="active",
+        product_variant__product__status="active",
+        product_variant__product__category__status="active",
+    )
 
-    return render(request, 'user/wishlist.html', {
-        'wishlist_items': wishlist_items
-    })
+    return render(request, "user/wishlist.html", {"wishlist_items": wishlist_items})
+
 
 @login_required
 def add_to_wishlist(request, variant_id):
-    if request.method == 'POST':
+    if request.method == "POST":
 
         # get the variant from DB
         variant = get_object_or_404(ProductVariant, id=variant_id)
-        next_page = request.POST.get('next', '')
+        next_page = request.POST.get("next", "")
 
-        referer = request.META.get('HTTP_REFERER')
+        referer = request.META.get("HTTP_REFERER")
         safe_referer = None
         if referer and url_has_allowed_host_and_scheme(
-            referer, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+            referer,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure(),
         ):
             safe_referer = referer
 
-        if variant.status == 'inactive' or variant.product.status == 'inactive' or variant.product.category.status == 'inactive':
+        if (
+            variant.status == "inactive"
+            or variant.product.status == "inactive"
+            or variant.product.category.status == "inactive"
+        ):
             messages.error(request, "Currently unavailabe!")
 
             if safe_referer:
                 return redirect(safe_referer)
-            
-            if next_page == 'product_details':
-                return redirect('product_details', variant.id)
-            
-            elif next_page == 'shop':
-                return redirect('shop')
-            
-            elif next_page == 'collection_details':
-                return redirect('collection_details',variant.product.category.id)
 
+            if next_page == "product_details":
+                return redirect("product_details", variant.id)
+
+            elif next_page == "shop":
+                return redirect("shop")
+
+            elif next_page == "collection_details":
+                return redirect("collection_details", variant.product.category.id)
 
         # Check first, then decide to add or remove
-        existing = Wishlist.objects.filter(user=request.user, product_variant=variant).first()
+        existing = Wishlist.objects.filter(
+            user=request.user, product_variant=variant
+        ).first()
 
         if existing:
             # Already in wishlist then remove it
             existing.delete()
-            messages.success(request, f"{variant.product.product_name} removed from wishlist!")
+            messages.success(
+                request, f"{variant.product.product_name} removed from wishlist!"
+            )
         else:
             # Not in wishlist then add it
             Wishlist.objects.create(user=request.user, product_variant=variant)
-            messages.success(request, f"{variant.product.product_name} added to wishlist!")
-        
+            messages.success(
+                request, f"{variant.product.product_name} added to wishlist!"
+            )
+
         if safe_referer:
             return redirect(safe_referer)
 
-        if next_page == 'shop':
-            return redirect('shop')
-        elif next_page == 'collection_details':
-            return redirect('collection_details', variant.product.category.id)
-       
-        return redirect('product_details', variant.id)
+        if next_page == "shop":
+            return redirect("shop")
+        elif next_page == "collection_details":
+            return redirect("collection_details", variant.product.category.id)
+
+        return redirect("product_details", variant.id)
+
 
 @login_required
 def remove_from_wishlist(request, variant_id):
-    if request.method == 'POST':
-        next_page = request.POST.get('next', '')
+    if request.method == "POST":
+        next_page = request.POST.get("next", "")
         # get the variant from DB
-        variant = get_object_or_404(ProductVariant, id=variant_id, status='active')
+        variant = get_object_or_404(ProductVariant, id=variant_id, status="active")
 
-        referer = request.META.get('HTTP_REFERER')
+        referer = request.META.get("HTTP_REFERER")
         safe_referer = None
         if referer and url_has_allowed_host_and_scheme(
-            referer, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+            referer,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure(),
         ):
             safe_referer = referer
 
         # delete the wishlist item
         Wishlist.objects.filter(user=request.user, product_variant=variant).delete()
         messages.success(request, "Removed from wishlist!")
-        
+
         if safe_referer:
             return redirect(safe_referer)
 
-        if next_page == 'product_details':
-            return redirect('product_details',variant.id)
+        if next_page == "product_details":
+            return redirect("product_details", variant.id)
         else:
-            return redirect('wishlist')
+            return redirect("wishlist")
+
 
 @admin_required
 def offer_management(request):
-    search_query = request.GET.get('search', '').strip()
+    search_query = request.GET.get("search", "").strip()
 
-    offers = Offer.objects.select_related('product', 'category').order_by('-created_at')
+    offers = Offer.objects.select_related("product", "category").order_by("-created_at")
 
     if search_query:
         offers = offers.filter(
-            Q(offer_name__icontains=search_query) |
-            Q(product__product_name__icontains=search_query) |
-            Q(category__category_name__icontains=search_query)
+            Q(offer_name__icontains=search_query)
+            | Q(product__product_name__icontains=search_query)
+            | Q(category__category_name__icontains=search_query)
         )
 
     paginator = Paginator(offers, 10)
-    page_number = request.GET.get('page')
+    page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
-    return render(request, 'admin/offer_management.html', {
-        'offers': page_obj,
-        'search_query': search_query,
-    })
+    return render(
+        request,
+        "admin/offer_management.html",
+        {
+            "offers": page_obj,
+            "search_query": search_query,
+        },
+    )
+
 
 @admin_required
-def add_offer(request):    
-    products   = Product.objects.filter(status='active')
-    categories = Category.objects.filter(status='active')       
+def add_offer(request):
+    products = Product.objects.filter(status="active")
+    categories = Category.objects.filter(status="active")
 
-    if request.method == 'POST':
-        offer_type          = request.POST.get('offer_type', '').strip()
-        offer_name          = request.POST.get('offer_name', '').strip()
-        discount_percentage = request.POST.get('discount_percentage', '').strip()
-        start_date          = request.POST.get('start_date', '').strip()
-        end_date            = request.POST.get('end_date', '').strip()
-        product_id          = request.POST.get('product_id')
-        category_id         = request.POST.get('category_id')
+    if request.method == "POST":
+        offer_type = request.POST.get("offer_type", "").strip()
+        offer_name = request.POST.get("offer_name", "").strip()
+        discount_percentage = request.POST.get("discount_percentage", "").strip()
+        start_date = request.POST.get("start_date", "").strip()
+        end_date = request.POST.get("end_date", "").strip()
+        product_id = request.POST.get("product_id")
+        category_id = request.POST.get("category_id")
 
-        error_context = {'products': products, 'categories': categories}
+        error_context = {"products": products, "categories": categories}
 
         # Offer name
         if not offer_name:
             messages.error(request, "Offer name is required.")
-            return render(request, 'admin/add_offer.html', error_context, status=400)
+            return render(request, "admin/add_offer.html", error_context, status=400)
 
         if len(offer_name) < 3:
             messages.error(request, "Offer name must be at least 3 characters.")
-            return render(request, 'admin/add_offer.html', error_context, status=400)
+            return render(request, "admin/add_offer.html", error_context, status=400)
 
         if len(offer_name) > 100:
             messages.error(request, "Offer name cannot exceed 100 characters.")
-            return render(request, 'admin/add_offer.html', error_context, status=400)
+            return render(request, "admin/add_offer.html", error_context, status=400)
 
         if Offer.objects.filter(offer_name__iexact=offer_name).exists():
             messages.error(request, "An offer with this name already exists.")
-            return render(request, 'admin/add_offer.html', error_context, status=400)
+            return render(request, "admin/add_offer.html", error_context, status=400)
 
         # Offer type
-        if offer_type not in ['product', 'category']:
+        if offer_type not in ["product", "category"]:
             messages.error(request, "Please select a valid offer type.")
-            return render(request, 'admin/add_offer.html', error_context, status=400)
+            return render(request, "admin/add_offer.html", error_context, status=400)
 
         # Discount percentage
         if not discount_percentage:
             messages.error(request, "Discount percentage is required.")
-            return render(request, 'admin/add_offer.html', error_context, status=400)
+            return render(request, "admin/add_offer.html", error_context, status=400)
 
         try:
             discount_value = float(discount_percentage)
         except ValueError:
             messages.error(request, "Discount must be a valid number.")
-            return render(request, 'admin/add_offer.html', error_context, status=400)
+            return render(request, "admin/add_offer.html", error_context, status=400)
 
         if discount_value <= 0 or discount_value > 100:
             messages.error(request, "Discount must be between 1 and 100.")
-            return render(request, 'admin/add_offer.html', error_context, status=400)
+            return render(request, "admin/add_offer.html", error_context, status=400)
 
         # Dates
         if not start_date or not end_date:
             messages.error(request, "Both start date and end date are required.")
-            return render(request, 'admin/add_offer.html', error_context, status=400)
+            return render(request, "admin/add_offer.html", error_context, status=400)
 
         try:
-            start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date()
-            end_date_obj = datetime.strptime(end_date, '%Y-%m-%d').date()
+            start_date_obj = datetime.strptime(start_date, "%Y-%m-%d").date()
+            end_date_obj = datetime.strptime(end_date, "%Y-%m-%d").date()
         except ValueError:
             messages.error(request, "Invalid date format.")
-            return render(request, 'admin/add_offer.html', error_context, status=400)
+            return render(request, "admin/add_offer.html", error_context, status=400)
 
         today = timezone.now().date()
         if start_date_obj < today:
             messages.error(request, "Start date cannot be in the past.")
-            return render(request, 'admin/add_offer.html', error_context, status=400)
+            return render(request, "admin/add_offer.html", error_context, status=400)
 
         if end_date_obj <= start_date_obj:
             messages.error(request, "End date must be after start date.")
-            return render(request, 'admin/add_offer.html', error_context, status=400)
+            return render(request, "admin/add_offer.html", error_context, status=400)
 
         offer = Offer(
-            offer_type          = offer_type,
-            offer_name          = offer_name,
-            discount_percentage = discount_value,
-            start_date          = start_date_obj,
-            end_date            = end_date_obj,
+            offer_type=offer_type,
+            offer_name=offer_name,
+            discount_percentage=discount_value,
+            start_date=start_date_obj,
+            end_date=end_date_obj,
         )
 
         # Product / Category selection
-        if offer_type == 'product':
+        if offer_type == "product":
             if not product_id:
                 messages.error(request, "Please select a product.")
-                return render(request, 'admin/add_offer.html', error_context, status=400)
+                return render(
+                    request, "admin/add_offer.html", error_context, status=400
+                )
 
             product = get_object_or_404(Product, id=product_id)
 
-            if has_overlapping_offer('product', product.id, start_date_obj, end_date_obj):
-                messages.error(request, f"{product.product_name} already has an active offer during this date range.")
-                return render(request, 'admin/add_offer.html', error_context, status=400)
+            if has_overlapping_offer(
+                "product", product.id, start_date_obj, end_date_obj
+            ):
+                messages.error(
+                    request,
+                    f"{product.product_name} already has an active offer during this date range.",
+                )
+                return render(
+                    request, "admin/add_offer.html", error_context, status=400
+                )
 
             offer.product = product
 
-        elif offer_type == 'category':
+        elif offer_type == "category":
             if not category_id:
                 messages.error(request, "Please select a category.")
-                return render(request, 'admin/add_offer.html', error_context, status=400)
+                return render(
+                    request, "admin/add_offer.html", error_context, status=400
+                )
 
             category = get_object_or_404(Category, id=category_id)
 
-            if has_overlapping_offer('category', category.id, start_date_obj, end_date_obj):
-                messages.error(request, f"{category.category_name} already has an active offer during this date range.")
-                return render(request, 'admin/add_offer.html', error_context, status=400)
+            if has_overlapping_offer(
+                "category", category.id, start_date_obj, end_date_obj
+            ):
+                messages.error(
+                    request,
+                    f"{category.category_name} already has an active offer during this date range.",
+                )
+                return render(
+                    request, "admin/add_offer.html", error_context, status=400
+                )
 
             offer.category = category
 
         offer.save()
         messages.success(request, "Offer created successfully!")
-        return redirect('offer_management')
-    
-    return render(request, 'admin/add_offer.html', {
-        'products':   products,
-        'categories': categories,
-    })
+        return redirect("offer_management")
+
+    return render(
+        request,
+        "admin/add_offer.html",
+        {
+            "products": products,
+            "categories": categories,
+        },
+    )
+
 
 @admin_required
 def edit_offer(request, offer_id):
     offer = get_object_or_404(Offer, id=offer_id)
 
-    if request.method == 'POST':
-        offer_name          = request.POST.get('offer_name', '').strip()
-        discount_percentage = request.POST.get('discount_percentage', '').strip()
-        start_date           = request.POST.get('start_date', '').strip()
-        end_date             = request.POST.get('end_date', '').strip()
+    if request.method == "POST":
+        offer_name = request.POST.get("offer_name", "").strip()
+        discount_percentage = request.POST.get("discount_percentage", "").strip()
+        start_date = request.POST.get("start_date", "").strip()
+        end_date = request.POST.get("end_date", "").strip()
 
         if not offer_name:
             messages.error(request, "Offer name is required.")
-            return redirect('edit_offer', offer_id=offer.id)
+            return redirect("edit_offer", offer_id=offer.id)
 
         if len(offer_name) < 3:
             messages.error(request, "Offer name must be at least 3 characters.")
-            return redirect('edit_offer', offer_id=offer.id)
+            return redirect("edit_offer", offer_id=offer.id)
 
         if len(offer_name) > 100:
             messages.error(request, "Offer name cannot exceed 100 characters.")
-            return redirect('edit_offer', offer_id=offer.id)
+            return redirect("edit_offer", offer_id=offer.id)
 
-        if Offer.objects.filter(offer_name__iexact=offer_name).exclude(id=offer.id).exists():
+        if (
+            Offer.objects.filter(offer_name__iexact=offer_name)
+            .exclude(id=offer.id)
+            .exists()
+        ):
             messages.error(request, "An offer with this name already exists.")
-            return redirect('edit_offer', offer_id=offer.id)
+            return redirect("edit_offer", offer_id=offer.id)
 
         if not discount_percentage:
             messages.error(request, "Discount percentage is required.")
-            return redirect('edit_offer', offer_id=offer.id)
+            return redirect("edit_offer", offer_id=offer.id)
 
         try:
             discount_value = float(discount_percentage)
         except ValueError:
             messages.error(request, "Discount must be a valid number.")
-            return redirect('edit_offer', offer_id=offer.id)
+            return redirect("edit_offer", offer_id=offer.id)
 
         if discount_value <= 0 or discount_value > 100:
             messages.error(request, "Discount must be between 1 and 100.")
-            return redirect('edit_offer', offer_id=offer.id)
+            return redirect("edit_offer", offer_id=offer.id)
 
         if not start_date or not end_date:
             messages.error(request, "Both start date and end date are required.")
-            return redirect('edit_offer', offer_id=offer.id)
+            return redirect("edit_offer", offer_id=offer.id)
 
         try:
-            start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date()
-            end_date_obj = datetime.strptime(end_date, '%Y-%m-%d').date()
+            start_date_obj = datetime.strptime(start_date, "%Y-%m-%d").date()
+            end_date_obj = datetime.strptime(end_date, "%Y-%m-%d").date()
         except ValueError:
             messages.error(request, "Invalid date format.")
-            return redirect('edit_offer', offer_id=offer.id)
+            return redirect("edit_offer", offer_id=offer.id)
 
         if end_date_obj <= start_date_obj:
             messages.error(request, "End date must be after start date.")
-            return redirect('edit_offer', offer_id=offer.id)
+            return redirect("edit_offer", offer_id=offer.id)
 
         today = timezone.now().date()
         if start_date_obj < today:
             messages.error(request, "Start date cannot be in the past.")
-            return redirect('edit_offer', offer_id=offer.id)
+            return redirect("edit_offer", offer_id=offer.id)
 
         # check overlap against the same product/category, excluding this offer itself
-        if offer.offer_type == 'product':
+        if offer.offer_type == "product":
             target_id = offer.product_id
         else:
             target_id = offer.category_id
 
-        if has_overlapping_offer(offer.offer_type, target_id, start_date_obj, end_date_obj, exclude_offer_id=offer.id):
-            target_name = offer.product.product_name if offer.offer_type == 'product' else offer.category.category_name
-            messages.error(request, f"{target_name} already has an active offer during this date range.")
-            return redirect('edit_offer', offer_id=offer.id)
+        if has_overlapping_offer(
+            offer.offer_type,
+            target_id,
+            start_date_obj,
+            end_date_obj,
+            exclude_offer_id=offer.id,
+        ):
+            target_name = (
+                offer.product.product_name
+                if offer.offer_type == "product"
+                else offer.category.category_name
+            )
+            messages.error(
+                request,
+                f"{target_name} already has an active offer during this date range.",
+            )
+            return redirect("edit_offer", offer_id=offer.id)
 
-        offer.offer_name          = offer_name
+        offer.offer_name = offer_name
         offer.discount_percentage = discount_value
-        offer.start_date          = start_date_obj
-        offer.end_date            = end_date_obj
+        offer.start_date = start_date_obj
+        offer.end_date = end_date_obj
         offer.save()
         messages.success(request, "Offer updated successfully!")
-        return redirect('offer_management')
+        return redirect("offer_management")
 
-    products   = Product.objects.filter(status='active')
-    categories = Category.objects.filter(status='active')
-    return render(request, 'admin/edit_offer.html', {
-        'offer':      offer,
-        'products':   products,
-        'categories': categories,
-    })
+    products = Product.objects.filter(status="active")
+    categories = Category.objects.filter(status="active")
+    return render(
+        request,
+        "admin/edit_offer.html",
+        {
+            "offer": offer,
+            "products": products,
+            "categories": categories,
+        },
+    )
+
 
 @admin_required
 def toggle_offer_status(request, offer_id):
     offer = get_object_or_404(Offer, id=offer_id)
-    offer.status = 'inactive' if offer.status == 'active' else 'active'
+    offer.status = "inactive" if offer.status == "active" else "active"
     offer.save()
-    messages.success(request, f"Offer {'activated' if offer.status == 'active' else 'deactivated'} successfully.")
-    return redirect('offer_management')
+    messages.success(
+        request,
+        f"Offer {'activated' if offer.status == 'active' else 'deactivated'} successfully.",
+    )
+    return redirect("offer_management")
 
 
 @admin_required
@@ -1321,27 +1366,31 @@ def delete_offer(request, offer_id):
     offer = get_object_or_404(Offer, id=offer_id)
     offer.delete()
     messages.success(request, "Offer deleted successfully.")
-    return redirect('offer_management')
+    return redirect("offer_management")
+
 
 @login_required
 def add_review(request, product_id):
     product = get_object_or_404(Product, id=product_id)
 
     if not can_review_product(request.user, product):
-        messages.error(request, "You can only review products you've received in a delivered order.")
-        return redirect('my_orders')
+        messages.error(
+            request,
+            "You can only review products you've received in a delivered order.",
+        )
+        return redirect("my_orders")
 
-    if request.method == 'POST':
-        rating = request.POST.get('rating')
-        review_text = request.POST.get('review', '').strip()
+    if request.method == "POST":
+        rating = request.POST.get("rating")
+        review_text = request.POST.get("review", "").strip()
 
         if not rating or not rating.isdigit() or not (1 <= int(rating) <= 5):
             messages.error(request, "Please select a rating between 1 and 5.")
-            return redirect(request.META.get('HTTP_REFERER', 'my_orders'))
+            return redirect(request.META.get("HTTP_REFERER", "my_orders"))
 
         if len(review_text) < 10:
             messages.error(request, "Review must be at least 10 characters.")
-            return redirect(request.META.get('HTTP_REFERER', 'my_orders'))
+            return redirect(request.META.get("HTTP_REFERER", "my_orders"))
 
         Review.objects.create(
             user=request.user,
@@ -1351,11 +1400,11 @@ def add_review(request, product_id):
         )
         messages.success(request, "Thank you for your review!")
 
-        next_page = request.POST.get('next', '')
-        if next_page == 'order_detail':
-            order_id = request.POST.get('order_id')
-            return redirect('order_detail', order_id=order_id)
+        next_page = request.POST.get("next", "")
+        if next_page == "order_detail":
+            order_id = request.POST.get("order_id")
+            return redirect("order_detail", order_id=order_id)
 
-        return redirect('product_details', variant_id=request.POST.get('variant_id'))
+        return redirect("product_details", variant_id=request.POST.get("variant_id"))
 
-    return redirect('my_orders')
+    return redirect("my_orders")

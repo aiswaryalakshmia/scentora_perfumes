@@ -7,17 +7,32 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('products', '0005_product_productvariant'),
+        ("products", "0005_product_productvariant"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='VariantImage',
+            name="VariantImage",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('image', models.ImageField(upload_to='variant_images/')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('variant', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='images', to='products.productvariant')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("image", models.ImageField(upload_to="variant_images/")),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "variant",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="images",
+                        to="products.productvariant",
+                    ),
+                ),
             ],
         ),
     ]

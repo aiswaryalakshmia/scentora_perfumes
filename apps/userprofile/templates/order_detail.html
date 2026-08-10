@@ -54,8 +54,8 @@
     </div>
     <div class="info-card">
       <p class="info-label">ORDER STATUS</p>
-      <span class="status-badge status-{{ order.order_status }}">
-        ● {{ order.order_status|capfirst }}
+      <span class="status-badge status-{{ order.display_status }}">
+        ● {{ order.display_status|capfirst }}
       </span>
     </div>
     <div class="info-card">

@@ -26,7 +26,7 @@
       <option value="">All Status</option>
       {% for value, label in status_choices %}
         <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
-      {% endfor %}
+      {% endfor %}      
     </select>
 
     <select name="sort">
@@ -67,8 +67,8 @@
           <td>{{ order.created_at|date:"M d, Y" }}</td>
           <td class="amount">₹{{ order.final_amount }}</td>
           <td>
-            <span class="status-pill status-{{ order.order_status }}">
-              {{ order.get_order_status_display }}
+            <span class="status-pill status-{{ order.display_status }}">
+              {{ order.display_status|capfirst }}
             </span>
           </td>
           <td>
@@ -78,7 +78,13 @@
               <span class="status-pill payment-awaiting">Awaiting</span>
             {% endif %}
           </td>
-          <td><span class="status-pill neutral">N/A</span></td>
+          <td>
+            {% if order.display_status == 'return_requested' %}
+              <span class="status-pill status-return_requested">Pending</span>
+            {% else %}
+              <span class="status-pill neutral">N/A</span>
+            {% endif %}
+          </td>
           <td>
             <a href="{% url 'admin_order_detail' order.id %}" class="icon-action">
               <i class="fa-solid fa-eye"></i>

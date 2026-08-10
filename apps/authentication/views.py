@@ -267,14 +267,7 @@ def verify_otp(request):
 
     if request.method == 'POST':
 
-        entered_otp = (
-            request.POST.get('otp1', '') +
-            request.POST.get('otp2', '') +
-            request.POST.get('otp3', '') +
-            request.POST.get('otp4', '') +
-            request.POST.get('otp5', '') +
-            request.POST.get('otp6', '')
-        )
+        entered_otp = ''.join(request.POST.get(f'otp{i}', '') for i in range(1, 7))
 
         try:
 

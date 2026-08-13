@@ -19,18 +19,13 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         except User.DoesNotExist:
             return
 
-        original_password = (
-            user.password
-        )  # capture the real hash before connect() can wipe it
+        # Stash the existing password hash in the session so it can be
+        # restored after the ENTIRE login pipeline finishes, regardless
+        # of whether allauth resets it somewhere in between.
+        if user.has_usable_password():
+            request.session['_social_login_password_restore'] = user.password
 
         sociallogin.connect(request, user)
-
-        # connect() may call set_unusable_password() + save() internally on `user`.
-        # Restore the original password hash so email/password login keeps working.
-        user.refresh_from_db()
-        if not user.has_usable_password() and original_password:
-            user.password = original_password
-            user.save(update_fields=["password"])
 
     def save_user(self, request, sociallogin, form=None):
         user = super().save_user(request, sociallogin, form)

@@ -19,6 +19,8 @@ from apps.authentication.models import User
 from apps.common.decorators import admin_required
 from apps.orders.models import Order, OrderItem
 
+def admin_panel_home(request):
+    return redirect("admin_dashboard")
 
 @never_cache
 def admin_login(request):
@@ -34,6 +36,7 @@ def admin_login(request):
             return redirect("admin_dashboard")
         else:
             messages.error(request, "Invalid admin credentials")
+            return render(request, "admin_login.html",status=401)
     return render(request, "admin_login.html")
 
 

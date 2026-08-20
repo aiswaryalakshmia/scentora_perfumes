@@ -64,7 +64,7 @@ def add_category(request):
 
             if not cropped_image:
                 messages.error(request, "Category image is required.")
-                return render(request, "admin/add_category.html", {"form": form})
+                return render(request, "admin/add_category.html", {"form": form}, status=400,)
 
             try:
                 images = json.loads(cropped_image)
@@ -86,6 +86,8 @@ def add_category(request):
             category.save()
             messages.success(request, "Category added successfully!")
             return redirect("category_management")
+
+        return render(request, "admin/add_category.html", {"form": form},status=400)
 
     else:
         form = CategoryForm()
@@ -131,7 +133,13 @@ def edit_category(request, category_id):
             category.save()
             messages.success(request, "Category updated successfully!")
             return redirect("category_management")
-
+        
+        return render(
+            request, 
+            "admin/edit_category.html", 
+            {"form": form, "category": category}, 
+            status=400,
+        )
     else:
         form = CategoryForm(instance=category)
 
@@ -227,6 +235,13 @@ def add_product(request):
 
             return redirect("add_variant", product_id=product.id)
 
+        return render(
+            request,
+            "admin/add_product.html",
+            {"form": form},
+            status=400
+        )
+
     else:
 
         form = ProductForm()
@@ -258,6 +273,7 @@ def add_variant(request, product_id):
                         "form": form,
                         "variants": ProductVariant.objects.filter(product=product),
                     },
+                    status=400,
                 )
 
             try:
@@ -273,6 +289,7 @@ def add_variant(request, product_id):
                             "form": form,
                             "variants": ProductVariant.objects.filter(product=product),
                         },
+                        status=400,
                     )
 
             except Exception:
@@ -285,6 +302,7 @@ def add_variant(request, product_id):
                         "form": form,
                         "variants": ProductVariant.objects.filter(product=product),
                     },
+                    status=400,
                 )
 
             variant = form.save(commit=False)
@@ -324,8 +342,7 @@ def add_variant(request, product_id):
                 return redirect("edit_product", product_id=product.id)
 
             # Coming from Add Variant page
-            return redirect("add_variant", product_id=product.id)
-
+            return redirect("add_variant", product_id=product.id)        
     else:
 
         form = ProductVariantForm()
@@ -359,6 +376,17 @@ def edit_product(request, product_id):
             messages.success(request, "Product updated successfully.")
 
             return redirect("edit_product", product_id=product.id)
+
+        return render(
+            request,
+            "admin/edit_product.html",
+            {
+                "product": product,
+                "form": form,
+                "variants": ProductVariant.objects.filter(product=product),
+            },
+            status=400
+        )
 
     else:
 
